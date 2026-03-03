@@ -198,65 +198,22 @@ Steps:
 **Skip when**: Not explicitly requested or not part of a governance cadence.
 **Fallback (no vault)**: Ask the user for customer names or use `crm_whoami` context. No automatic roster approximation without a configured persistence layer.
 
-## Workflow Integration (Detailed Reference)
+## Quick Reference: Vault–CRM Interaction Patterns
 
-> Skills should invoke the named Vault Protocol Phases above. This section provides detailed reference for the patterns underlying each phase.
+> Skills should invoke the named Vault Protocol Phases above. This section provides a condensed lookup for common patterns.
 
-### 1. CRM Query Prefetch (Vault → CRM)
+| Scenario | Phase | Key Pattern |
+|---|---|---|
+| Before any CRM query | VAULT-PREFETCH | `get_customer_context` → extract GUIDs → CRM `$filter` |
+| After M365/WorkIQ retrieval | VAULT-CORRELATE | `resolve_people_to_customers` → `correlate_with_vault` |
+| After validated CRM findings | VAULT-PROMOTE | `promote_findings` → customer file `## Agent Insights` |
+| Connect evidence capture | VAULT-PROMOTE | `capture_connect_hook` → customer file + backup |
+| Multi-customer scope | VAULT-PREFETCH | Vault roster → `prepare_crm_prefetch` → scoped CRM queries |
+| Periodic cleanup | VAULT-HYGIENE | `check_vault_health` → `get_drift_report` → user review |
 
-**Before any CRM query workflow**, check the vault for relevant customer context:
+**Freshness rule**: Use vault for *who/what/why* context. Use CRM for *current state*. Vault scopes first, CRM validates second.
 
-1. Call `get_vault_context()` to identify the active customer roster.
-2. If the query targets a specific customer, call `get_customer_context({ customer: "<Name>" })` to get:
-   - Known opportunity names/IDs (avoids discovery queries).
-   - Team composition (identifies relevant owners for filtering).
-   - Prior findings and open items (avoids redundant queries).
-3. For CRM-ready filters, use `prepare_crm_prefetch({ customers: ["<Name>"] })` to get pre-built OData filter strings.
-
-**When to skip vault prefetch:**
-- The user provides an explicit opportunity ID or customer name not in the vault.
-- The user explicitly asks to search broadly beyond their tracked customers.
-
-### 2. Freshness Rules (When to Use CRM vs Vault)
-
-| Scenario | Source |
-|---|---|
-| "Who are my active customers?" | **Vault** (customer roster) |
-| "What milestones need attention for Contoso?" | **CRM** (fresh state), vault for context |
-| "What did we discuss last time about Contoso?" | **Vault** (notes, agent insights) |
-| "Create a task for milestone X" | **CRM** (fresh milestone state → write) |
-| "Which customers have at-risk milestones?" | **Vault** (roster) → **CRM** (filtered query) |
-| "Summarize my account health" | **Vault** (roster + context) → **CRM** (fresh state per customer) |
-| "What's the status of opportunity Y?" | **CRM** (always fresh for status) |
-
-**Rule of thumb:** Use vault for *who/what/why* context. Use CRM for *current state* data. When both are needed, vault scopes first, CRM validates second.
-
-### 3. Post-Workflow Promotion (CRM → Vault)
-
-After completing a CRM query or write workflow, promote **validated findings** back to the vault:
-
-1. Use `promote_findings()` to batch-promote findings to the relevant `Customers/<Name>.md` files under `## Agent Insights`.
-2. Include a datestamp and brief summary of what was found/changed.
-3. If no customer file exists and the customer is now being actively tracked, use `create_customer_file({ customer: "<Name>" })` to scaffold it.
-4. Do NOT promote speculative or unvalidated information.
-
-### 4. Connect Hook Storage
-
-When capturing Connect-relevant evidence:
-
-1. **Primary**: Use `capture_connect_hook({ customer: "<Name>", hook: { ... } })` — this appends to the customer file under `## Connect Hooks` and creates a backup automatically.
-2. **Create file** if no customer file exists — use `create_customer_file({ customer: "<Name>" })` first, then capture the hook.
-3. **Fallback**: If OIL is unavailable, write to `.connect/hooks/hooks.md` for repo-tracked persistence.
-
-See `.github/instructions/connect-hooks.instructions.md` for the hook schema and formatting rules.
-
-### 5. Customer Roster as Scope Filter
-
-The vault customer roster acts as a **default filter** for multi-customer operations:
-
-- **Proactive workflows** (e.g., "check my milestones", "what needs attention"): Scope to vault-listed customers only. Past/completed customers without vault files are excluded.
-- **Reactive queries** (e.g., "what about Fabrikam?"): If the user explicitly asks about a customer not in the vault, query CRM directly — but note that the customer isn't in their active tracking set.
-- **Composite tools**: When using `find_milestones_needing_tasks` or similar batch tools, derive the `customerKeywords` list from the vault roster — don't guess or use a hardcoded list.
+**Customer roster rule**: Vault-listed customers are the active scope for proactive workflows. Un-tracked customers are excluded unless the user explicitly asks.
 
 ## Fallback Behavior (No Vault)
 
