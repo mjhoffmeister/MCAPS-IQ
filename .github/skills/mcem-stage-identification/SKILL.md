@@ -1,6 +1,6 @@
 ---
 name: mcem-stage-identification
-description: 'Diagnostic triage: pinpoints which MCEM process step (1-5) an opportunity occupies by reading CRM entity state, not the recorded field label. Detects labeled-vs-functional divergence. Triggers: which stage, what stage, stage mismatch, triage stalled, diagnose position, identify step.'
+description: 'Diagnostic triage: pinpoints which MCEM process step (1-5) an opportunity occupies by reading CRM entity state, not the recorded field label. Detects labeled-vs-functional divergence. Chains with milestone-health-review and customer-evidence-pack for pre-governance prep; chains with exit-criteria-validation, risk-surfacing, and role-orchestration for full deal triage. Triggers: which stage, what stage, stage mismatch, triage stalled, diagnose position, identify step, what stage are we really in, governance prep.'
 argument-hint: 'Provide opportunityId to diagnose'
 ---
 

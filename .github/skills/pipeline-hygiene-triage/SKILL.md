@@ -1,6 +1,6 @@
 ---
 name: pipeline-hygiene-triage
-description: 'Pipeline hygiene triage for Specialist: flags stale opportunities, missing CRM fields, close-date slippage, and low-quality entries. Generates exception report with bulk-fix suggestions for forecast prep. Triggers: portfolio cleanup, stale opportunities, missing fields, forecast prep, pipeline exceptions, close-date slip.'
+description: 'Pipeline hygiene triage for Specialist: flags stale opportunities, missing CRM fields, close-date slippage, and low-quality entries. Generates exception report with bulk-fix suggestions for forecast prep. Chains with handoff-readiness-validation and risk-surfacing for weekly pipeline review. Triggers: portfolio cleanup, stale opportunities, missing fields, forecast prep, pipeline exceptions, close-date slip, weekly review, pipeline review.'
 argument-hint: 'Scope by opportunityId(s) or sweep all active Specialist-owned pipeline'
 ---
 
@@ -50,3 +50,4 @@ Detects and prioritizes pipeline hygiene exceptions across active Stage 2–3 op
 - `proposed_field_updates`: dry-run payloads for corrections
 - `escalation_path`: who to engage (SE, CSA, CSAM, partner) per exception
 - `next_action`: "Pipeline reviewed. CSA/CSAM should run `commit-gate-enforcement` for milestones approaching commitment — recommend engaging the CSU team."
+- `connect_hook_hint`: Circle(s): Customer/Business, Team/Org — "Pipeline hygiene triage across {n} opportunities: flagged {exceptions} exceptions, proposed {fixes} field corrections for forecast accuracy"

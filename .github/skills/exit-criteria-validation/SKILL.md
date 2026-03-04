@@ -1,6 +1,6 @@
 ---
 name: exit-criteria-validation
-description: 'Exit-criteria validation via VO evidence audit: checks each formal criterion against CRM field evidence (solution play set, BVA complete, success plan linked) and returns pass/fail per item. Flags when BPF position diverges from actual evidence. Triggers: exit criteria, are we ready, Verifiable Outcome check, criteria met, VO audit, BPF evidence mismatch.'
+description: 'Exit-criteria validation via VO evidence audit: checks each formal criterion against CRM field evidence (solution play set, BVA complete, success plan linked) and returns pass/fail per item. Flags when BPF position diverges from actual evidence. Chains with mcem-stage-identification, risk-surfacing, and role-orchestration for full deal triage. Triggers: exit criteria, are we ready, Verifiable Outcome check, criteria met, VO audit, BPF evidence mismatch, ready to advance.'
 argument-hint: 'Provide opportunityId and the target stage number to validate against'
 ---
 

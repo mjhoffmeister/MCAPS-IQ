@@ -1,6 +1,6 @@
 ---
 name: expansion-signal-routing
-description: 'Upsell/cross-sell router: when a growth signal surfaces during active delivery or post-deployment optimization, captures the signal and routes it to Specialist for net-new deal creation. Triggers: upsell detected, cross-sell opportunity, growth signal, land-and-expand, new deal from delivery, expansion routing.'
+description: 'Upsell/cross-sell router: when a growth signal surfaces during active delivery or post-deployment optimization, captures the signal and routes it to Specialist for net-new deal creation. Chains with adoption-excellence-review and value-realization-pack for full Stage 5 review. Triggers: upsell detected, cross-sell opportunity, growth signal, land-and-expand, new deal from delivery, expansion routing, expansion signals, flag expansion.'
 argument-hint: 'Provide opportunityId where upsell/cross-sell signal was observed'
 ---
 

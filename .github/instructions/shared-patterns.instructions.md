@@ -54,9 +54,83 @@ After completing a CRM workflow, persist validated findings to the vault:
 - If new opportunity GUIDs were discovered, use `oil:update_customer_file()` to add them.
 - Skipped automatically if OIL is unavailable.
 
+## Skill Composition Contract
+
+Skills are instruction documents auto-loaded by the runtime when matched, NOT exclusive tool calls. The agent MUST execute multiple skills sequentially in the same turn when the user's request requires outputs from more than one skill. Do NOT defer or refuse with "I can only invoke one skill at a time" — that constraint does not exist.
+
+### How to execute a skill
+
+1. **Locate**: The skill's Flow, Decision Logic, and Output Schema are already in your context when matched by the runtime. If a chained skill (via `next_action`) was not auto-loaded, fall back to `read_file` at `.github/skills/{name}/SKILL.md`.
+2. **Execute**: Follow the skill's `## Flow` section — each numbered step maps to one or more MCP tool calls.
+3. **Apply**: Use the skill's `## Decision Logic` and `## Output Schema` to classify results and structure output.
+4. **Chain**: Read the skill's `next_action`. If the user's request spans the next skill, execute it immediately — do not ask permission.
+
+### Multi-skill prompts
+
+When a user prompt clearly requires multiple skills (e.g., "review adoption, check value realization, and flag expansion"):
+1. Identify all required skills from the prompt — matched skills are already loaded.
+2. Execute each skill's Flow sequentially, reusing MCP tool call results across skills where the same data is needed.
+3. If any required skill was not auto-loaded (not in context), `read_file` it before executing.
+4. Produce a combined output with sections labeled per skill.
+
+### Composition rules
+
+- **Same-role chaining**: When a skill's `next_action` names another skill owned by the same role, execute it immediately.
+- **Cross-role chaining**: When `next_action` names a skill owned by a different role, present the handoff recommendation but do not block remaining same-role skills.
+- **Parallel data gathering**: MCP tool calls that feed multiple skills (e.g., `get_milestones` used by both `milestone-health-review` and `mcem-stage-identification`) should be made once and reused.
+
+### Common multi-skill chains
+
+These chains are pre-validated. When a prompt matches a chain pattern, load and execute all listed skills:
+
+| Chain name | Skills (in order) | Trigger pattern |
+|---|---|---|
+| Weekly pipeline review | `pipeline-hygiene-triage` → `handoff-readiness-validation` → `risk-surfacing` | "weekly review", "pipeline cleanup + handoff + risks" |
+| Pre-governance prep | `mcem-stage-identification` → `milestone-health-review` → `customer-evidence-pack` | "governance meeting prep", "stage + health + evidence" |
+| Commit-or-loopback | `commit-gate-enforcement` → `non-linear-progression` → `delivery-accountability-mapping` | "should we commit or loop back" |
+| Full deal triage | `mcem-stage-identification` → `exit-criteria-validation` → `risk-surfacing` → `role-orchestration` | "deal stuck", "end-to-end triage" |
+| Post-proof handoff | `architecture-feasibility-check` → `architecture-execution-handoff` → `handoff-readiness-validation` | "proof completed, create handoff" |
+| Adoption + expansion | `adoption-excellence-review` → `value-realization-pack` → `expansion-signal-routing` | "adoption health + value + expansion" |
+| SE morning prep | `task-hygiene-flow` → `execution-monitoring` → `unified-constraint-check` | "SE daily check", "task hygiene + blockers" |
+
+## Connect Hook Capture (Post-Action)
+
+After completing any skill that produces measurable outcomes, the agent **passively evaluates** whether the work constitutes impact evidence worth capturing for Microsoft Connect performance reviews.
+
+### When to fire
+
+Fire `oil:capture_connect_hook` when a completed skill produced at least one of:
+- A **concrete deliverable** (health report, exception list, handoff document, remediation plan)
+- A **measurable improvement** (time saved, errors fixed, milestones unblocked, adoption gaps closed)
+- A **process contribution** (new tooling, documentation, onboarding others, cross-team enablement)
+
+Do **not** fire for: pure read/discovery actions, failed scoping attempts, or skills that produced no actionable output.
+
+### Circle classification
+
+| Circle | Skill output signals |
+|---|---|
+| **Individual** | Personal learning, new capability exercised, certification prep, first-time skill execution |
+| **Team/Org** | Process improvement, tooling that scales beyond one person, cross-role coordination, mentoring |
+| **Customer/Business** | Direct customer deliverable, revenue-impacting action, adoption lift, risk mitigation, milestone progression |
+
+Most skill completions map to **Customer/Business**. Add **Team/Org** when the action created reusable process. Add **Individual** when it stretched a new capability.
+
+### Capture pattern
+
+After the skill's output is delivered, if a hook is warranted:
+
+1. Derive `customer` from the skill's scoping context (opportunity or vault prefetch).
+2. Build `hook` from the skill's structured output — the hook text should be the one-sentence impact summary, evidence from the measurable delta, and source from the skill invocation or CRM record.
+3. Call `oil:capture_connect_hook({ customer, hook })`. This is auto-confirmed — no human gate.
+4. If OIL is unavailable, skip silently. The hook is opportunistic, not blocking.
+
+Skills may include a `connect_hook_hint` in their Output Schema to pre-classify the likely circle(s) and hook template. When present, the agent uses the hint to streamline capture. When absent, the agent applies the classification table above.
+
 ## Common Output Conventions
 
 - Dry-run write payloads include `mock: true` and the tool name that would execute.
 - Every stage-bound skill output includes `next_action` naming the recommended next skill.
 - Cross-role `next_action` must name the owning role and recommend engagement (no auto-invoke).
 - Risk findings always include: one-sentence risk, evidence source, role to act, minimum intervention.
+- `connect_hook_hint` (optional): pre-classified circle(s) and one-line hook template for passive Connect evidence capture.

@@ -1,6 +1,6 @@
 ---
 name: delivery-accountability-mapping
-description: 'RACI mapper: answers "who runs point on hands-on work vs. who coordinates?" Classifies each work item into execution doer vs. orchestration coordinator and flags mislabeled delivery-PM assignments. Triggers: RACI, who delivers, accountability roster, delivery PM confusion, implementation vs coordination, who runs point, missing attribution.'
+description: 'RACI mapper: answers "who runs point on hands-on work vs. who coordinates?" Classifies each work item into execution doer vs. orchestration coordinator and flags mislabeled delivery-PM assignments. Chains with commit-gate-enforcement and non-linear-progression for commit-or-loopback decision. Triggers: RACI, who delivers, accountability roster, delivery PM confusion, implementation vs coordination, who runs point, missing attribution, who owns what.'
 argument-hint: 'Provide opportunityId and milestoneId(s) with unclear RACI'
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: architecture-feasibility-check
-description: 'Architecture feasibility check before commitment: can we actually build this? Reviews environment prerequisites, dependency sequencing, capacity headroom, and solution design risks. Triggers: can we build, feasibility, prerequisites, capacity headroom, technical risk, solution design review, buildability.'
+description: 'Architecture feasibility check before commitment: can we actually build this? Reviews environment prerequisites, dependency sequencing, capacity headroom, and solution design risks. Chains with architecture-execution-handoff and handoff-readiness-validation for post-proof handoff. Triggers: can we build, feasibility, prerequisites, capacity headroom, technical risk, solution design review, buildability, proof completed.'
 argument-hint: 'Provide opportunityId for the solution requiring technical feasibility review'
 ---
 

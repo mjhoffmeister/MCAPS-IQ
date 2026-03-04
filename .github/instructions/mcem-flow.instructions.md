@@ -8,7 +8,7 @@ description: "MCEM process spine: maps Stages 1-5 with ATU/STU/CSU accountabilit
 
 1. Identify the opportunity's current MCEM stage — use `mcem-stage-identification` skill if unclear.
 2. Load the matching stage section below.
-3. Activate only the skills listed for the user's confirmed role at that stage.
+3. Activate the skills listed for the user's confirmed role at that stage. Multiple skills may be executed sequentially in a single turn — chain them as needed to fulfill the request.
 4. Stages are NOT strictly linear — follow non-linear guidance when customer readiness requires iteration.
 
 **Accountability-based lens override**: When the user's role differs from the stage-accountable unit, load BOTH role cards (user's + accountable unit's). Make explicit who leads vs. contributes. Do NOT auto-invoke skills owned by a different role — present the handoff and name the role to engage.

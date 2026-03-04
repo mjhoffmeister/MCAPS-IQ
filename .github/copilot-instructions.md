@@ -67,9 +67,11 @@ Cache probe results for the session. Two-medium answers are acceptable; single-m
 |---|---|---|---|
 | **0** | This file | Always (every turn) | ≤100 lines |
 | **1** | `.github/instructions/*.instructions.md` | By `description` match or `applyTo` glob | ≤600 lines combined |
-| **2** | `.github/skills/{name}/SKILL.md` | Auto-discovered by VS Code via frontmatter | ≤500 lines per skill |
+| **2** | `.github/skills/{name}/SKILL.md` | By `description` match (full content injected when matched) | ≤500 lines per skill |
 | **3** | `.github/documents/` | Explicit tool read only | No auto-load |
 
-**Skill loading**: Skills use the folder convention `.github/skills/{name}/SKILL.md` and are auto-discovered by VS Code via `name`, `description`, and `argument-hint` frontmatter. When a role card or MCEM flow references a skill by name, load it with `read_file` at `.github/skills/{name}/SKILL.md`.
+**Skill loading**: Skills use the folder convention `.github/skills/{name}/SKILL.md` and are auto-loaded by VS Code / Copilot CLI when the user's prompt matches a skill's `description` keywords. Matched skills appear in context with their full content (Flow, Decision Logic, Output Schema). When a `next_action` or role card references a skill that was not auto-loaded, fall back to `read_file` at `.github/skills/{name}/SKILL.md`.
+
+**Skill composition**: Skills are instruction documents, NOT exclusive tool invocations. Multiple skills can and should be executed sequentially in a single turn when the task requires it. To execute a skill: (1) follow its `## Flow` steps using MCP tools, (2) apply its Decision Logic and Output Schema, (3) if its `next_action` names a skill required by the user's request, execute that skill immediately without asking. For multi-skill prompts, execute each loaded skill's Flow in sequence, reusing MCP tool call results across skills. See `shared-patterns.instructions.md` § "Skill Composition Contract" for pre-validated chains.
 
 **Authoring rules**: Every instruction needs keyword-rich `description` frontmatter. Every skill needs `name`, `description`, `argument-hint` in its `SKILL.md` frontmatter. Shared definitions belong in Tier 1, not duplicated across skills.

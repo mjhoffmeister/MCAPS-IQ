@@ -1,6 +1,6 @@
 ---
 name: execution-monitoring
-description: 'CSA guardrail scanner for execution monitoring: audits committed architecture decisions against live dependency state, flags technical constraint breaches and unresolved blockers. Produces a punch-list for delivery integrity. Triggers: guardrail scanner, architecture breach, dependency audit, CSA punch-list, constraint violation, owner-motion mismatch.'
+description: 'CSA guardrail scanner for execution monitoring: audits committed architecture decisions against live dependency state, flags technical constraint breaches and unresolved blockers. Produces a punch-list for delivery integrity. Chains with task-hygiene-flow and unified-constraint-check for SE morning prep. Triggers: guardrail scanner, architecture breach, dependency audit, CSA punch-list, constraint violation, owner-motion mismatch, execution blockers.'
 argument-hint: 'Run across CSA-owned committed work or specify opportunityId(s) for targeted scan'
 ---
 

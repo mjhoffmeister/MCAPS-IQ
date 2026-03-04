@@ -1,6 +1,6 @@
 ---
 name: adoption-excellence-review
-description: 'Adoption excellence review: audits usage telemetry (MAU, DAU, license utilization) against consumption targets. Compares actuals to success-plan baselines and flags shortfalls needing stakeholder intervention. Triggers: consumption scorecard, MAU, DAU, usage telemetry, adoption gap, license utilization, consumption vs target.'
+description: 'Adoption excellence review: audits usage telemetry (MAU, DAU, license utilization) against consumption targets. Compares actuals to success-plan baselines and flags shortfalls needing stakeholder intervention. Chains with value-realization-pack and expansion-signal-routing for full Stage 5 review. Triggers: consumption scorecard, MAU, DAU, usage telemetry, adoption gap, adoption health, license utilization, consumption vs target, how is adoption going.'
 argument-hint: 'Scope by opportunityId(s) or run across all CSAM-owned consumption targets'
 ---
 
@@ -39,16 +39,17 @@ Ensures adoption and usage milestones have active owner-task coverage, measurabl
 | Activity cadence | Recent tasks with progress | No activity in 30+ days |
 | Measurable targets | `msp_monthlyuse` or equivalent populated | No consumption metric defined |
 
+## Output Schema
+
+- `adoption_health`: per-milestone adoption state with classification and gap details
+- `remediation_queue`: proposed tasks for stakeholder coverage and consumption tracking
+- `dry_run_updates`: create/update/close task preview payloads
+- `next_action`: "Adoption reviewed. Run `value-realization-pack` to validate outcome measurement, then `expansion-signal-routing` for growth signals."
+- `connect_hook_hint`: Circle(s): Customer/Business — "Adoption review for {customer}: {healthy}/{total} milestones healthy, flagged {gaps} consumption gaps needing stakeholder intervention"
+
 ## Decision Logic
 
 - Coordination is complete when each adoption milestone has active owner-task coverage and measurable next outcomes
 - Flag adoption stalls when consumption is flat with no active mitigation
 - Route optimization insights that imply scope expansion to `expansion-signal-routing`
 - Surface value evidence for governance via `customer-evidence-pack`
-
-## Output Schema
-
-- `adoption_health_report`: per-milestone status with health criteria assessment
-- `orchestration_actions`: tasks to close stakeholder and measurement gaps
-- `task_previews`: dry-run create/update/close payloads
-- `next_action`: "Adoption reviewed. Would you like to run `expansion-signal-routing` for opportunities with growth signals?"

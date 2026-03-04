@@ -1,6 +1,6 @@
 ---
 name: customer-evidence-pack
-description: 'Customer evidence pack compiler: assembles email threads, calendar excerpts, and chat history into a consolidated briefing document for upcoming reviews. Triggers: meeting prep, compile package, email threads, chat history, briefing document, review preparation, communication bundle.'
+description: 'Customer evidence pack compiler: assembles email threads, calendar excerpts, and chat history into a consolidated briefing document for upcoming reviews. Chains with mcem-stage-identification and milestone-health-review for pre-governance prep. Triggers: meeting prep, compile package, email threads, chat history, briefing document, review preparation, communication bundle, evidence pack, governance prep.'
 argument-hint: 'Provide opportunityId, participant names, and date range for artifact compilation'
 ---
 

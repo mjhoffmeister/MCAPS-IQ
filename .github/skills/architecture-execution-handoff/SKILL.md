@@ -1,6 +1,6 @@
 ---
 name: architecture-execution-handoff
-description: 'CSA handoff document generator: produces a structured architecture decision record (decisions, constraints, guardrails, success KPIs) when a proof-of-concept concludes. Output is the written handoff artifact itself. Triggers: write handoff note, architecture decision record, POC concluded, CSA document, proof summary writeup, handoff artifact.'
+description: 'CSA handoff document generator: produces a structured architecture decision record (decisions, constraints, guardrails, success KPIs) when a proof-of-concept concludes. Output is the written handoff artifact itself. Chains with architecture-feasibility-check and handoff-readiness-validation for post-proof handoff. Triggers: write handoff note, architecture decision record, POC concluded, CSA document, proof summary writeup, handoff artifact, create handoff.'
 argument-hint: 'Provide opportunityId with a proof-of-concept reaching conclusion'
 ---
 

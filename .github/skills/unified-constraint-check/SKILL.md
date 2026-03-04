@@ -1,6 +1,6 @@
 ---
 name: unified-constraint-check
-description: 'Unified constraint check: detects work items needing Unified dispatch that lack eligibility proof, accreditation, or catalog alignment. Purely about Unified program logistics, not general feasibility. Triggers: Unified Support, dispatch readiness, accreditation gap, eligibility proof, Unified catalog, Unified blocker.'
+description: 'Unified constraint check: detects work items needing Unified dispatch that lack eligibility proof, accreditation, or catalog alignment. Purely about Unified program logistics, not general feasibility. Chains with task-hygiene-flow and execution-monitoring for SE morning prep. Triggers: Unified Support, dispatch readiness, accreditation gap, eligibility proof, Unified catalog, Unified blocker, Unified constraints.'
 argument-hint: 'Provide opportunityId with Unified Support dispatch dependencies'
 ---
 

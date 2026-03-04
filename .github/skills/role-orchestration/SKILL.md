@@ -1,6 +1,6 @@
 ---
 name: role-orchestration
-description: 'Role orchestration router: given current deal state, recommends which organizational unit (ATU, STU, CSU, or Partner) should own the immediate next step. Prevents action paralysis from multi-team overlap. Triggers: who leads next, team assignment, action paralysis, ATU/STU/CSU routing, which team, next-step owner.'
+description: 'Role orchestration router: given current deal state, recommends which organizational unit (ATU, STU, CSU, or Partner) should own the immediate next step. Prevents action paralysis from multi-team overlap. Chains with mcem-stage-identification, exit-criteria-validation, and risk-surfacing for full deal triage. Triggers: who leads next, team assignment, action paralysis, ATU/STU/CSU routing, which team, next-step owner, who should own.'
 argument-hint: 'Provide opportunityId and the specific action or decision needing team assignment'
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: commit-gate-enforcement
-description: 'Commit-gate enforcement: answers "should we flip this milestone to Committed?" by checking resource staffing, delivery-path named, and target-date realism. Produces remediation tasks when gaps block the flip. Triggers: should we commit, pre-commitment gate, resource capacity check, commit decision, staffing confirmation, before committing.'
+description: 'Commit-gate enforcement: answers "should we flip this milestone to Committed?" by checking resource staffing, delivery-path named, and target-date realism. Produces remediation tasks when gaps block the flip. Chains with non-linear-progression and delivery-accountability-mapping for commit-or-loopback decision. Triggers: should we commit, pre-commitment gate, resource capacity check, commit decision, staffing confirmation, before committing, commit or loop back.'
 argument-hint: 'Provide opportunityId and milestoneId(s) being evaluated for commitment'
 ---
 
