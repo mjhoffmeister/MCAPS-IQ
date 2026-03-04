@@ -1,6 +1,6 @@
 ---
 name: handoff-readiness-validation
-description: 'Handoff readiness validation checklist: verifies assigned owner, outcome text, proof artifacts, and next-action items are populated before STU transfers to CSU. Returns populated/missing status per field. Triggers: Specialist departure, STU leaves, transfer checklist, STU-to-CSU transfer, departure readiness.'
+description: 'Handoff readiness validation for STU-to-CSU transfer: verifies the Specialist populated business-case summary, measurable outcomes, proof artifacts, CSU-aligned owners, and next-action items before disengaging. Returns populated/missing per field. Triggers: Specialist departure, STU leaves, transfer checklist, STU-to-CSU handoff, readiness validation.'
 argument-hint: 'Provide opportunityId the Specialist is preparing to transfer'
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: exit-criteria-validation
-description: 'Formal gate-check: evaluates each Verifiable Outcome against CRM entity state and returns a criterion-by-criterion verdict with evidence links. Determines whether advancement conditions are satisfied. Triggers: exit criteria, gate check, criteria met, Verifiable Outcome check, formal gate, advancement readiness.'
+description: 'Exit-criteria validation via VO evidence audit: checks each formal criterion against CRM field evidence (solution play set, BVA complete, success plan linked) and returns pass/fail per item. Flags when BPF position diverges from actual evidence. Triggers: exit criteria, are we ready, Verifiable Outcome check, criteria met, VO audit, BPF evidence mismatch.'
 argument-hint: 'Provide opportunityId and the target stage number to validate against'
 ---
 

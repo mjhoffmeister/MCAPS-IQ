@@ -1,6 +1,6 @@
 ---
 name: delivery-accountability-mapping
-description: 'RACI mapper: determines who owns hands-on implementation versus who coordinates logistics on committed work. Flags when CSAM is incorrectly tagged as delivery PM without decision rights. Triggers: RACI, who delivers, accountability roster, delivery PM confusion, implementation vs coordination, ownership chart.'
+description: 'RACI mapper: answers "who runs point on hands-on work vs. who coordinates?" Classifies each work item into execution doer vs. orchestration coordinator and flags mislabeled delivery-PM assignments. Triggers: RACI, who delivers, accountability roster, delivery PM confusion, implementation vs coordination, who runs point, missing attribution.'
 argument-hint: 'Provide opportunityId and milestoneId(s) with unclear RACI'
 ---
 

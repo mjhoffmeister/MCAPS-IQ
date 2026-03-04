@@ -1,6 +1,6 @@
 ---
 name: commit-gate-enforcement
-description: 'Pre-commitment readiness gate: validates resource capacity, delivery-path clarity, and target-date realism BEFORE flipping a work item to committed status. Returns remediation tasks when gaps are found. Triggers: pre-commitment gate, should we commit, readiness before signing, resource capacity check, commit decision, before committing.'
+description: 'Commit-gate enforcement: answers "should we flip this milestone to Committed?" by checking resource staffing, delivery-path named, and target-date realism. Produces remediation tasks when gaps block the flip. Triggers: should we commit, pre-commitment gate, resource capacity check, commit decision, staffing confirmation, before committing.'
 argument-hint: 'Provide opportunityId and milestoneId(s) being evaluated for commitment'
 ---
 

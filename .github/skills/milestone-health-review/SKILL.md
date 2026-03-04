@@ -1,6 +1,6 @@
 ---
 name: milestone-health-review
-description: 'Milestone health review for CSAM: scans committed work for date drift, blocked items, and overdue completions. Generates remediation queue and customer update document with dry-run corrections. Triggers: weekly status, date drift, blocked items, overdue, committed status scan, CSAM report.'
+description: 'Milestone health review for weekly governance: scans committed milestones for date drift, overdue completions, and stalled items. Produces customer-safe status bullets plus internal remediation queue. Triggers: weekly status, date drift, overdue milestones, governance cycle, customer status update, how are my milestones.'
 argument-hint: 'Scope by opportunityId(s) or run across all CSAM-governed committed work'
 ---
 
