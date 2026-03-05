@@ -43,16 +43,16 @@ The vault supports two customer layouts, but **nested is strongly preferred**:
 | **Nested** (preferred) | `Customers/X/X.md` | `opportunities/`, `milestones/` subdirs available | Default for new customers |
 | **Flat** (legacy) | `Customers/X.md` | Cannot store sub-entity notes | Migration recommended |
 
-**Why nested matters**: Operations like `create_opportunity`, `create_milestone`, and entity-level notes require the nested structure (`Customers/X/opportunities/`, `Customers/X/milestones/`). Flat-layout customers cannot use these features.
+**Why nested matters**: Operations like `oil_create_opportunity`, `oil_create_milestone`, and entity-level notes require the nested structure (`Customers/X/opportunities/`, `Customers/X/milestones/`). Flat-layout customers cannot use these features.
 
 **Migration protocol**: When the agent encounters a flat-layout customer file during any workflow:
 1. **Detect**: `check_vault_health()` reports flat-layout customers in `structuralIssues`.
 2. **Propose**: Call `migrate_customer_structure({ customer: "X" })` — this generates a gated diff showing the move.
 3. **Confirm**: The user reviews and confirms the migration. Content is preserved as-is.
-4. **Post-migration**: Sub-entity directories become available for `create_opportunity` / `create_milestone`.
+4. **Post-migration**: Sub-entity directories become available for `oil_create_opportunity` / `oil_create_milestone`.
 
 **When to trigger migration automatically**:
-- Before `create_opportunity` or `create_milestone` — if the target customer uses flat layout, propose migration first.
+- Before `oil_create_opportunity` or `oil_create_milestone` — if the target customer uses flat layout, propose migration first.
 - During `check_vault_health()` — flat-layout customers are surfaced as structural issues.
 - During VAULT-HYGIENE phase — include structural migration in the recommended actions.
 
