@@ -31,12 +31,7 @@ temp/
 .vscode/*.code-workspace
 .vscode/.mcp-cli.json
 
-# Local agent memory (untracked)
-.agent-memory/
+# Local notes / knowledge layer (personal, untracked)
+.docs/
 
 .vscode/mcp.json
-.copilot
-
-# LenVolk
-
-samples/lenvolk/.docs
