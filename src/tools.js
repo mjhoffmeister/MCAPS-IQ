@@ -41,6 +41,12 @@ const TASK_CATEGORIES = [
 const text = (content) => ({ content: [{ type: 'text', text: typeof content === 'string' ? content : JSON.stringify(content, null, 2) }] });
 const error = (msg) => ({ content: [{ type: 'text', text: msg }], isError: true });
 
+/** Build a Dynamics 365 deep-link URL to open a record in the browser. */
+function buildRecordUrl(crmBaseUrl, entityLogicalName, guid) {
+  if (!crmBaseUrl || !entityLogicalName || !guid) return undefined;
+  return `${crmBaseUrl}/main.aspx?etn=${entityLogicalName}&id=${guid}&pagetype=entityrecord`;
+}
+
 function monthKey(dateValue) {
   if (!dateValue) return null;
   const date = new Date(dateValue);
@@ -73,7 +79,7 @@ function commitmentLabel(m) {
   return m.msp_commitmentrecommendation === 861980001 ? 'Committed' : 'Uncommitted';
 }
 
-function buildMilestoneSummary(milestones) {
+function buildMilestoneSummary(milestones, crmBaseUrl) {
   const byStatus = {};
   const byOpportunity = {};
   const byCommitment = { Committed: 0, Uncommitted: 0 };
@@ -93,7 +99,8 @@ function buildMilestoneSummary(milestones) {
       ...m,
       status: fv(m, 'msp_milestonestatus'),
       commitment: commitmentLabel(m),
-      opportunity: fv(m, '_msp_opportunityid_value')
+      opportunity: fv(m, '_msp_opportunityid_value'),
+      recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
     }))
   };
 }
@@ -158,6 +165,9 @@ async function embedTasksOnMilestones(crmClient, milestones) {
  * Register all CRM tools on an McpServer instance.
  */
 export function registerTools(server, crmClient) {
+  /** Lazily get the CRM base URL for deep-link generation. */
+  const getCrmBase = () => crmClient.getCrmUrl?.() || null;
+
   // ── crm_whoami ──────────────────────────────────────────────
   server.tool(
     'crm_whoami',
@@ -263,7 +273,7 @@ export function registerTools(server, crmClient) {
         if (result.ok && result.data?.value) allOpps.push(...result.data.value);
       }
 
-      return text({ count: allOpps.length, opportunities: allOpps });
+      return text({ count: allOpps.length, opportunities: allOpps.map(o => ({ ...o, recordUrl: buildRecordUrl(getCrmBase(), 'opportunity', o.opportunityid) })) });
     }
   );
 
@@ -295,7 +305,7 @@ export function registerTools(server, crmClient) {
           query: { $select: MILESTONE_SELECT }
         });
         if (!result.ok) return error(`Milestone lookup failed (${result.status}): ${result.data?.message}`);
-        const milestone = { ...result.data, commitment: commitmentLabel(result.data) };
+        const milestone = { ...result.data, commitment: commitmentLabel(result.data), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', nid) };
         if (includeTasks) {
           milestone.tasks = await fetchTasksForMilestones(crmClient, [nid]);
         }
@@ -394,8 +404,8 @@ export function registerTools(server, crmClient) {
         if (includeTasks) {
           milestones = await embedTasksOnMilestones(crmClient, milestones);
         }
-        if (format === 'summary') return text(buildMilestoneSummary(milestones));
-        return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m) })) });
+        if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
+        return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
       } else if (opportunityId) {
         const nid = normalizeGuid(opportunityId);
         if (!isValidGuid(nid)) return error('Invalid opportunityId GUID');
@@ -439,8 +449,8 @@ export function registerTools(server, crmClient) {
       if (includeTasks) {
         milestones = await embedTasksOnMilestones(crmClient, milestones);
       }
-      if (format === 'summary') return text(buildMilestoneSummary(milestones));
-      return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m) })) });
+      if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
+      return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
     }
   );
 
@@ -504,16 +514,19 @@ export function registerTools(server, crmClient) {
       }
 
       // 4. Combine and tag
+      const base = getCrmBase();
       let opportunities = [
         ...ownedOpps.map(o => ({
           ...o,
           customer: fv(o, '_parentaccountid_value') || null,
-          relationship: 'owner'
+          relationship: 'owner',
+          recordUrl: buildRecordUrl(base, 'opportunity', o.opportunityid)
         })),
         ...dealTeamOpps.map(o => ({
           ...o,
           customer: fv(o, '_parentaccountid_value') || null,
-          relationship: 'deal-team'
+          relationship: 'deal-team',
+          recordUrl: buildRecordUrl(base, 'opportunity', o.opportunityid)
         }))
       ];
 
@@ -963,12 +976,13 @@ export function registerTools(server, crmClient) {
           });
           if (batchResult.ok && batchResult.data?.value) allTasks.push(...batchResult.data.value);
         }
-        // Group by milestone
+        // Group by milestone and add recordUrls
+        const base = getCrmBase();
         const byMilestone = {};
         for (const t of allTasks) {
           const msId = t._regardingobjectid_value;
           if (!byMilestone[msId]) byMilestone[msId] = [];
-          byMilestone[msId].push(t);
+          byMilestone[msId].push({ ...t, recordUrl: buildRecordUrl(base, 'task', t.activityid) });
         }
         return text({ count: allTasks.length, byMilestone });
       }
@@ -987,7 +1001,7 @@ export function registerTools(server, crmClient) {
         }
       });
       if (!result.ok) return error(`Get activities failed (${result.status}): ${result.data?.message}`);
-      const tasks = result.data?.value || [];
+      const tasks = (result.data?.value || []).map(t => ({ ...t, recordUrl: buildRecordUrl(getCrmBase(), 'task', t.activityid) }));
       return text({ count: tasks.length, tasks });
     }
   );
@@ -1075,7 +1089,8 @@ export function registerTools(server, crmClient) {
             commitment: commitmentLabel(m),
             date: toIsoDate(m.msp_milestonedate),
             opportunity: fv(m, '_msp_opportunityid_value'),
-            workload: fv(m, '_msp_workloadlkid_value')
+            workload: fv(m, '_msp_workloadlkid_value'),
+            recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid)
           }))
         });
       }
@@ -1133,6 +1148,7 @@ export function registerTools(server, crmClient) {
         if (opp.ok && opp.data?.name) opportunityNames[id] = opp.data.name;
       }
 
+      const base = getCrmBase();
       const events = milestones.map(m => ({
         id: m.msp_engagementmilestoneid,
         date: toIsoDate(m.msp_milestonedate),
@@ -1142,7 +1158,8 @@ export function registerTools(server, crmClient) {
         commitment: commitmentLabel(m),
         monthlyUse: m.msp_monthlyuse ?? null,
         opportunityId: m._msp_opportunityid_value ?? null,
-        opportunityName: opportunityNames[m._msp_opportunityid_value] ?? null
+        opportunityName: opportunityNames[m._msp_opportunityid_value] ?? null,
+        recordUrl: buildRecordUrl(base, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
       }));
 
       return text({

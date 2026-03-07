@@ -203,5 +203,5 @@ export function createCrmClient(authService) {
     return { ok: true, status: 200, data: { ...first.data, value: allValues } };
   };
 
-  return { request, requestAllPages, buildUrl };
+  return { request, requestAllPages, buildUrl, getCrmUrl: () => authService.getCrmUrl() };
 }

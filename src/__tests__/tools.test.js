@@ -15,7 +15,8 @@ function mockCrmClient(responses = {}) {
       if (responses[path]) return responses[path];
       return { ok: true, status: 200, data: { value: [] } };
     }),
-    buildUrl: vi.fn()
+    buildUrl: vi.fn(),
+    getCrmUrl: vi.fn(() => 'https://test.crm.dynamics.com')
   };
 }
 
