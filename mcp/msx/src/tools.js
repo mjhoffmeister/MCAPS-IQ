@@ -734,7 +734,7 @@ export function registerTools(server, crmClient) {
   // ── close_task ──────────────────────────────────────────────
   server.tool(
     'close_task',
-    'Close a task using the CloseTask action (with fallback to bound Close endpoint).',
+    'Close a task using the CloseTask action (with fallback to bound Close endpoint, then PATCH statecode/statuscode).',
     {
       taskId: z.string().describe('Task GUID'),
       statusCode: z.number().describe('Status code for the closure (e.g. 5 = Completed, 6 = Cancelled)'),
@@ -771,6 +771,9 @@ export function registerTools(server, crmClient) {
       // Attach fallback info for executor
       op.fallbackEntitySet = `tasks(${nid})/Microsoft.Dynamics.CRM.Close`;
       op.fallbackPayload = { Status: statusCode };
+      // PATCH-based fallback when neither CloseTask action nor bound Close endpoint exist
+      op.patchFallbackEntitySet = `tasks(${nid})`;
+      op.patchFallbackPayload = { statecode: statusCode === 6 ? 2 : 1, statuscode: statusCode };
 
       return text({
         staged: true,
@@ -1368,10 +1371,13 @@ export function registerTools(server, crmClient) {
       // Execute against CRM
       let result;
       if (op.type === 'close_task') {
-        // Try primary CloseTask action, fallback to bound Close
+        // Try primary CloseTask action, then bound Close, then PATCH fallback
         result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
         if (!result.ok && result.status !== 204 && op.fallbackEntitySet) {
           result = await crmClient.request(op.fallbackEntitySet, { method: 'POST', body: op.fallbackPayload });
+        }
+        if (!result.ok && result.status !== 204 && op.patchFallbackEntitySet) {
+          result = await crmClient.request(op.patchFallbackEntitySet, { method: 'PATCH', body: op.patchFallbackPayload });
         }
       } else {
         result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
@@ -1429,6 +1435,9 @@ export function registerTools(server, crmClient) {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
             if (!result.ok && result.status !== 204 && op.fallbackEntitySet) {
               result = await crmClient.request(op.fallbackEntitySet, { method: 'POST', body: op.fallbackPayload });
+            }
+            if (!result.ok && result.status !== 204 && op.patchFallbackEntitySet) {
+              result = await crmClient.request(op.patchFallbackEntitySet, { method: 'PATCH', body: op.patchFallbackPayload });
             }
           } else {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
