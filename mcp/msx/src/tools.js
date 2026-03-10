@@ -1249,7 +1249,7 @@ export function registerTools(server, crmClient) {
         payload: {
           subject: `Tag #${tag} applied`,
           notetext: `Tag #${tag} applied by ${taggerId}.\n\nReason: ${reason.trim()}`,
-          'objectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
+          'objectid@odata.bind': `/msp_engagementmilestones(${nid})`
         },
         beforeState: null,
         description: `Add annotation for tag #${tag} on milestone ${milestoneNumber || nid}`
@@ -1347,7 +1347,7 @@ export function registerTools(server, crmClient) {
         payload: {
           subject: `Tag #${tag} removed`,
           notetext: `Tag #${tag} removed by ${removerId}.\n\nReason: ${reason.trim()}`,
-          'objectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
+          'objectid@odata.bind': `/msp_engagementmilestones(${nid})`
         },
         beforeState: null,
         description: `Add annotation for tag #${tag} removal on milestone ${milestoneNumber || nid}`
