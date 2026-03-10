@@ -1212,10 +1212,6 @@ export function registerTools(server, crmClient) {
 
       const newName = `${currentName} #${tag}`;
 
-      // Identify the tagger for audit trail
-      const whoAmI = await crmClient.request('WhoAmI');
-      const taggerId = whoAmI.ok ? normalizeGuid(whoAmI.data?.UserId || '') : 'unknown';
-
       const humanDesc = `Tag milestone ${milestoneNumber || nid}` +
         (currentName ? ` ("${currentName}")` : '') +
         (opportunityName ? ` on "${opportunityName}"` : '') +
@@ -1241,7 +1237,7 @@ export function registerTools(server, crmClient) {
 
       // Stage 2: PATCH forecast comments with tag reason
       const currentComments = record.msp_forecastcomments || '';
-      const tagComment = `Tag #${tag} applied by ${taggerId}. Reason: ${reason.trim()}`;
+      const tagComment = `Tag #${tag} applied. Reason: ${reason.trim()}`;
       const newComments = currentComments ? `${currentComments}\n${tagComment}` : tagComment;
       const commentOp = queue.stage({
         type: 'tag_milestone',
@@ -1267,7 +1263,6 @@ export function registerTools(server, crmClient) {
           opportunityId: milestoneOppId,
           opportunityName,
         },
-        taggerId,
         tag,
         message: `Staged ${patchOp.id} + ${commentOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
       });
@@ -1311,10 +1306,6 @@ export function registerTools(server, crmClient) {
 
       const newName = currentName.replace(tagPattern, '').trim();
 
-      // Identify the user for audit trail
-      const whoAmI = await crmClient.request('WhoAmI');
-      const removerId = whoAmI.ok ? normalizeGuid(whoAmI.data?.UserId || '') : 'unknown';
-
       const humanDesc = `Remove tag #${tag} from milestone ${milestoneNumber || nid}` +
         (opportunityName ? ` on "${opportunityName}"` : '');
 
@@ -1338,7 +1329,7 @@ export function registerTools(server, crmClient) {
 
       // Stage 2: PATCH forecast comments with removal reason
       const currentComments = record.msp_forecastcomments || '';
-      const removeComment = `Tag #${tag} removed by ${removerId}. Reason: ${reason.trim()}`;
+      const removeComment = `Tag #${tag} removed. Reason: ${reason.trim()}`;
       const newComments = currentComments ? `${currentComments}\n${removeComment}` : removeComment;
       const commentOp = queue.stage({
         type: 'untag_milestone',
@@ -1363,7 +1354,6 @@ export function registerTools(server, crmClient) {
           opportunityId: milestoneOppId,
           opportunityName,
         },
-        removerId,
         tag,
         message: `Staged ${patchOp.id} + ${commentOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
       });

@@ -1524,7 +1524,6 @@ describe('registerTools', () => {
       expect(parsed.tag).toBe('at-risk');
       expect(parsed.operations).toHaveLength(2);
       expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #at-risk');
-      expect(parsed.taggerId).toBe('abc-123');
     });
 
     it('preserves tag casing', async () => {
@@ -1621,7 +1620,6 @@ describe('registerTools', () => {
       expect(parsed.operations).toHaveLength(2);
       expect(parsed.operations[0].before.msp_name).toBe('Kickoff Meeting #at-risk');
       expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting');
-      expect(parsed.removerId).toBe('abc-123');
     });
 
     it('removes tag from middle of name with multiple tags', async () => {
