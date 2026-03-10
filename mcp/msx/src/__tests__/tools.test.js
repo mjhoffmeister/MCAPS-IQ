@@ -1501,7 +1501,7 @@ describe('registerTools', () => {
         reason: 'Already tagged'
       });
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('already has tag');
+      expect(result.content[0].text).toContain('Already has tag');
     });
 
     it('stages tag without ownership check (non-owner can tag)', async () => {
@@ -1522,8 +1522,8 @@ describe('registerTools', () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.staged).toBe(true);
       expect(parsed.tag).toBe('at-risk');
-      expect(parsed.operations).toHaveLength(2);
-      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #at-risk');
+      expect(parsed.tagged).toBe(1);
+      expect(parsed.operations[0].after).toBe('Kickoff Meeting #at-risk');
     });
 
     it('preserves tag casing', async () => {
@@ -1543,7 +1543,7 @@ describe('registerTools', () => {
       expect(result.isError).toBeUndefined();
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.tag).toBe('AppMod');
-      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #AppMod');
+      expect(parsed.operations[0].after).toBe('Kickoff Meeting #AppMod');
     });
   });
 

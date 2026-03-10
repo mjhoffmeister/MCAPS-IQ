@@ -1179,92 +1179,106 @@ export function registerTools(server, crmClient) {
   // ── tag_milestone ───────────────────────────────────────────
   server.tool(
     'tag_milestone',
-    'Tag an engagement milestone by appending #tag-name to its name and adding a forecast comment with the reason. Does NOT require ownership — any authenticated user can tag. Tags are alphanumeric with optional hyphens (2-50 chars).',
+    'Tag one or more engagement milestones by appending #tag-name to names and adding forecast comments with the reason. Accepts a single milestoneId or an array of milestoneIds for batch tagging. Does NOT require ownership — any authenticated user can tag. Tags are alphanumeric with optional hyphens (2-50 chars).',
     {
-      milestoneId: z.string().describe('Engagement milestone GUID'),
-      tag: z.string().describe('Tag name (lowercase alphanumeric + hyphens, e.g. "at-risk-review")'),
+      milestoneId: z.string().optional().describe('Single engagement milestone GUID (use this OR milestoneIds)'),
+      milestoneIds: z.array(z.string()).optional().describe('Array of engagement milestone GUIDs for batch tagging'),
+      tag: z.string().describe('Tag name (alphanumeric + hyphens, e.g. "AppMod")'),
       reason: z.string().describe('Why this tag is being applied')
     },
-    async ({ milestoneId, tag, reason }) => {
-      const nid = normalizeGuid(milestoneId);
-      if (!isValidGuid(nid)) return error('Invalid milestoneId GUID');
+    async ({ milestoneId, milestoneIds, tag, reason }) => {
       if (!tag || !TAG_REGEX.test(tag)) return error('Invalid tag: must be 2-50 characters, alphanumeric and hyphens only (e.g. "at-risk-review")');
       if (!reason || !reason.trim()) return error('reason is required');
 
-      // Fetch milestone record
-      const fullRecord = await crmClient.request(`msp_engagementmilestones(${nid})`, {
-        query: { $select: MILESTONE_SELECT }
-      });
-      if (!fullRecord.ok) {
-        return error(`Milestone ${nid} not found or inaccessible (${fullRecord.status}): ${fullRecord.data?.message || 'lookup failed'}`);
-      }
-
-      const record = fullRecord.data;
-      const currentName = record.msp_name || '';
-      const milestoneNumber = record.msp_milestonenumber || null;
-      const milestoneOppId = record._msp_opportunityid_value || null;
-      const opportunityName = fv(record, '_msp_opportunityid_value') || null;
-
-      // Check for duplicate tag (case-insensitive)
-      if (currentName.toLowerCase().includes(`#${tag.toLowerCase()}`)) {
-        return error(`Milestone already has tag #${tag}`);
-      }
-
-      const newName = `${currentName} #${tag}`;
-
-      const humanDesc = `Tag milestone ${milestoneNumber || nid}` +
-        (currentName ? ` ("${currentName}")` : '') +
-        (opportunityName ? ` on "${opportunityName}"` : '') +
-        ` with #${tag}`;
+      // Resolve to array of IDs
+      const ids = milestoneIds || (milestoneId ? [milestoneId] : []);
+      if (!ids.length) return error('Provide milestoneId or milestoneIds');
+      const normalizedIds = ids.map(normalizeGuid);
+      const invalidIds = normalizedIds.filter(id => !isValidGuid(id));
+      if (invalidIds.length) return error(`Invalid milestone GUIDs: ${invalidIds.join(', ')}`);
 
       const queue = getApprovalQueue();
+      const allOps = [];
+      const skipped = [];
 
-      // Stage 1: PATCH milestone name
-      const patchOp = queue.stage({
-        type: 'tag_milestone',
-        entitySet: `msp_engagementmilestones(${nid})`,
-        method: 'PATCH',
-        payload: { msp_name: newName },
-        beforeState: { msp_name: currentName },
-        description: humanDesc
-      });
-      patchOp.identity = {
-        milestoneNumber,
-        milestoneName: currentName,
-        opportunityId: milestoneOppId,
-        opportunityName,
-      };
+      for (const nid of normalizedIds) {
+        const fullRecord = await crmClient.request(`msp_engagementmilestones(${nid})`, {
+          query: { $select: MILESTONE_SELECT }
+        });
+        if (!fullRecord.ok) {
+          skipped.push({ id: nid, reason: `Not found or inaccessible (${fullRecord.status})` });
+          continue;
+        }
 
-      // Stage 2: PATCH forecast comments with tag reason
-      const currentComments = record.msp_forecastcomments || '';
-      const tagComment = `Tag #${tag} applied. Reason: ${reason.trim()}`;
-      const newComments = currentComments ? `${currentComments}\n${tagComment}` : tagComment;
-      const commentOp = queue.stage({
-        type: 'tag_milestone',
-        entitySet: `msp_engagementmilestones(${nid})`,
-        method: 'PATCH',
-        payload: { msp_forecastcomments: newComments },
-        beforeState: { msp_forecastcomments: currentComments },
-        description: `Add comment for tag #${tag} on milestone ${milestoneNumber || nid}`
-      });
-      // Link the two operations so they can be reviewed together
-      patchOp.linkedOpId = commentOp.id;
-      commentOp.linkedOpId = patchOp.id;
+        const record = fullRecord.data;
+        const currentName = record.msp_name || '';
+        const milestoneNumber = record.msp_milestonenumber || null;
+        const milestoneOppId = record._msp_opportunityid_value || null;
+        const opportunityName = fv(record, '_msp_opportunityid_value') || null;
 
-      return text({
-        staged: true,
-        operations: [
-          { operationId: patchOp.id, description: patchOp.description, before: { msp_name: currentName }, after: { msp_name: newName } },
-          { operationId: commentOp.id, description: commentOp.description }
-        ],
-        identity: {
+        if (currentName.toLowerCase().includes(`#${tag.toLowerCase()}`)) {
+          skipped.push({ id: nid, milestoneNumber, name: currentName, reason: `Already has tag #${tag}` });
+          continue;
+        }
+
+        const newName = `${currentName} #${tag}`;
+        const humanDesc = `Tag milestone ${milestoneNumber || nid}` +
+          (currentName ? ` ("${currentName}")` : '') +
+          (opportunityName ? ` on "${opportunityName}"` : '') +
+          ` with #${tag}`;
+
+        const patchOp = queue.stage({
+          type: 'tag_milestone',
+          entitySet: `msp_engagementmilestones(${nid})`,
+          method: 'PATCH',
+          payload: { msp_name: newName },
+          beforeState: { msp_name: currentName },
+          description: humanDesc
+        });
+        patchOp.identity = {
           milestoneNumber,
           milestoneName: currentName,
           opportunityId: milestoneOppId,
           opportunityName,
-        },
+        };
+
+        const currentComments = record.msp_forecastcomments || '';
+        const tagComment = `Tag #${tag} applied. Reason: ${reason.trim()}`;
+        const newComments = currentComments ? `${currentComments}\n${tagComment}` : tagComment;
+        const commentOp = queue.stage({
+          type: 'tag_milestone',
+          entitySet: `msp_engagementmilestones(${nid})`,
+          method: 'PATCH',
+          payload: { msp_forecastcomments: newComments },
+          beforeState: { msp_forecastcomments: currentComments },
+          description: `Add comment for tag #${tag} on milestone ${milestoneNumber || nid}`
+        });
+        patchOp.linkedOpId = commentOp.id;
+        commentOp.linkedOpId = patchOp.id;
+
+        allOps.push({
+          milestoneNumber,
+          name: currentName,
+          opportunity: opportunityName,
+          operationIds: [patchOp.id, commentOp.id],
+          before: currentName,
+          after: newName
+        });
+      }
+
+      if (!allOps.length && skipped.length) {
+        return error(`No milestones to tag. Skipped ${skipped.length}: ${skipped.map(s => `${s.milestoneNumber || s.id} (${s.reason})`).join(', ')}`);
+      }
+
+      return text({
+        staged: true,
+        tagged: allOps.length,
+        skipped: skipped.length,
+        totalOperations: allOps.length * 2,
+        operations: allOps,
+        skippedDetails: skipped.length ? skipped : undefined,
         tag,
-        message: `Staged ${patchOp.id} + ${commentOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
+        message: `Staged ${allOps.length * 2} operations for ${allOps.length} milestones with #${tag}.${skipped.length ? ` Skipped ${skipped.length}.` : ''} Approve via execute_all.`
       });
     }
   );
