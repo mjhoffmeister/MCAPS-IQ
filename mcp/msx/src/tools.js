@@ -23,8 +23,6 @@ export const ALLOWED_ENTITY_SETS = new Set([
   // Deal team / partner linkage (alternative to msp_dealteams in some orgs)
   'connections',
   'connectionroles',
-  // CRM notes (used by tag_milestone / untag_milestone)
-  'annotations',
   // BPF stage name resolution (mcem-stage-identification)
   'processstages',
   // Metadata endpoints (used by get_task_status_options pattern)
@@ -1181,7 +1179,7 @@ export function registerTools(server, crmClient) {
   // ── tag_milestone ───────────────────────────────────────────
   server.tool(
     'tag_milestone',
-    'Tag an engagement milestone by appending #tag-name to its name and creating a CRM annotation with the reason. Does NOT require ownership — any authenticated user can tag. Tags are lowercase alphanumeric with optional hyphens (2-50 chars).',
+    'Tag an engagement milestone by appending #tag-name to its name and adding a forecast comment with the reason. Does NOT require ownership — any authenticated user can tag. Tags are alphanumeric with optional hyphens (2-50 chars).',
     {
       milestoneId: z.string().describe('Engagement milestone GUID'),
       tag: z.string().describe('Tag name (lowercase alphanumeric + hyphens, e.g. "at-risk-review")'),
@@ -1241,28 +1239,27 @@ export function registerTools(server, crmClient) {
         opportunityName,
       };
 
-      // Stage 2: POST annotation (CRM note) with reason
-      const noteOp = queue.stage({
+      // Stage 2: PATCH forecast comments with tag reason
+      const currentComments = record.msp_forecastcomments || '';
+      const tagComment = `Tag #${tag} applied by ${taggerId}. Reason: ${reason.trim()}`;
+      const newComments = currentComments ? `${currentComments}\n${tagComment}` : tagComment;
+      const commentOp = queue.stage({
         type: 'tag_milestone',
-        entitySet: 'annotations',
-        method: 'POST',
-        payload: {
-          subject: `Tag #${tag} applied`,
-          notetext: `Tag #${tag} applied by ${taggerId}.\n\nReason: ${reason.trim()}`,
-          'objectid@odata.bind': `/msp_engagementmilestones(${nid})`
-        },
-        beforeState: null,
-        description: `Add annotation for tag #${tag} on milestone ${milestoneNumber || nid}`
+        entitySet: `msp_engagementmilestones(${nid})`,
+        method: 'PATCH',
+        payload: { msp_forecastcomments: newComments },
+        beforeState: { msp_forecastcomments: currentComments },
+        description: `Add comment for tag #${tag} on milestone ${milestoneNumber || nid}`
       });
       // Link the two operations so they can be reviewed together
-      patchOp.linkedOpId = noteOp.id;
-      noteOp.linkedOpId = patchOp.id;
+      patchOp.linkedOpId = commentOp.id;
+      commentOp.linkedOpId = patchOp.id;
 
       return text({
         staged: true,
         operations: [
           { operationId: patchOp.id, description: patchOp.description, before: { msp_name: currentName }, after: { msp_name: newName } },
-          { operationId: noteOp.id, description: noteOp.description }
+          { operationId: commentOp.id, description: commentOp.description }
         ],
         identity: {
           milestoneNumber,
@@ -1272,7 +1269,7 @@ export function registerTools(server, crmClient) {
         },
         taggerId,
         tag,
-        message: `Staged ${patchOp.id} + ${noteOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
+        message: `Staged ${patchOp.id} + ${commentOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
       });
     }
   );
@@ -1280,7 +1277,7 @@ export function registerTools(server, crmClient) {
   // ── untag_milestone ─────────────────────────────────────────
   server.tool(
     'untag_milestone',
-    'Remove a #tag from an engagement milestone name and add an annotation explaining the removal. Does NOT require ownership — any authenticated user can untag.',
+    'Remove a #tag from an engagement milestone name and add a forecast comment explaining the removal. Does NOT require ownership — any authenticated user can untag.',
     {
       milestoneId: z.string().describe('Engagement milestone GUID'),
       tag: z.string().describe('Tag name to remove (without the # prefix)'),
@@ -1339,27 +1336,26 @@ export function registerTools(server, crmClient) {
         opportunityName,
       };
 
-      // Stage 2: POST annotation (CRM note) with removal reason
-      const noteOp = queue.stage({
+      // Stage 2: PATCH forecast comments with removal reason
+      const currentComments = record.msp_forecastcomments || '';
+      const removeComment = `Tag #${tag} removed by ${removerId}. Reason: ${reason.trim()}`;
+      const newComments = currentComments ? `${currentComments}\n${removeComment}` : removeComment;
+      const commentOp = queue.stage({
         type: 'untag_milestone',
-        entitySet: 'annotations',
-        method: 'POST',
-        payload: {
-          subject: `Tag #${tag} removed`,
-          notetext: `Tag #${tag} removed by ${removerId}.\n\nReason: ${reason.trim()}`,
-          'objectid@odata.bind': `/msp_engagementmilestones(${nid})`
-        },
-        beforeState: null,
-        description: `Add annotation for tag #${tag} removal on milestone ${milestoneNumber || nid}`
+        entitySet: `msp_engagementmilestones(${nid})`,
+        method: 'PATCH',
+        payload: { msp_forecastcomments: newComments },
+        beforeState: { msp_forecastcomments: currentComments },
+        description: `Add comment for tag #${tag} removal on milestone ${milestoneNumber || nid}`
       });
-      patchOp.linkedOpId = noteOp.id;
-      noteOp.linkedOpId = patchOp.id;
+      patchOp.linkedOpId = commentOp.id;
+      commentOp.linkedOpId = patchOp.id;
 
       return text({
         staged: true,
         operations: [
           { operationId: patchOp.id, description: patchOp.description, before: { msp_name: currentName }, after: { msp_name: newName } },
-          { operationId: noteOp.id, description: noteOp.description }
+          { operationId: commentOp.id, description: commentOp.description }
         ],
         identity: {
           milestoneNumber,
@@ -1369,7 +1365,7 @@ export function registerTools(server, crmClient) {
         },
         removerId,
         tag,
-        message: `Staged ${patchOp.id} + ${noteOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
+        message: `Staged ${patchOp.id} + ${commentOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
       });
     }
   );

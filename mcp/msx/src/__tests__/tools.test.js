@@ -1873,11 +1873,8 @@ describe('ALLOWED_ENTITY_SETS', () => {
 
   it('does not contain high-risk PII entity sets', () => {
     expect(ALLOWED_ENTITY_SETS.has('emails')).toBe(false);
+    expect(ALLOWED_ENTITY_SETS.has('annotations')).toBe(false);
     expect(ALLOWED_ENTITY_SETS.has('phonecalls')).toBe(false);
-  });
-
-  it('contains annotations for tag/untag milestone notes', () => {
-    expect(ALLOWED_ENTITY_SETS.has('annotations')).toBe(true);
   });
 });
 

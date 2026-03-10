@@ -103,8 +103,8 @@ All write tools **stage** the operation and return a preview. Nothing is written
 | `update_task` | Update task fields (subject, due date, description, status) |
 | `close_task` | Close a task via CloseTask action |
 | `update_milestone` | Update milestone fields (date, monthly use, comments) |
-| `tag_milestone` | Tag a milestone (appends `#tag-name` to name + adds CRM annotation with reason). No ownership required. |
-| `untag_milestone` | Remove a tag from a milestone name + adds annotation explaining removal. No ownership required. |
+| `tag_milestone` | Tag a milestone (appends `#tag-name` to name + adds forecast comment with reason). No ownership required. |
+| `untag_milestone` | Remove a tag from a milestone name + adds forecast comment explaining removal. No ownership required. |
 
 ### Approval Queue Tools
 
