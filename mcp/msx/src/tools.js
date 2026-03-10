@@ -23,6 +23,8 @@ export const ALLOWED_ENTITY_SETS = new Set([
   // Deal team / partner linkage (alternative to msp_dealteams in some orgs)
   'connections',
   'connectionroles',
+  // CRM notes (used by tag_milestone / untag_milestone)
+  'annotations',
   // BPF stage name resolution (mcem-stage-identification)
   'processstages',
   // Metadata endpoints (used by get_task_status_options pattern)
@@ -307,6 +309,54 @@ async function embedTasksOnMilestones(crmClient, milestones) {
     ...m,
     tasks: byMilestone[m.msp_engagementmilestoneid] || []
   }));
+}
+
+// ── Tag format ─────────────────────────────────────────────
+const TAG_REGEX = /^[a-z0-9][a-z0-9-]{0,48}[a-z0-9]$/i;
+
+/**
+ * Verify the current user's access to a milestone.
+ * Returns { ok: true, currentUserId } on success, or { ok: false, error: string } on failure.
+ */
+async function verifyMilestoneAccess(crmClient, { milestoneNumber, milestoneName, milestoneOppId, milestoneOwnerId, milestoneId, opportunityName }) {
+  const whoAmI = await crmClient.request('WhoAmI');
+  if (!whoAmI.ok || !whoAmI.data?.UserId) {
+    return { ok: false, error: 'Unable to verify identity (WhoAmI failed)' };
+  }
+  const currentUserId = normalizeGuid(whoAmI.data.UserId);
+  const isOwner = milestoneOwnerId && normalizeGuid(milestoneOwnerId) === currentUserId;
+
+  if (isOwner) return { ok: true, currentUserId };
+
+  if (milestoneOppId) {
+    const oppResult = await crmClient.request(`opportunities(${normalizeGuid(milestoneOppId)})`, {
+      query: { $select: '_ownerid_value' }
+    });
+    const oppOwnerId = oppResult.ok ? normalizeGuid(oppResult.data?._ownerid_value || '') : '';
+    if (oppOwnerId === currentUserId) return { ok: true, currentUserId };
+
+    const teamCheck = await crmClient.requestAllPages('msp_engagementmilestones', {
+      query: {
+        $filter: `_msp_opportunityid_value eq '${normalizeGuid(milestoneOppId)}' and _ownerid_value eq '${currentUserId}'`,
+        $select: 'msp_engagementmilestoneid',
+        $top: '1'
+      }
+    });
+    if (teamCheck.ok && teamCheck.data?.value?.length > 0) return { ok: true, currentUserId };
+
+    return {
+      ok: false,
+      error: `Ownership check failed: milestone ${milestoneNumber || milestoneId} ("${milestoneName || 'unknown'}") ` +
+        `under opportunity "${opportunityName || milestoneOppId}" is not owned by you and you are not on the deal team. ` +
+        `Verify you have the correct milestone ID.`
+    };
+  }
+
+  return {
+    ok: false,
+    error: `Ownership check failed: milestone ${milestoneNumber || milestoneId} is not owned by you ` +
+      `and has no linked opportunity for deal-team verification.`
+  };
 }
 
 /**
@@ -1078,43 +1128,11 @@ export function registerTools(server, crmClient) {
       const opportunityName = fv(record, '_msp_opportunityid_value') || null;
 
       // Ownership verification: ensure current user owns milestone or is on deal team
-      const whoAmI = await crmClient.request('WhoAmI');
-      if (whoAmI.ok && whoAmI.data?.UserId) {
-        const currentUserId = normalizeGuid(whoAmI.data.UserId);
-        const isOwner = milestoneOwnerId && normalizeGuid(milestoneOwnerId) === currentUserId;
-
-        if (!isOwner && milestoneOppId) {
-          // Check if user owns the opportunity or any milestones under it
-          const oppResult = await crmClient.request(`opportunities(${normalizeGuid(milestoneOppId)})`, {
-            query: { $select: '_ownerid_value' }
-          });
-          const oppOwnerId = oppResult.ok ? normalizeGuid(oppResult.data?._ownerid_value || '') : '';
-          const isOppOwner = oppOwnerId === currentUserId;
-
-          if (!isOppOwner) {
-            const teamCheck = await crmClient.requestAllPages('msp_engagementmilestones', {
-              query: {
-                $filter: `_msp_opportunityid_value eq '${normalizeGuid(milestoneOppId)}' and _ownerid_value eq '${currentUserId}'`,
-                $select: 'msp_engagementmilestoneid',
-                $top: '1'
-              }
-            });
-            const isOnDealTeam = teamCheck.ok && teamCheck.data?.value?.length > 0;
-            if (!isOnDealTeam) {
-              return error(
-                `Ownership check failed: milestone ${milestoneNumber || nid} ("${milestoneName || 'unknown'}") ` +
-                `under opportunity "${opportunityName || milestoneOppId}" is not owned by you and you are not on the deal team. ` +
-                `Verify you have the correct milestone ID.`
-              );
-            }
-          }
-        } else if (!isOwner && !milestoneOppId) {
-          return error(
-            `Ownership check failed: milestone ${milestoneNumber || nid} is not owned by you ` +
-            `and has no linked opportunity for deal-team verification.`
-          );
-        }
-      }
+      const access = await verifyMilestoneAccess(crmClient, {
+        milestoneNumber, milestoneName, milestoneOppId, milestoneOwnerId,
+        milestoneId: nid, opportunityName
+      });
+      if (!access.ok) return error(access.error);
 
       // Build before-state limited to fields being changed
       const before = {};
@@ -1156,6 +1174,206 @@ export function registerTools(server, crmClient) {
         after: resolvePayloadLabels(payload),
         payload,
         message: `Staged ${op.id}: ${op.description}. Approve via execute_operation or from the approval UI.`
+      });
+    }
+  );
+
+  // ── tag_milestone ───────────────────────────────────────────
+  server.tool(
+    'tag_milestone',
+    'Tag an engagement milestone by appending #tag-name to its name and creating a CRM annotation with the reason. Does NOT require ownership — any authenticated user can tag. Tags are lowercase alphanumeric with optional hyphens (2-50 chars).',
+    {
+      milestoneId: z.string().describe('Engagement milestone GUID'),
+      tag: z.string().describe('Tag name (lowercase alphanumeric + hyphens, e.g. "at-risk-review")'),
+      reason: z.string().describe('Why this tag is being applied')
+    },
+    async ({ milestoneId, tag, reason }) => {
+      const nid = normalizeGuid(milestoneId);
+      if (!isValidGuid(nid)) return error('Invalid milestoneId GUID');
+      if (!tag || !TAG_REGEX.test(tag)) return error('Invalid tag: must be 2-50 characters, alphanumeric and hyphens only (e.g. "at-risk-review")');
+      if (!reason || !reason.trim()) return error('reason is required');
+
+      const normalizedTag = tag.toLowerCase();
+
+      // Fetch milestone record
+      const fullRecord = await crmClient.request(`msp_engagementmilestones(${nid})`, {
+        query: { $select: MILESTONE_SELECT }
+      });
+      if (!fullRecord.ok) {
+        return error(`Milestone ${nid} not found or inaccessible (${fullRecord.status}): ${fullRecord.data?.message || 'lookup failed'}`);
+      }
+
+      const record = fullRecord.data;
+      const currentName = record.msp_name || '';
+      const milestoneNumber = record.msp_milestonenumber || null;
+      const milestoneOppId = record._msp_opportunityid_value || null;
+      const opportunityName = fv(record, '_msp_opportunityid_value') || null;
+
+      // Check for duplicate tag
+      if (currentName.toLowerCase().includes(`#${normalizedTag}`)) {
+        return error(`Milestone already has tag #${normalizedTag}`);
+      }
+
+      const newName = `${currentName} #${normalizedTag}`;
+
+      // Identify the tagger for audit trail
+      const whoAmI = await crmClient.request('WhoAmI');
+      const taggerId = whoAmI.ok ? normalizeGuid(whoAmI.data?.UserId || '') : 'unknown';
+
+      const humanDesc = `Tag milestone ${milestoneNumber || nid}` +
+        (currentName ? ` ("${currentName}")` : '') +
+        (opportunityName ? ` on "${opportunityName}"` : '') +
+        ` with #${normalizedTag}`;
+
+      const queue = getApprovalQueue();
+
+      // Stage 1: PATCH milestone name
+      const patchOp = queue.stage({
+        type: 'tag_milestone',
+        entitySet: `msp_engagementmilestones(${nid})`,
+        method: 'PATCH',
+        payload: { msp_name: newName },
+        beforeState: { msp_name: currentName },
+        description: humanDesc
+      });
+      patchOp.identity = {
+        milestoneNumber,
+        milestoneName: currentName,
+        opportunityId: milestoneOppId,
+        opportunityName,
+      };
+
+      // Stage 2: POST annotation (CRM note) with reason
+      const noteOp = queue.stage({
+        type: 'tag_milestone',
+        entitySet: 'annotations',
+        method: 'POST',
+        payload: {
+          subject: `Tag #${normalizedTag} applied`,
+          notetext: `Tag #${normalizedTag} applied by ${taggerId}.\n\nReason: ${reason.trim()}`,
+          'objectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
+        },
+        beforeState: null,
+        description: `Add annotation for tag #${normalizedTag} on milestone ${milestoneNumber || nid}`
+      });
+      // Link the two operations so they can be reviewed together
+      patchOp.linkedOpId = noteOp.id;
+      noteOp.linkedOpId = patchOp.id;
+
+      return text({
+        staged: true,
+        operations: [
+          { operationId: patchOp.id, description: patchOp.description, before: { msp_name: currentName }, after: { msp_name: newName } },
+          { operationId: noteOp.id, description: noteOp.description }
+        ],
+        identity: {
+          milestoneNumber,
+          milestoneName: currentName,
+          opportunityId: milestoneOppId,
+          opportunityName,
+        },
+        taggerId,
+        tag: normalizedTag,
+        message: `Staged ${patchOp.id} + ${noteOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
+      });
+    }
+  );
+
+  // ── untag_milestone ─────────────────────────────────────────
+  server.tool(
+    'untag_milestone',
+    'Remove a #tag from an engagement milestone name and add an annotation explaining the removal. Does NOT require ownership — any authenticated user can untag.',
+    {
+      milestoneId: z.string().describe('Engagement milestone GUID'),
+      tag: z.string().describe('Tag name to remove (without the # prefix)'),
+      reason: z.string().describe('Why this tag is being removed')
+    },
+    async ({ milestoneId, tag, reason }) => {
+      const nid = normalizeGuid(milestoneId);
+      if (!isValidGuid(nid)) return error('Invalid milestoneId GUID');
+      if (!tag || !TAG_REGEX.test(tag)) return error('Invalid tag: must be 2-50 characters, alphanumeric and hyphens only');
+      if (!reason || !reason.trim()) return error('reason is required');
+
+      const normalizedTag = tag.toLowerCase();
+
+      // Fetch milestone record
+      const fullRecord = await crmClient.request(`msp_engagementmilestones(${nid})`, {
+        query: { $select: MILESTONE_SELECT }
+      });
+      if (!fullRecord.ok) {
+        return error(`Milestone ${nid} not found or inaccessible (${fullRecord.status}): ${fullRecord.data?.message || 'lookup failed'}`);
+      }
+
+      const record = fullRecord.data;
+      const currentName = record.msp_name || '';
+      const milestoneNumber = record.msp_milestonenumber || null;
+      const milestoneOppId = record._msp_opportunityid_value || null;
+      const opportunityName = fv(record, '_msp_opportunityid_value') || null;
+
+      // Verify the tag exists on the milestone
+      const tagPattern = new RegExp(`\\s*#${normalizedTag.replace(/-/g, '\\-')}`, 'i');
+      if (!tagPattern.test(currentName)) {
+        return error(`Milestone does not have tag #${normalizedTag}`);
+      }
+
+      const newName = currentName.replace(tagPattern, '').trim();
+
+      // Identify the user for audit trail
+      const whoAmI = await crmClient.request('WhoAmI');
+      const removerId = whoAmI.ok ? normalizeGuid(whoAmI.data?.UserId || '') : 'unknown';
+
+      const humanDesc = `Remove tag #${normalizedTag} from milestone ${milestoneNumber || nid}` +
+        (opportunityName ? ` on "${opportunityName}"` : '');
+
+      const queue = getApprovalQueue();
+
+      // Stage 1: PATCH milestone name (remove tag)
+      const patchOp = queue.stage({
+        type: 'untag_milestone',
+        entitySet: `msp_engagementmilestones(${nid})`,
+        method: 'PATCH',
+        payload: { msp_name: newName },
+        beforeState: { msp_name: currentName },
+        description: humanDesc
+      });
+      patchOp.identity = {
+        milestoneNumber,
+        milestoneName: currentName,
+        opportunityId: milestoneOppId,
+        opportunityName,
+      };
+
+      // Stage 2: POST annotation (CRM note) with removal reason
+      const noteOp = queue.stage({
+        type: 'untag_milestone',
+        entitySet: 'annotations',
+        method: 'POST',
+        payload: {
+          subject: `Tag #${normalizedTag} removed`,
+          notetext: `Tag #${normalizedTag} removed by ${removerId}.\n\nReason: ${reason.trim()}`,
+          'objectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
+        },
+        beforeState: null,
+        description: `Add annotation for tag #${normalizedTag} removal on milestone ${milestoneNumber || nid}`
+      });
+      patchOp.linkedOpId = noteOp.id;
+      noteOp.linkedOpId = patchOp.id;
+
+      return text({
+        staged: true,
+        operations: [
+          { operationId: patchOp.id, description: patchOp.description, before: { msp_name: currentName }, after: { msp_name: newName } },
+          { operationId: noteOp.id, description: noteOp.description }
+        ],
+        identity: {
+          milestoneNumber,
+          milestoneName: currentName,
+          opportunityId: milestoneOppId,
+          opportunityName,
+        },
+        removerId,
+        tag: normalizedTag,
+        message: `Staged ${patchOp.id} + ${noteOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
       });
     }
   );

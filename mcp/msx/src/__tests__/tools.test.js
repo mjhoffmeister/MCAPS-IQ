@@ -53,6 +53,8 @@ describe('registerTools', () => {
     expect(toolNames).toContain('update_task');
     expect(toolNames).toContain('close_task');
     expect(toolNames).toContain('update_milestone');
+    expect(toolNames).toContain('tag_milestone');
+    expect(toolNames).toContain('untag_milestone');
     expect(toolNames).toContain('list_accounts_by_tpid');
     expect(toolNames).toContain('get_milestone_field_options');
     expect(toolNames).toContain('get_task_status_options');
@@ -161,13 +163,13 @@ describe('registerTools', () => {
 
     it('blocks entity sets not in the allowlist', async () => {
       const result = await callTool(server, 'crm_get_record', {
-        entitySet: 'annotations',
+        entitySet: 'emails',
         id: '12345678-1234-1234-1234-123456789abc'
       });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('not in the allowed list');
       expect(crm.request).not.toHaveBeenCalledWith(
-        expect.stringContaining('annotations'),
+        expect.stringContaining('emails'),
         expect.anything()
       );
     });
@@ -1430,6 +1432,218 @@ describe('registerTools', () => {
     });
   });
 
+  describe('tag_milestone', () => {
+    const MILESTONE_GUID = '12345678-1234-1234-1234-123456789abc';
+    const OPP_GUID = 'aaaa1111-2222-3333-4444-555566667777';
+
+    const makeMilestoneRecord = (overrides = {}) => ({
+      msp_engagementmilestoneid: MILESTONE_GUID,
+      msp_milestonenumber: '7-100000001',
+      msp_name: 'Kickoff Meeting',
+      _msp_opportunityid_value: OPP_GUID,
+      '_msp_opportunityid_value@OData.Community.Display.V1.FormattedValue': 'Contoso AI Platform',
+      _ownerid_value: 'other-user-id',
+      msp_milestonedate: '2026-03-01',
+      ...overrides
+    });
+
+    it('rejects invalid milestoneId GUID', async () => {
+      const result = await callTool(server, 'tag_milestone', {
+        milestoneId: 'not-a-guid',
+        tag: 'at-risk',
+        reason: 'Testing'
+      });
+      expect(result.isError).toBe(true);
+    });
+
+    it('rejects invalid tag format', async () => {
+      const result = await callTool(server, 'tag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'a',
+        reason: 'Too short'
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid tag');
+    });
+
+    it('rejects tag with special characters', async () => {
+      const result = await callTool(server, 'tag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'bad tag!',
+        reason: 'Has spaces and special chars'
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid tag');
+    });
+
+    it('rejects empty reason', async () => {
+      const result = await callTool(server, 'tag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'at-risk',
+        reason: ''
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('reason is required');
+    });
+
+    it('rejects duplicate tag', async () => {
+      crm.request.mockImplementation(async (path) => {
+        if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
+        if (path.startsWith('msp_engagementmilestones(')) {
+          return { ok: true, status: 200, data: makeMilestoneRecord({ msp_name: 'Kickoff Meeting #at-risk' }) };
+        }
+        return { ok: true, status: 200, data: {} };
+      });
+
+      const result = await callTool(server, 'tag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'at-risk',
+        reason: 'Already tagged'
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('already has tag');
+    });
+
+    it('stages tag without ownership check (non-owner can tag)', async () => {
+      crm.request.mockImplementation(async (path) => {
+        if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
+        if (path.startsWith('msp_engagementmilestones(')) {
+          return { ok: true, status: 200, data: makeMilestoneRecord() };
+        }
+        return { ok: true, status: 200, data: {} };
+      });
+
+      const result = await callTool(server, 'tag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'at-risk',
+        reason: 'Customer delayed response'
+      });
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.staged).toBe(true);
+      expect(parsed.tag).toBe('at-risk');
+      expect(parsed.operations).toHaveLength(2);
+      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #at-risk');
+      expect(parsed.taggerId).toBe('abc-123');
+    });
+
+    it('normalizes tag to lowercase', async () => {
+      crm.request.mockImplementation(async (path) => {
+        if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
+        if (path.startsWith('msp_engagementmilestones(')) {
+          return { ok: true, status: 200, data: makeMilestoneRecord() };
+        }
+        return { ok: true, status: 200, data: {} };
+      });
+
+      const result = await callTool(server, 'tag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'At-Risk',
+        reason: 'Testing case normalization'
+      });
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.tag).toBe('at-risk');
+      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #at-risk');
+    });
+  });
+
+  describe('untag_milestone', () => {
+    const MILESTONE_GUID = '12345678-1234-1234-1234-123456789abc';
+    const OPP_GUID = 'aaaa1111-2222-3333-4444-555566667777';
+
+    const makeMilestoneRecord = (overrides = {}) => ({
+      msp_engagementmilestoneid: MILESTONE_GUID,
+      msp_milestonenumber: '7-100000001',
+      msp_name: 'Kickoff Meeting #at-risk',
+      _msp_opportunityid_value: OPP_GUID,
+      '_msp_opportunityid_value@OData.Community.Display.V1.FormattedValue': 'Contoso AI Platform',
+      _ownerid_value: 'other-user-id',
+      msp_milestonedate: '2026-03-01',
+      ...overrides
+    });
+
+    it('rejects invalid milestoneId GUID', async () => {
+      const result = await callTool(server, 'untag_milestone', {
+        milestoneId: 'not-a-guid',
+        tag: 'at-risk',
+        reason: 'Testing'
+      });
+      expect(result.isError).toBe(true);
+    });
+
+    it('rejects empty reason', async () => {
+      const result = await callTool(server, 'untag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'at-risk',
+        reason: ''
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('reason is required');
+    });
+
+    it('rejects when tag is not present on milestone', async () => {
+      crm.request.mockImplementation(async (path) => {
+        if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
+        if (path.startsWith('msp_engagementmilestones(')) {
+          return { ok: true, status: 200, data: makeMilestoneRecord({ msp_name: 'Kickoff Meeting' }) };
+        }
+        return { ok: true, status: 200, data: {} };
+      });
+
+      const result = await callTool(server, 'untag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'at-risk',
+        reason: 'Not there'
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('does not have tag');
+    });
+
+    it('stages untag without ownership check (non-owner can untag)', async () => {
+      crm.request.mockImplementation(async (path) => {
+        if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
+        if (path.startsWith('msp_engagementmilestones(')) {
+          return { ok: true, status: 200, data: makeMilestoneRecord() };
+        }
+        return { ok: true, status: 200, data: {} };
+      });
+
+      const result = await callTool(server, 'untag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'at-risk',
+        reason: 'Issue resolved'
+      });
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.staged).toBe(true);
+      expect(parsed.tag).toBe('at-risk');
+      expect(parsed.operations).toHaveLength(2);
+      expect(parsed.operations[0].before.msp_name).toBe('Kickoff Meeting #at-risk');
+      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting');
+      expect(parsed.removerId).toBe('abc-123');
+    });
+
+    it('removes tag from middle of name with multiple tags', async () => {
+      crm.request.mockImplementation(async (path) => {
+        if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
+        if (path.startsWith('msp_engagementmilestones(')) {
+          return { ok: true, status: 200, data: makeMilestoneRecord({ msp_name: 'Kickoff Meeting #at-risk #needs-review' }) };
+        }
+        return { ok: true, status: 200, data: {} };
+      });
+
+      const result = await callTool(server, 'untag_milestone', {
+        milestoneId: MILESTONE_GUID,
+        tag: 'at-risk',
+        reason: 'Risk cleared'
+      });
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #needs-review');
+    });
+  });
+
   describe('list_accounts_by_tpid', () => {
     it('rejects non-numeric TPIDs', async () => {
       const result = await callTool(server, 'list_accounts_by_tpid', { tpids: ['abc'] });
@@ -1632,7 +1846,6 @@ describe('isEntityAllowed', () => {
 
   it('rejects entity sets not in the allowlist', () => {
     expect(isEntityAllowed('emails')).toBe(false);
-    expect(isEntityAllowed('annotations')).toBe(false);
     expect(isEntityAllowed('phonecalls')).toBe(false);
     expect(isEntityAllowed('letters')).toBe(false);
     expect(isEntityAllowed('activitypointers')).toBe(false);
@@ -1660,8 +1873,11 @@ describe('ALLOWED_ENTITY_SETS', () => {
 
   it('does not contain high-risk PII entity sets', () => {
     expect(ALLOWED_ENTITY_SETS.has('emails')).toBe(false);
-    expect(ALLOWED_ENTITY_SETS.has('annotations')).toBe(false);
     expect(ALLOWED_ENTITY_SETS.has('phonecalls')).toBe(false);
+  });
+
+  it('contains annotations for tag/untag milestone notes', () => {
+    expect(ALLOWED_ENTITY_SETS.has('annotations')).toBe(true);
   });
 });
 
