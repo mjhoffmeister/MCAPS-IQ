@@ -351,6 +351,33 @@ if (checkMode) {
     console.log("\nFix prerequisite issues above, then re-run this script.");
     process.exit(1);
   }
+
+  // ── risk acknowledgement ────────────────────────────────────────
+  heading("⚠  Important — Please Read");
+  console.log(`
+  This toolkit uses agentic AI (GitHub Copilot + MCP servers) to read
+  and write CRM records, query M365 data, and suggest strategic actions.
+
+  AI models can produce incorrect, incomplete, or misleading outputs.
+  YOU are responsible for reviewing and validating every action.
+
+  By proceeding you acknowledge that:
+    • All AI-generated outputs are drafts requiring human judgment.
+    • Write operations require your explicit confirmation before executing.
+    • You will not rely on AI outputs without independent verification.
+`);
+
+  if (process.stdin.isTTY) {
+    const consent = await ask("  Type 'yes' to accept and continue installation: ");
+    if (consent.toLowerCase() !== "yes") {
+      console.log("\n  Setup cancelled. Re-run when you're ready.\n");
+      process.exit(0);
+    }
+  } else {
+    warn("Non-interactive shell — proceeding with installation.");
+    warn("By using this toolkit you accept the risks described above.");
+  }
+
   const serversOk = initServers();
   if (serversOk) {
     await configureEnv();

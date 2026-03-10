@@ -5,6 +5,12 @@
 > **Your AI-powered sales operations toolkit for MCAPS.** (previously known as `MCAPS Copilot Tools`)
 > Talk to Copilot in plain English to manage MSX opportunities, milestones, and tasks — no coding required.
 
+> [!NOTE]
+> **This is a showcase of GitHub Copilot's extensibility.** The core value proposition here is GitHub Copilot and the agentic era it enables — not this repo itself. This project tackles our specific internal tooling (MSX, Dynamics CRM, M365) as the problem domain, but the pattern is universal: extend Copilot beyond code by connecting it to your enterprise systems through MCP servers, layering in your domain expertise via instructions and skills, and letting your team operate complex workflows in plain natural language. The MCP servers, role cards, and skills in this repo are replaceable — what isn't replaceable is the agentic platform underneath. Fork the pattern, swap in your own systems, and build your own version.
+
+> [!CAUTION]
+> **Agentic AI can make mistakes.** This toolkit uses AI models that may produce incorrect, incomplete, or misleading outputs — including CRM queries, record updates, and strategic recommendations. **You are responsible for reviewing and validating every action before it takes effect.** Never blindly trust AI-generated data or let it execute changes without your confirmation. Treat all outputs as drafts that require human judgment.
+
 MCAPS Copilot Tools connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 data through [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers. Instead of clicking through MSX screens, you describe what you need in the Copilot chat window and the tools do it for you.
 
 **What can it do?**

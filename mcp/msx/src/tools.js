@@ -227,6 +227,13 @@ function toIsoDate(value) {
   return date.toISOString().slice(0, 10);
 }
 
+/** Map task statusCode to the required statecode for Dynamics 365 state transitions. */
+function taskStateForStatus(statusCode) {
+  if ([5].includes(statusCode)) return 1;       // Completed
+  if ([6].includes(statusCode)) return 2;       // Cancelled
+  return 0;                                      // Open
+}
+
 function fv(record, field) {
   return record[`${field}@OData.Community.Display.V1.FormattedValue`] ?? null;
 }
@@ -939,7 +946,10 @@ export function registerTools(server, crmClient) {
       if (subject !== undefined) payload.subject = subject;
       if (dueDate !== undefined) payload.scheduledend = dueDate;
       if (description !== undefined) payload.description = description;
-      if (statusCode !== undefined) payload.statuscode = statusCode;
+      if (statusCode !== undefined) {
+        payload.statuscode = statusCode;
+        payload.statecode = taskStateForStatus(statusCode);
+      }
       if (Object.keys(payload).length === 0) return error('No fields to update');
 
       // Fetch before-state for diff preview
@@ -1692,6 +1702,17 @@ export function registerTools(server, crmClient) {
         if (!result.ok && result.status !== 204 && op.fallbackEntitySet) {
           result = await crmClient.request(op.fallbackEntitySet, { method: 'POST', body: op.fallbackPayload });
         }
+        // Third fallback: direct PATCH with state+status
+        if (!result.ok && result.status !== 204) {
+          const taskId = op.description.match(/task ([a-f0-9-]+)/)?.[1];
+          if (taskId) {
+            const sc = op.fallbackPayload?.Status || 5;
+            result = await crmClient.request(`tasks(${taskId})`, {
+              method: 'PATCH',
+              body: { statecode: taskStateForStatus(sc), statuscode: sc }
+            });
+          }
+        }
       } else {
         result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
       }
@@ -1748,6 +1769,17 @@ export function registerTools(server, crmClient) {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
             if (!result.ok && result.status !== 204 && op.fallbackEntitySet) {
               result = await crmClient.request(op.fallbackEntitySet, { method: 'POST', body: op.fallbackPayload });
+            }
+            // Third fallback: direct PATCH with state+status
+            if (!result.ok && result.status !== 204) {
+              const taskId = op.description.match(/task ([a-f0-9-]+)/)?.[1];
+              if (taskId) {
+                const sc = op.fallbackPayload?.Status || 5;
+                result = await crmClient.request(`tasks(${taskId})`, {
+                  method: 'PATCH',
+                  body: { statecode: taskStateForStatus(sc), statuscode: sc }
+                });
+              }
             }
           } else {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
