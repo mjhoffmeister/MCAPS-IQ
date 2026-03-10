@@ -1527,7 +1527,7 @@ describe('registerTools', () => {
       expect(parsed.taggerId).toBe('abc-123');
     });
 
-    it('normalizes tag to lowercase', async () => {
+    it('preserves tag casing', async () => {
       crm.request.mockImplementation(async (path) => {
         if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
         if (path.startsWith('msp_engagementmilestones(')) {
@@ -1538,13 +1538,13 @@ describe('registerTools', () => {
 
       const result = await callTool(server, 'tag_milestone', {
         milestoneId: MILESTONE_GUID,
-        tag: 'At-Risk',
-        reason: 'Testing case normalization'
+        tag: 'AppMod',
+        reason: 'Testing case preservation'
       });
       expect(result.isError).toBeUndefined();
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.tag).toBe('at-risk');
-      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #at-risk');
+      expect(parsed.tag).toBe('AppMod');
+      expect(parsed.operations[0].after.msp_name).toBe('Kickoff Meeting #AppMod');
     });
   });
 

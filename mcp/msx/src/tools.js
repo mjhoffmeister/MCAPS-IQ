@@ -1193,8 +1193,6 @@ export function registerTools(server, crmClient) {
       if (!tag || !TAG_REGEX.test(tag)) return error('Invalid tag: must be 2-50 characters, alphanumeric and hyphens only (e.g. "at-risk-review")');
       if (!reason || !reason.trim()) return error('reason is required');
 
-      const normalizedTag = tag.toLowerCase();
-
       // Fetch milestone record
       const fullRecord = await crmClient.request(`msp_engagementmilestones(${nid})`, {
         query: { $select: MILESTONE_SELECT }
@@ -1209,12 +1207,12 @@ export function registerTools(server, crmClient) {
       const milestoneOppId = record._msp_opportunityid_value || null;
       const opportunityName = fv(record, '_msp_opportunityid_value') || null;
 
-      // Check for duplicate tag
-      if (currentName.toLowerCase().includes(`#${normalizedTag}`)) {
-        return error(`Milestone already has tag #${normalizedTag}`);
+      // Check for duplicate tag (case-insensitive)
+      if (currentName.toLowerCase().includes(`#${tag.toLowerCase()}`)) {
+        return error(`Milestone already has tag #${tag}`);
       }
 
-      const newName = `${currentName} #${normalizedTag}`;
+      const newName = `${currentName} #${tag}`;
 
       // Identify the tagger for audit trail
       const whoAmI = await crmClient.request('WhoAmI');
@@ -1223,7 +1221,7 @@ export function registerTools(server, crmClient) {
       const humanDesc = `Tag milestone ${milestoneNumber || nid}` +
         (currentName ? ` ("${currentName}")` : '') +
         (opportunityName ? ` on "${opportunityName}"` : '') +
-        ` with #${normalizedTag}`;
+        ` with #${tag}`;
 
       const queue = getApprovalQueue();
 
@@ -1249,12 +1247,12 @@ export function registerTools(server, crmClient) {
         entitySet: 'annotations',
         method: 'POST',
         payload: {
-          subject: `Tag #${normalizedTag} applied`,
-          notetext: `Tag #${normalizedTag} applied by ${taggerId}.\n\nReason: ${reason.trim()}`,
+          subject: `Tag #${tag} applied`,
+          notetext: `Tag #${tag} applied by ${taggerId}.\n\nReason: ${reason.trim()}`,
           'objectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
         },
         beforeState: null,
-        description: `Add annotation for tag #${normalizedTag} on milestone ${milestoneNumber || nid}`
+        description: `Add annotation for tag #${tag} on milestone ${milestoneNumber || nid}`
       });
       // Link the two operations so they can be reviewed together
       patchOp.linkedOpId = noteOp.id;
@@ -1273,7 +1271,7 @@ export function registerTools(server, crmClient) {
           opportunityName,
         },
         taggerId,
-        tag: normalizedTag,
+        tag,
         message: `Staged ${patchOp.id} + ${noteOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
       });
     }
@@ -1294,8 +1292,6 @@ export function registerTools(server, crmClient) {
       if (!tag || !TAG_REGEX.test(tag)) return error('Invalid tag: must be 2-50 characters, alphanumeric and hyphens only');
       if (!reason || !reason.trim()) return error('reason is required');
 
-      const normalizedTag = tag.toLowerCase();
-
       // Fetch milestone record
       const fullRecord = await crmClient.request(`msp_engagementmilestones(${nid})`, {
         query: { $select: MILESTONE_SELECT }
@@ -1310,10 +1306,10 @@ export function registerTools(server, crmClient) {
       const milestoneOppId = record._msp_opportunityid_value || null;
       const opportunityName = fv(record, '_msp_opportunityid_value') || null;
 
-      // Verify the tag exists on the milestone
-      const tagPattern = new RegExp(`\\s*#${normalizedTag.replace(/-/g, '\\-')}`, 'i');
+      // Verify the tag exists on the milestone (case-insensitive)
+      const tagPattern = new RegExp(`\\s*#${tag.replace(/-/g, '\\-')}`, 'i');
       if (!tagPattern.test(currentName)) {
-        return error(`Milestone does not have tag #${normalizedTag}`);
+        return error(`Milestone does not have tag #${tag}`);
       }
 
       const newName = currentName.replace(tagPattern, '').trim();
@@ -1322,7 +1318,7 @@ export function registerTools(server, crmClient) {
       const whoAmI = await crmClient.request('WhoAmI');
       const removerId = whoAmI.ok ? normalizeGuid(whoAmI.data?.UserId || '') : 'unknown';
 
-      const humanDesc = `Remove tag #${normalizedTag} from milestone ${milestoneNumber || nid}` +
+      const humanDesc = `Remove tag #${tag} from milestone ${milestoneNumber || nid}` +
         (opportunityName ? ` on "${opportunityName}"` : '');
 
       const queue = getApprovalQueue();
@@ -1349,12 +1345,12 @@ export function registerTools(server, crmClient) {
         entitySet: 'annotations',
         method: 'POST',
         payload: {
-          subject: `Tag #${normalizedTag} removed`,
-          notetext: `Tag #${normalizedTag} removed by ${removerId}.\n\nReason: ${reason.trim()}`,
+          subject: `Tag #${tag} removed`,
+          notetext: `Tag #${tag} removed by ${removerId}.\n\nReason: ${reason.trim()}`,
           'objectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
         },
         beforeState: null,
-        description: `Add annotation for tag #${normalizedTag} removal on milestone ${milestoneNumber || nid}`
+        description: `Add annotation for tag #${tag} removal on milestone ${milestoneNumber || nid}`
       });
       patchOp.linkedOpId = noteOp.id;
       noteOp.linkedOpId = patchOp.id;
@@ -1372,7 +1368,7 @@ export function registerTools(server, crmClient) {
           opportunityName,
         },
         removerId,
-        tag: normalizedTag,
+        tag,
         message: `Staged ${patchOp.id} + ${noteOp.id}: ${humanDesc}. Approve via execute_operation or execute_all.`
       });
     }
