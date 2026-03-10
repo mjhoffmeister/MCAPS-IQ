@@ -116,6 +116,14 @@ Used for deal team / sales team membership on opportunities. The `manage_deal_te
 | connectionroleid | Uniqueidentifier | Primary key |
 | name | String | Role name (e.g. "Delivery Professional", "Sales Team Member") |
 
+### msp_workloads (logical name: msp_workload)
+| Property | Type | Description |
+|---|---|---|
+| msp_workloadid | Uniqueidentifier | Primary key |
+| msp_name | String | Workload name |
+
+> **Note**: `msp_workloads` does **not** have `_msp_opportunityid_value`. You cannot filter workloads by opportunity. To find the workload GUID for an opportunity, query `msp_engagementmilestones` filtered by `_msp_opportunityid_value` and read `_msp_workloadlkid_value` from the results.
+
 ## Milestone Naming Convention
 
 All milestones **must** follow this naming format:
@@ -153,6 +161,8 @@ When renaming milestones, use `update_milestone` with the `name` field set to th
 | `msp_forecastedconsumptionrecurring` | 400 — not a valid property | Does not exist on `msp_engagementmilestone` |
 | `msp_committedconsumptionrecurring` | 400 — not a valid property | Does not exist on `msp_engagementmilestone` |
 | `msp_estimatedcompletiondate` | 400 — not a valid property | Does not exist on `msp_engagementmilestone`; use `msp_milestonedate` instead |
+| `_parentaccountid_value` | 400 — not a valid property | Does not exist on `msp_engagementmilestone`; lives on `opportunity` — join via `_msp_opportunityid_value` instead |
+| `_msp_opportunityid_value` on `msp_workload` | 400 — not a valid property | Does not exist on `msp_workload`; workloads are not linked to opportunities — query `msp_engagementmilestones` by `_msp_opportunityid_value` and read `_msp_workloadlkid_value` instead |
 
 ## OData Navigation Properties for @odata.bind (Writes)
 
@@ -174,6 +184,7 @@ When creating/updating records with lookup fields, use the **navigation property
 - ❌ `taskid` → ✅ `activityid` (tasks use activity primary key)
 - ❌ `msp_engagementmilestone` as entity set → ✅ `msp_engagementmilestones` (plural)
 - ❌ `msp_estimatedcompletiondate` on milestone → ✅ `msp_milestonedate` (correct date field)
+- ❌ `_msp_opportunityid_value` on `msp_workloads` → ✅ query `msp_engagementmilestones` by `_msp_opportunityid_value`, read `_msp_workloadlkid_value`
 
 ## Milestone Status Codes
 
@@ -199,6 +210,82 @@ When creating/updating records with lookup fields, use the **navigation property
 | Label | Value |
 |-------|-------|
 | POC/Pilot | `861980000` |
+
+## Workload Type Codes (`msp_milestoneworkload`)
+
+**Required** for milestone creation. All four values are known — no need to call `get_milestone_field_options`.
+
+| Label | Value |
+|-------|-------|
+| Azure | `861980000` |
+| Dynamics 365 | `861980001` |
+| Security | `861980002` |
+| Modern Work | `861980003` |
+
+## Delivered By Codes (`msp_deliveryspecifiedfield`)
+
+**Required** for milestone creation. All four values are known — no need to call `get_milestone_field_options`.
+
+| Label | Value |
+|-------|-------|
+| Customer | `606820000` |
+| Partner | `606820001` |
+| ISD | `606820002` |
+| Microsoft Support | `606820003` |
+
+## Preferred Azure Region Codes (`msp_milestonepreferredazureregion`)
+
+**Required** for milestone creation. The full list has ~75 options. Common values are listed below. If the user's region is not listed here, call `get_milestone_field_options(field: "preferredAzureRegion")` to retrieve the complete list from live metadata.
+
+| Label | Value |
+|-------|-------|
+| West Europe - Amsterdam | `861980001` |
+| East US - Blue Ridge | `861980005` |
+| East US 2 - Boydton | `861980006` |
+| Central US - Des Moines | `861980018` |
+| North Europe - Dublin | `861980022` |
+| West US 3 - Phoenix | `861980036` |
+| West US 2 - Quincy | `861980040` |
+| Southeast Asia - Singapore | `861980046` |
+| None | `861980076` |
+
+## Azure Capacity Type Codes (`msp_milestoneazurecapacitytype`)
+
+**Required** for milestone creation. This is a **MultiSelectPicklist** — pass values as a comma-separated string of codes (e.g. `"861980081,861980065"`). The full list has ~65 options. Common values are listed below. If the user's capacity type is not listed here, call `get_milestone_field_options(field: "azureCapacityType")` to retrieve the complete list from live metadata.
+
+| Label | Value |
+|-------|-------|
+| None | `861980000` |
+| Other | `861980032` |
+| Av2/Dv2/Dv3/Ev3/Dsv3/Esv3 (Intel) (Cores) | `861980037` |
+| Azure SQL Database (Cores or DTUs) | `861980065` |
+| Nd H100 V5 (Cores) (Future) | `861980080` |
+| Azure OpenAI Service | `861980081` |
+
+## Task Category Codes (`msp_taskcategory`)
+
+Used when creating tasks via `create_task`.
+
+| Label | Value |
+|-------|-------|
+| Workshop | `861980001` |
+| Demo | `861980002` |
+| Architecture Design Session | `861980004` |
+| PoC/Pilot | `861980005` |
+| Technical Close/Win Plan | `606820005` |
+| Blocker Escalation | `861980006` |
+| Consumption Plan | `861980007` |
+| Briefing | `861980008` |
+
+## Milestone Picklist Resolution Procedure
+
+When creating or updating milestones, the agent **MUST** map picklist fields to valid numeric codes. Follow these steps:
+
+1. **Check embedded tables first** — for Workload Type, Delivered By, Milestone Status, Commitment Recommendation, Milestone Category, and Task Category, use the tables above directly.
+2. **Check common values for large picklists** — for Preferred Azure Region (9 common values) and Azure Capacity Type (6 common values), check the tables above.
+3. **Call `get_milestone_field_options`** if the user's value is not found in the common tables. Accepted `field` values: `"workloadType"`, `"deliveredBy"`, `"preferredAzureRegion"`, `"azureCapacityType"`.
+4. **Never guess codes.** If no match is found after querying metadata, ask the user to verify.
+5. For `create_milestone`, all four milestone-view fields are **mandatory**: `workloadType`, `deliveredBy`, `preferredAzureRegion`, `azureCapacityType`.
 
 ## Filtering Milestones via `crm_query`
 
