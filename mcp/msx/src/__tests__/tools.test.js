@@ -1458,7 +1458,7 @@ describe('registerTools', () => {
 
     it('rejects invalid tag format', async () => {
       const result = await callTool(server, 'tag_milestone', {
-        milestoneId: MILESTONE_GUID,
+        milestoneIds: [MILESTONE_GUID],
         tag: 'a',
         reason: 'Too short'
       });
@@ -1468,7 +1468,7 @@ describe('registerTools', () => {
 
     it('rejects tag with special characters', async () => {
       const result = await callTool(server, 'tag_milestone', {
-        milestoneId: MILESTONE_GUID,
+        milestoneIds: [MILESTONE_GUID],
         tag: 'bad tag!',
         reason: 'Has spaces and special chars'
       });
@@ -1478,7 +1478,7 @@ describe('registerTools', () => {
 
     it('rejects empty reason', async () => {
       const result = await callTool(server, 'tag_milestone', {
-        milestoneId: MILESTONE_GUID,
+        milestoneIds: [MILESTONE_GUID],
         tag: 'at-risk',
         reason: ''
       });
@@ -1496,7 +1496,7 @@ describe('registerTools', () => {
       });
 
       const result = await callTool(server, 'tag_milestone', {
-        milestoneId: MILESTONE_GUID,
+        milestoneIds: [MILESTONE_GUID],
         tag: 'at-risk',
         reason: 'Already tagged'
       });
@@ -1514,7 +1514,7 @@ describe('registerTools', () => {
       });
 
       const result = await callTool(server, 'tag_milestone', {
-        milestoneId: MILESTONE_GUID,
+        milestoneIds: [MILESTONE_GUID],
         tag: 'at-risk',
         reason: 'Customer delayed response'
       });
@@ -1536,7 +1536,7 @@ describe('registerTools', () => {
       });
 
       const result = await callTool(server, 'tag_milestone', {
-        milestoneId: MILESTONE_GUID,
+        milestoneIds: [MILESTONE_GUID],
         tag: 'AppMod',
         reason: 'Testing case preservation'
       });

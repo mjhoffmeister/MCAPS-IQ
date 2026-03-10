@@ -1181,18 +1181,17 @@ export function registerTools(server, crmClient) {
     'tag_milestone',
     'Tag one or more engagement milestones by appending #tag-name to names and adding forecast comments with the reason. Accepts a single milestoneId or an array of milestoneIds for batch tagging. Does NOT require ownership — any authenticated user can tag. Tags are alphanumeric with optional hyphens (2-50 chars).',
     {
-      milestoneId: z.string().optional().describe('Single engagement milestone GUID (use this OR milestoneIds)'),
-      milestoneIds: z.array(z.string()).optional().describe('Array of engagement milestone GUIDs for batch tagging'),
+      milestoneIds: z.array(z.string()).describe('Array of engagement milestone GUIDs to tag (supports single or batch)'),
       tag: z.string().describe('Tag name (alphanumeric + hyphens, e.g. "AppMod")'),
       reason: z.string().describe('Why this tag is being applied')
     },
-    async ({ milestoneId, milestoneIds, tag, reason }) => {
+    async ({ milestoneIds, tag, reason }) => {
       if (!tag || !TAG_REGEX.test(tag)) return error('Invalid tag: must be 2-50 characters, alphanumeric and hyphens only (e.g. "at-risk-review")');
       if (!reason || !reason.trim()) return error('reason is required');
 
       // Resolve to array of IDs
-      const ids = milestoneIds || (milestoneId ? [milestoneId] : []);
-      if (!ids.length) return error('Provide milestoneId or milestoneIds');
+      const ids = milestoneIds || [];
+      if (!ids.length) return error('Provide at least one milestone ID in milestoneIds');
       const normalizedIds = ids.map(normalizeGuid);
       const invalidIds = normalizedIds.filter(id => !isValidGuid(id));
       if (invalidIds.length) return error(`Invalid milestone GUIDs: ${invalidIds.join(', ')}`);
