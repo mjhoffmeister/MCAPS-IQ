@@ -18,9 +18,10 @@
             "type": "http",
             "url": "https://api.fabric.microsoft.com/v1/mcp/powerbi"
         },
+		
 		// Obsidian Intelligence Layer (OIL) — knowledge layer MCP server
 		// Subtree: mcp/oil (https://github.com/JinLee794/Obsidian-Intelligence-Layer)
-		// Setup: cd mcp/oil && npm install && npm run build
+		// Setup: npm install
 		// Vault path loaded from .env (created during `npm install` / `node scripts/init.js`).
 		// If not configured, workflows fall back to stateless CRM-only operation.
 		"oil": {

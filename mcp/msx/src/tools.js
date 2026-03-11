@@ -278,6 +278,62 @@ function buildMilestoneSummary(milestones, crmBaseUrl) {
   };
 }
 
+/**
+ * Triage format: classifies milestones into urgency buckets and strips
+ * verbose OData annotations for a compact, action-oriented response.
+ */
+function buildMilestoneTriage(milestones, crmBaseUrl) {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const soon = new Date(now);
+  soon.setDate(soon.getDate() + 14);
+  const soonStr = soon.toISOString().split('T')[0];
+
+  const buckets = { overdue: [], due_soon: [], blocked: [], on_track: [] };
+  const summary = { total: milestones.length, overdue: 0, due_soon: 0, blocked: 0, on_track: 0, byCommitment: { Committed: 0, Uncommitted: 0 } };
+
+  for (const m of milestones) {
+    const status = fv(m, 'msp_milestonestatus') || 'Unknown';
+    const date = m.msp_milestonedate || null;
+    const commitment = commitmentLabel(m);
+    summary.byCommitment[commitment] += 1;
+
+    const compact = {
+      id: m.msp_engagementmilestoneid,
+      number: m.msp_milestonenumber,
+      name: m.msp_name,
+      status,
+      commitment,
+      date,
+      opportunity: fv(m, '_msp_opportunityid_value'),
+      workload: fv(m, '_msp_workloadlkid_value'),
+      recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
+    };
+    if (m.tasks) compact.tasks = m.tasks;
+
+    if (status === 'Blocked' || status === 'At Risk') {
+      buckets.blocked.push(compact);
+      summary.blocked++;
+    } else if (date && date < todayStr) {
+      buckets.overdue.push(compact);
+      summary.overdue++;
+    } else if (date && date <= soonStr) {
+      buckets.due_soon.push(compact);
+      summary.due_soon++;
+    } else {
+      buckets.on_track.push(compact);
+      summary.on_track++;
+    }
+  }
+
+  // Sort each bucket by date ascending
+  for (const list of Object.values(buckets)) {
+    list.sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+  }
+
+  return { summary, ...buckets };
+}
+
 async function applyTaskFilter(crmClient, milestones, mode) {
   if (!milestones.length) return milestones;
   const msIds = milestones.map(m => m.msp_engagementmilestoneid).filter(Boolean);
@@ -475,7 +531,7 @@ export function registerTools(server, crmClient) {
   // ── get_milestones ──────────────────────────────────────────
   server.tool(
     'get_milestones',
-    'Get engagement milestones scoped by customer name, opportunity name/GUID, milestoneId, milestone number, or owner. Always requires a scoping parameter — never returns all milestones unscoped. Resolves customer/opportunity keywords to GUIDs internally — no need to call list_opportunities first. Supports batch opportunityIds, status/keyword filtering, task-presence filtering, and inline task embedding.',
+    'Get engagement milestones scoped by customer name, opportunity name/GUID, milestoneId, milestone number, or owner. Always requires a scoping parameter — never returns all milestones unscoped. Resolves customer/opportunity keywords to GUIDs internally — no need to call list_opportunities first. Supports batch opportunityIds, status/keyword filtering, task-presence filtering, and inline task embedding. When mine=true, only active milestones are returned by default (excludes Completed/Cancelled/Closed); pass statusFilter="all" to override. Use format="triage" for urgency-classified output (overdue, due_soon, blocked, on_track) — ideal for morning briefs and health reviews.',
     {
       customerKeyword: z.string().optional().describe('Customer name keyword — resolves accounts → opportunities → milestones in one call'),
       opportunityKeyword: z.string().optional().describe('Opportunity name keyword — resolves matching opportunities → milestones in one call'),
@@ -484,14 +540,19 @@ export function registerTools(server, crmClient) {
       milestoneNumber: z.string().optional().describe('Milestone number to search for, e.g. "7-123456789"'),
       milestoneId: z.string().optional().describe('Direct milestone GUID lookup'),
       ownerId: z.string().optional().describe('Owner system user GUID to list milestones for'),
-      mine: z.boolean().optional().describe('When explicitly set to true, returns milestones owned by the authenticated CRM user. Must be set explicitly — does NOT default to true. Prefer customerKeyword, opportunityKeyword, or opportunityId for narrower scoping.'),
+      mine: z.boolean().optional().describe('When explicitly set to true, returns milestones owned by the authenticated CRM user. Automatically filters to active milestones (excludes Completed/Cancelled/Closed) unless statusFilter="all" is passed. Must be set explicitly — does NOT default to true. Prefer customerKeyword, opportunityKeyword, or opportunityId for narrower scoping.'),
       statusFilter: z.enum(['active', 'all']).optional().describe('Filter by status: active = Not Started/On Track/Blocked/At Risk'),
       keyword: z.string().optional().describe('Case-insensitive keyword filter across milestone name, opportunity, and workload'),
-      format: z.enum(['full', 'summary']).optional().describe('Response format: full (default) or summary (grouped compact output)'),
+      format: z.enum(['full', 'summary', 'triage']).optional().describe('Response format: full (default), summary (grouped compact), or triage (urgency-classified: overdue / due_soon / blocked / on_track)'),
       taskFilter: z.enum(['all', 'with-tasks', 'without-tasks']).optional().describe('Filter milestones by task presence'),
       includeTasks: z.boolean().optional().describe('When true, embeds linked tasks inline on each milestone (avoids separate get_milestone_activities call). Default: false')
     },
     async ({ customerKeyword, opportunityKeyword, opportunityId, opportunityIds, milestoneNumber, milestoneId, ownerId, mine, statusFilter, keyword, format, taskFilter: taskFilterParam, includeTasks }) => {
+      // When mine=true, default to active milestones only (skip Completed/Cancelled/Closed)
+      if (mine === true && statusFilter === undefined) {
+        statusFilter = 'active';
+      }
+
       // Direct GUID lookup
       if (milestoneId) {
         const nid = normalizeGuid(milestoneId);
@@ -600,6 +661,7 @@ export function registerTools(server, crmClient) {
           milestones = await embedTasksOnMilestones(crmClient, milestones);
         }
         if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
+        if (format === 'triage') return text(buildMilestoneTriage(milestones, getCrmBase()));
         return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
       } else if (opportunityId) {
         const nid = normalizeGuid(opportunityId);
@@ -645,6 +707,7 @@ export function registerTools(server, crmClient) {
         milestones = await embedTasksOnMilestones(crmClient, milestones);
       }
       if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
+      if (format === 'triage') return text(buildMilestoneTriage(milestones, getCrmBase()));
       return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
     }
   );

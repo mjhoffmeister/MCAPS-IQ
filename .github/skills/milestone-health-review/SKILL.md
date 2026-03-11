@@ -22,7 +22,7 @@ Produces a structured health report for committed milestones within CSAM scope, 
 
 1. Call `msx-crm:crm_auth_status`.
 2. Call `msx-crm:get_my_active_opportunities` — single call for all active opportunities.
-3. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 2), `statusFilter: 'active'`, `format: 'summary'`, and `includeTasks: true` — one call returns all milestones with inline tasks. If scoped to a single customer, use `customerKeyword` instead.
+3. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 2), `statusFilter: 'active'`, `format: 'triage'`, and `includeTasks: true` — one call returns all milestones pre-classified into urgency buckets (overdue, due_soon, blocked, on_track) with inline tasks. If scoped to a single customer, use `customerKeyword` instead.
 4. Classify health state per milestone.
 6. Generate dry-run corrections:
    - `msx-crm:update_milestone` for date/status/comments

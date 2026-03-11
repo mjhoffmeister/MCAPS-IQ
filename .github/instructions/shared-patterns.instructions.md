@@ -98,6 +98,8 @@ These chains are pre-validated. When a prompt matches a chain pattern, load and 
 | Account swarming | `account-landscape-awareness` → `account-structure-diagram` → `pipeline-hygiene-triage` | "what else is happening", "swarm opportunities", "full account view", "who else is working" |
 | Unified investment scan | `account-landscape-awareness` → `unified-constraint-check` → `pipeline-qualification` | "EDE gaps", "Unified upsell", "package coverage", "where should we invest" |
 | Morning brief | `morning-brief` (parallel: vault + CRM + WorkIQ) → `pipeline-hygiene-triage` (optional drill-down) | "morning brief", "start my day", "catch me up", "daily dashboard" |
+| Proof cost modeling | `proof-plan-orchestration` → `azure-pricing-model` → `processing-spreadsheets` | "proof cost", "how much will this cost", "Azure pricing for POC" |
+| Solution cost proposal | `azure-pricing-model` → `processing-spreadsheets` → `value-realization-pack` | "cost model", "Azure pricing spreadsheet", "pricing document", "TCO comparison" |
 
 ## Connect Hook Capture (Post-Action)
 
