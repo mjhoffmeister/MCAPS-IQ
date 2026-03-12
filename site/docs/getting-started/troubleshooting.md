@@ -191,4 +191,4 @@ Can't get things running? This page covers every common issue, organized by symp
 
 1. Run the full diagnostic: `npm run check`
 2. Check the [FAQ](../faq/index.md) for more answers
-3. Open an issue: [GitHub Issues](https://github.com/JinLee794/MCAPS-IQ/issues)
+3. Open an issue: [GitHub Issues](https://github.com/microsoft/MCAPS-IQ/issues)

@@ -32,7 +32,7 @@ You (Copilot Chat)
 | `.github/prompts/`                | Reusable prompt templates (slash commands in VS Code; copyable prompts elsewhere)                                                      | **Yes** — create workflows you repeat often |
 | `.vscode/mcp.json`                | MCP server definitions (CRM, WorkIQ, Power BI, Obsidian)                                                                              | **Yes** — add/remove data sources           |
 | `mcp/msx/`                        | MSX CRM MCP server *(subtree: [microsoft/msx-copilot-mcp](https://github.com/microsoft/msx-copilot-mcp))*                                  | Optional — works out of the box                   |
-| `mcp/oil/`                        | Obsidian Intelligence Layer *(subtree: [JinLee794/Obsidian-Intelligence-Layer](https://github.com/JinLee794/Obsidian-Intelligence-Layer))* | Optional — enables persistent vault memory        |
+| `mcp/oil/`                        | Obsidian Intelligence Layer *(subtree: [microsoft/Obsidian-Intelligence-Layer](https://github.com/microsoft/Obsidian-Intelligence-Layer))* | Optional — enables persistent vault memory        |
 | `docs/`                           | Architecture docs and supporting material                                                                                             | Reference only                                     |
 
 ---

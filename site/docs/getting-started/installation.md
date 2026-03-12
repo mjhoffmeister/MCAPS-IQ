@@ -22,7 +22,7 @@ Three commands and you're done.
 ## Step 1: Clone the Repo
 
 ```bash
-git clone https://github.com/JinLee794/mcaps-iq.git
+git clone https://github.com/microsoft/mcaps-iq.git
 cd mcaps-iq
 ```
 

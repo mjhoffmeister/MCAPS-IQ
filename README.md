@@ -30,7 +30,7 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 ### Step 1: Clone and install
 
 ```bash
-git clone https://github.com/JinLee794/mcaps-iq.git
+git clone https://github.com/microsoft/mcaps-iq.git
 cd mcaps-iq
 npm install
 ```
