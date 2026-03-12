@@ -42,7 +42,15 @@ Before calling any CRM read tool that may return large result sets (especially `
 - If a requested action conflicts with the selected role boundary, call out the conflict and propose the correct owner/route.
 
 ## 3) Mandatory Plan Mode for Write-Intent Actions
-Before calling any write-intent tool (`create_task`, `update_task`, `close_task`, `update_milestone`), always run a confirmation step.
+Before calling any write-intent tool (`create_task`, `update_task`, `close_task`, `create_milestone`, `update_milestone`), always run a confirmation step.
+
+### 3a) Picklist Field Mapping (Required for `create_milestone` and `update_milestone`)
+Before building the confirmation packet for milestone create/update operations:
+1. **Map all picklist fields** to numeric codes using the reference tables in `crm-entity-schema.instructions.md` § Workload Type / Delivered By / Preferred Azure Region / Azure Capacity Type.
+2. For `create_milestone`, all four milestone-view fields are **mandatory** — `workloadType`, `deliveredBy`, `preferredAzureRegion`, `azureCapacityType`. If the user has not specified a value, ask for it (present the available options).
+3. If the user's value does not match any entry in the embedded common-values tables, call `get_milestone_field_options({ field: "..." })` to retrieve the full option list from live Dynamics 365 metadata.
+4. **Never guess a numeric code.** If no match is found after querying metadata, ask the user to verify.
+5. Show the resolved human-readable label alongside the numeric code in the confirmation packet (e.g. `workloadType: Azure (861980000)`).
 
 ### Required confirmation packet (must be shown to user)
 - Role being applied (SE/CSA/CSAM/Specialist)
@@ -50,7 +58,7 @@ Before calling any write-intent tool (`create_task`, `update_task`, `close_task`
 - Opportunity name + ID
 - Milestone/task name + ID
 - Current values relevant to the change
-- Proposed new values
+- Proposed new values (with picklist labels resolved to "Label (code)" format)
 - Why the change is needed (business intent)
 - Expected impact and any risk
 

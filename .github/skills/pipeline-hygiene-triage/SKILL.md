@@ -49,4 +49,4 @@ Detects and prioritizes pipeline hygiene exceptions across active Stage 2–3 op
 - `proposed_field_updates`: dry-run payloads for corrections
 - `escalation_path`: who to engage (SE, CSA, CSAM, partner) per exception
 - `next_action`: "Pipeline reviewed. CSA/CSAM should run `commit-gate-enforcement` for milestones approaching commitment — recommend engaging the CSU team."
-- `connect_hook_hint`: Circle(s): Customer/Business, Team/Org — "Pipeline hygiene triage across {n} opportunities: flagged {exceptions} exceptions, proposed {fixes} field corrections for forecast accuracy"
+- `connect_hook_hint`: Impact Area(s): Business Impact, Culture & Collaboration — "Pipeline hygiene triage across {n} opportunities: flagged {exceptions} exceptions, proposed {fixes} field corrections for forecast accuracy"

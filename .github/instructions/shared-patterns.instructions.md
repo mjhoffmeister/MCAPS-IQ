@@ -48,6 +48,7 @@ Use `ask_work_iq` when evidence lives in M365 rather than CRM:
 - **Sources**: Teams chats/channels, meeting transcripts/notes, Outlook mail/calendar, SharePoint/OneDrive docs.
 - **Source separation**: CRM = system-of-record status; WorkIQ = communication and delivery evidence.
 - **Scoping**: Always include explicit date range, customer/people, and source types. See `workiq-query-scoping/SKILL.md` for full playbook.
+- **Personal attribution**: When gathering evidence for Connect or impact reporting, always include the authenticated user's name/alias (from `crm_whoami`) as a required filter. Account-level outcomes are not personal contributions unless the user appears in the evidence thread. See `workiq-query-scoping/SKILL.md` § Personal Attribution Filter.
 
 ## VAULT-PROMOTE (Post-Workflow)
 
@@ -96,10 +97,13 @@ These chains are pre-validated. When a prompt matches a chain pattern, load and 
 | SE morning prep | `task-hygiene-flow` → `execution-monitoring` → `unified-constraint-check` | "SE daily check", "task hygiene + blockers" |
 | Account swarming | `account-landscape-awareness` → `account-structure-diagram` → `pipeline-hygiene-triage` | "what else is happening", "swarm opportunities", "full account view", "who else is working" |
 | Unified investment scan | `account-landscape-awareness` → `unified-constraint-check` → `pipeline-qualification` | "EDE gaps", "Unified upsell", "package coverage", "where should we invest" |
+| Morning brief | `morning-brief` (parallel: vault + CRM + WorkIQ) → `pipeline-hygiene-triage` (optional drill-down) | "morning brief", "start my day", "catch me up", "daily dashboard" |
+| Proof cost modeling | `proof-plan-orchestration` → `azure-pricing-model` → `processing-spreadsheets` | "proof cost", "how much will this cost", "Azure pricing for POC" |
+| Solution cost proposal | `azure-pricing-model` → `processing-spreadsheets` → `value-realization-pack` | "cost model", "Azure pricing spreadsheet", "pricing document", "TCO comparison" |
 
 ## Connect Hook Capture (Post-Action)
 
-After completing any skill that produces measurable outcomes, the agent **passively evaluates** whether the work constitutes impact evidence worth capturing for Microsoft Connect performance reviews.
+After completing any skill that produces measurable outcomes, the agent **passively evaluates** whether the work constitutes impact evidence worth capturing for Microsoft Connects performance reviews.
 
 ### When to fire
 
@@ -110,15 +114,15 @@ Fire `oil:capture_connect_hook` when a completed skill produced at least one of:
 
 Do **not** fire for: pure read/discovery actions, failed scoping attempts, or skills that produced no actionable output.
 
-### Circle classification
+### Impact area classification
 
-| Circle | Skill output signals |
+| Impact Area | Skill output signals |
 |---|---|
-| **Individual** | Personal learning, new capability exercised, certification prep, first-time skill execution |
-| **Team/Org** | Process improvement, tooling that scales beyond one person, cross-role coordination, mentoring |
-| **Customer/Business** | Direct customer deliverable, revenue-impacting action, adoption lift, risk mitigation, milestone progression |
+| **Customer Impact** | Direct customer deliverable, adoption lift, milestone delivery, risk mitigation, solution readiness |
+| **Business Impact** | Revenue influenced, pipeline progression, forecast accuracy, deal velocity, cost avoidance |
+| **Culture & Collaboration** | Process improvement, tooling that scales beyond one person, cross-role coordination, mentoring, knowledge sharing, inclusive practices |
 
-Most skill completions map to **Customer/Business**. Add **Team/Org** when the action created reusable process. Add **Individual** when it stretched a new capability.
+Most skill completions map to **Customer Impact**. Add **Business Impact** when the action influenced pipeline or revenue. Add **Culture & Collaboration** when the action created reusable process, enabled cross-team work, or involved mentoring.
 
 ### Capture pattern
 
@@ -129,7 +133,7 @@ After the skill's output is delivered, if a hook is warranted:
 3. Call `oil:capture_connect_hook({ customer, hook })`. This is auto-confirmed — no human gate.
 4. If OIL is unavailable, skip silently. The hook is opportunistic, not blocking.
 
-Skills may include a `connect_hook_hint` in their Output Schema to pre-classify the likely circle(s) and hook template. When present, the agent uses the hint to streamline capture. When absent, the agent applies the classification table above.
+Skills may include a `connect_hook_hint` in their Output Schema to pre-classify the likely impact area(s) and hook template. When present, the agent uses the hint to streamline capture. When absent, the agent applies the classification table above.
 
 ## Common Output Conventions
 
@@ -137,4 +141,4 @@ Skills may include a `connect_hook_hint` in their Output Schema to pre-classify 
 - Every stage-bound skill output includes `next_action` naming the recommended next skill.
 - Cross-role `next_action` must name the owning role and recommend engagement (no auto-invoke).
 - Risk findings always include: one-sentence risk, evidence source, role to act, minimum intervention.
-- `connect_hook_hint` (optional): pre-classified circle(s) and one-line hook template for passive Connect evidence capture.
+- `connect_hook_hint` (optional): pre-classified Connects impact area(s) and one-line hook template for passive evidence capture.

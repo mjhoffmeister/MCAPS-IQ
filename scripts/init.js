@@ -14,11 +14,13 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
 
 // ── repo root (scripts/ lives one level below) ──────────────────────
-const ROOT = resolve(import.meta.dirname, "..");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(__dirname, "..");
 
 // ── MCP server definitions ──────────────────────────────────────────
 // Each entry describes an MCP sub-project and the commands needed to
@@ -53,7 +55,7 @@ function run(cmd, cwd) {
   execSync(cmd, {
     cwd,
     stdio: "inherit",
-    shell: isWindows ? "cmd.exe" : "/bin/sh",
+    shell: isWindows ? true : "/bin/sh",
   });
 }
 
@@ -194,6 +196,28 @@ function checkOnly() {
 }
 
 // ── global alias registration ───────────────────────────────────────
+function printAliasFallback() {
+  const binPath = join(ROOT, "bin", "mcaps.js");
+  if (isWindows) {
+    const escaped = binPath.replace(/\\/g, "\\\\");
+    console.log();
+    warn("  Alternatives for PowerShell:");
+    warn("");
+    warn("  Option 1 — Add a function to your PowerShell profile:");
+    warn(`    Add-Content $PROFILE 'function mcaps { node "${escaped}" @args }'`);
+    warn("    . $PROFILE   # reload your profile");
+    warn("");
+    warn("  Option 2 — Use from the repo directory:");
+    warn("    node bin\\mcaps.js");
+    warn("");
+    warn("  Option 3 — Retry from an elevated terminal:");
+    warn("    npm link --ignore-scripts");
+  } else {
+    warn("  Try: sudo npm link --ignore-scripts");
+    warn("  Or with nvm/fnm (no sudo): npm link --ignore-scripts");
+  }
+}
+
 function registerAlias() {
   heading("Registering 'mcaps' CLI alias");
 
@@ -208,18 +232,51 @@ function registerAlias() {
   try {
     // --ignore-scripts prevents recursive postinstall
     run("npm link --ignore-scripts", ROOT);
-    ok("'mcaps' is now available globally — try it from any directory!");
-    return true;
   } catch {
     warn("Could not register global alias automatically.");
-    if (isWindows) {
-      warn("  Try running from an Administrator terminal: npm link");
-    } else {
-      warn("  Try: sudo npm link --ignore-scripts");
-      warn("  Or with nvm/fnm (no sudo): npm link --ignore-scripts");
-    }
+    printAliasFallback();
     return false;
   }
+
+  // Verify the command is actually reachable after linking
+  const whichCmd = isWindows ? "where mcaps" : "which mcaps";
+  const found = tryRun(whichCmd);
+
+  if (found) {
+    ok("'mcaps' is now available globally — try it from any directory!");
+    return true;
+  }
+
+  // npm link appeared to succeed but the command isn't callable
+  warn("npm link succeeded, but 'mcaps' was not found in your PATH.");
+
+  if (isWindows) {
+    const npmPrefix = tryRun("npm config get prefix");
+    if (npmPrefix) {
+      warn(`  npm global bin directory: ${npmPrefix}`);
+      warn("");
+      warn("  Add it to your PATH for this session:");
+      warn(`    $env:PATH += ";${npmPrefix}"`);
+      warn("");
+      warn("  Or make it permanent:");
+      warn(`    [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";${npmPrefix}", "User")`);
+    }
+
+    // Check PowerShell execution policy (common blocker for .ps1 shims)
+    const policy = tryRun('powershell -NoProfile -Command "Get-ExecutionPolicy"');
+    if (policy && policy.toLowerCase() === "restricted") {
+      warn("");
+      warn("  PowerShell execution policy is 'Restricted' — .ps1 scripts are blocked.");
+      warn("  Fix:  Set-ExecutionPolicy RemoteSigned -Scope CurrentUser");
+    }
+
+    printAliasFallback();
+  } else {
+    warn("  Check: npm config get prefix");
+    warn("  Make sure <prefix>/bin is in your PATH.");
+  }
+
+  return false;
 }
 
 // ── .env configuration ──────────────────────────────────────────────
@@ -294,6 +351,33 @@ if (checkMode) {
     console.log("\nFix prerequisite issues above, then re-run this script.");
     process.exit(1);
   }
+
+  // ── risk acknowledgement ────────────────────────────────────────
+  heading("⚠  Important — Please Read");
+  console.log(`
+  This toolkit uses agentic AI (GitHub Copilot + MCP servers) to read
+  and write CRM records, query M365 data, and suggest strategic actions.
+
+  AI models can produce incorrect, incomplete, or misleading outputs.
+  YOU are responsible for reviewing and validating every action.
+
+  By proceeding you acknowledge that:
+    • All AI-generated outputs are drafts requiring human judgment.
+    • Write operations require your explicit confirmation before executing.
+    • You will not rely on AI outputs without independent verification.
+`);
+
+  if (process.stdin.isTTY) {
+    const consent = await ask("  Type 'yes' to accept and continue installation: ");
+    if (consent.toLowerCase() !== "yes") {
+      console.log("\n  Setup cancelled. Re-run when you're ready.\n");
+      process.exit(0);
+    }
+  } else {
+    warn("Non-interactive shell — proceeding with installation.");
+    warn("By using this toolkit you accept the risks described above.");
+  }
+
   const serversOk = initServers();
   if (serversOk) {
     await configureEnv();

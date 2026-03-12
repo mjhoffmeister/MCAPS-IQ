@@ -45,7 +45,7 @@ Ensures adoption and usage milestones have active owner-task coverage, measurabl
 - `remediation_queue`: proposed tasks for stakeholder coverage and consumption tracking
 - `dry_run_updates`: create/update/close task preview payloads
 - `next_action`: "Adoption reviewed. Run `value-realization-pack` to validate outcome measurement, then `expansion-signal-routing` for growth signals."
-- `connect_hook_hint`: Circle(s): Customer/Business — "Adoption review for {customer}: {healthy}/{total} milestones healthy, flagged {gaps} consumption gaps needing stakeholder intervention"
+- `connect_hook_hint`: Impact Area(s): Customer Impact — "Adoption review for {customer}: {healthy}/{total} milestones healthy, flagged {gaps} consumption gaps needing stakeholder intervention"
 
 ## Decision Logic
 

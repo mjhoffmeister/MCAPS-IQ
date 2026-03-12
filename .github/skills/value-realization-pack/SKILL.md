@@ -20,10 +20,12 @@ Validates that committed milestones have measurable outcome definitions, metric 
 
 ## Flow
 
+0. **Resolve authenticated identity (pre-hook gate)** — call `msx-crm:crm_whoami` to obtain the user's `systemuserid`, name, and alias. This identity is used in step 4b to verify personal attribution before any outcome is surfaced as Connect evidence.
 1. Call `msx-crm:crm_get_record` on opportunity for stage, success plan, and solution play.
 2. Call `msx-crm:get_milestones` with `opportunityId` — isolate value/adoption milestones from summary.
 3. Call `msx-crm:get_milestone_activities` for milestones lacking execution cadence evidence (targeted only).
 4. Evaluate value completeness per milestone (see below).
+   - **4b. Attribution cross-reference** — for each finding that could surface as Connect evidence, verify the authenticated user (from step 0) appears as owner (`_ownerid_value`), task assignee, activity participant, or named contributor in the evidence chain. Outcomes where ownership is ambiguous **must** be flagged `attribution: unverified` and excluded from automatic Connect hook capture.
 5. Generate dry-run corrections:
    - `msx-crm:update_milestone` for measurable comments/metric updates
    - `msx-crm:create_task` for missing CSAM/CSU coordination actions

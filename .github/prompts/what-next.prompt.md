@@ -16,15 +16,15 @@ I have a few minutes — what's the most valuable thing I can do right now?
 - Flag: any opp closing within 14 days missing required fields? Any Stage 2 deal idle > 7 days?
 
 ### Solution Engineer
-- `get_milestones({ mine: true })` scoped to active opps → any tasks due within 7 days?
+- `get_milestones({ mine: true, format: 'triage', includeTasks: true })` → pre-classified into overdue/due_soon/blocked/on_track.
 - Flag: overdue tasks, unassigned tasks, proofs approaching deadline.
 
 ### Cloud Solution Architect
-- Committed milestones → any with unresolved blockers or date drift?
+- `get_milestones({ mine: true, format: 'triage', includeTasks: true })` → focus on blocked/overdue buckets.
 - Flag: proofs concluding soon that need architecture review.
 
 ### CSAM
-- Committed milestones → any overdue or approaching governance?
+- `get_milestones({ mine: true, format: 'triage', includeTasks: true })` → focus on overdue and due_soon buckets.
 - Flag: milestones pending commit-gate flip, customers with zero touchpoints this week.
 
 3. **Recommend exactly 3 actions** — numbered, ordered by urgency:

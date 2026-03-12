@@ -61,6 +61,15 @@ If OIL available, cross-reference Pass 1 candidates with vault notes for the sam
 2. Entity resolution summary (resolved, unresolved)
 3. Final deliverable in requested shape, organized by customer
 
+## Personal Attribution Filter
+
+When collecting evidence for **Connect hooks** or **personal impact reporting**, apply this mandatory filter:
+
+1. **Resolve the authenticated user** — obtain name and alias via `msx-crm:crm_whoami`.
+2. **Include user identity as a required filter** — every WorkIQ retrieval prompt must include the user's name or alias as a search term or participant filter.
+3. **Account-level ≠ personal contribution** — outcomes visible at the account level (e.g., customer ACR growth, program consumption metrics, license counts) are **not** personal contributions unless the user's name appears in the evidence thread as sender, recipient, attendee, author, or named contributor.
+4. **Flag ambiguity** — if a result references the user's account or team but not the user individually, tag it `attribution: unverified` in the output and do not route it to Connect hook capture without explicit user confirmation.
+
 ## Safety
 - No content outside confirmed customer/entity boundaries.
 - State assumptions explicitly.

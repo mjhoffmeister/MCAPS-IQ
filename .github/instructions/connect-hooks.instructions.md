@@ -7,9 +7,10 @@ description: "Connect hook formatting + evidence schema, Obsidian vault routing 
 When writing Connect hooks:
 
 - Use the schema below for every hook entry.
-- Each hook must map to at least one of the **3 circles of impact**.
-- Include concrete evidence and a source pointer (PR / Issue / Doc / Thread).
+- Each hook must map to at least one **Connects impact area**.
+- Include concrete evidence and a source pointer (PR / Issue / Doc / Thread / MSX record / M365 artifact).
 - Keep each hook to **3–6 lines**.
+- Every hook must have a **verifiable claim** backed by at least one primary source. Reject vague hooks — require specifics.
 
 ## Storage Routing
 
@@ -24,26 +25,51 @@ Connect hooks follow the vault-first storage pattern defined in `.github/instruc
 
 ```yaml
 - Date:
-- Circle(s): Individual | Team/Org | Customer/Business
+- Impact Area(s): Customer Impact | Business Impact | Culture & Collaboration
 - Hook:
 - Evidence:
 - Source:
 - Next step:
 ```
 
-## Circle of Impact Definitions
+## Connects Impact Area Definitions
 
-| Circle | What counts |
+| Impact Area | What qualifies |
 |---|---|
-| **Individual** | Personal growth, skill development, learning, certifications |
-| **Team/Org** | Improving team processes, mentoring, tooling, documentation |
-| **Customer/Business** | Direct customer impact, revenue, adoption, satisfaction |
+| **Customer Impact** | Direct customer deliverable, adoption lift, milestone delivery, risk mitigation, solution readiness |
+| **Business Impact** | Revenue influenced, pipeline progression, forecast accuracy, deal velocity, cost avoidance |
+| **Culture & Collaboration** | Process improvement, tooling that scales, cross-team enablement, mentoring, knowledge sharing, inclusive practices |
+
+## Attribution Gate (Mandatory)
+
+Before writing any Connect hook, the agent **must** verify that the authenticated user has a demonstrable connection to the claimed impact:
+
+1. **Resolve identity** — call `msx-crm:crm_whoami` to obtain the user's CRM `systemuserid` and alias.
+2. **Check attribution** — the user must satisfy **at least one** of:
+   - **(a) CRM owner** — the user is the `_ownerid_value` on the milestone or opportunity being cited.
+   - **(b) Forecast participant** — the user's name or alias appears in the opportunity's forecast comments (`msp_forecastnotes`).
+   - **(c) WorkIQ evidence participant** — the user's name or alias appears in the M365 evidence thread (email sender/recipient, meeting attendee, chat participant) retrieved via `ask_work_iq`.
+3. **Fail-safe** — if attribution is inferred only from account-level activity (e.g., the user is on the account team but not named in any milestone, forecast, or communication evidence), the hook **must** be flagged:
+   ```yaml
+   - Evidence: "⚠️ Unverified — user not found in milestone/forecast/communication evidence. Confirm personal contribution before filing."
+   ```
+   Do **not** silently include account-level-only hooks as verified personal impact.
+
+## Evidence Qualification
+
+Only include evidence that meets **at least one** of:
+- **Quantifiable impact** — revenue influenced, risk reduced, time saved, adoption unblocked
+- **Decision-level influence** — architectural guidance, technical direction, tradeoff framing
+- **Cross-team or customer leadership** — orchestration, alignment, unblocker behavior
+- **Customer outcomes advanced** — milestone progression, solution readiness, delivery acceleration
+
+Exclude: pure status updates with no outcome, administrative actions without impact, duplicative chatter.
 
 ## Example
 
 ```yaml
 - Date: 2026-02-24
-- Circle(s): Team/Org, Customer/Business
+- Impact Area(s): Culture & Collaboration, Business Impact
 - Hook: Built MCP-based CRM tooling that reduced milestone hygiene prep from ~45 min to <5 min per account
 - Evidence: Weekly milestone review now automated; 3 CSAMs onboarded to the workflow
 - Source: PR #42, recipe weekly-milestone-hygiene.md

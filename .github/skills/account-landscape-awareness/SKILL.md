@@ -108,4 +108,4 @@ When no `customerKeyword` is provided, run Layers 1-2 across all accounts from `
   - If swarming opportunities found: "Review adjacent pipeline. Consider running `account-structure-diagram` for {customer} to visualize the full landscape."
   - If EDE gaps found: "Unified investment signal detected. **Specialist** should evaluate Unified add-on for {domain} coverage. Run `pipeline-qualification` to scope."
   - If dormant pipeline: "Run `pipeline-hygiene-triage` to assess stale opportunities on {account}."
-- `connect_hook_hint`: Circle(s): Team/Org, Customer/Business — "Surfaced {n} swarming opportunities and {m} EDE coverage gaps across {account_count} accounts — enabling cross-role collaboration and Unified investment targeting"
+- `connect_hook_hint`: Impact Area(s): Culture & Collaboration, Business Impact — "Surfaced {n} swarming opportunities and {m} EDE coverage gaps across {account_count} accounts — enabling cross-role collaboration and Unified investment targeting"

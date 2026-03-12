@@ -167,4 +167,4 @@ Use deterministic IDs derived from CRM entity IDs: `acc-{accountid}`, `opp-{oppo
 - `stage_distribution`: opportunity count per MCEM stage
 - `role_coverage`: deal team members mapped to their owned milestones
 - `next_action`: suggests follow-up skill based on findings — e.g., `pipeline-hygiene-triage` if stale items detected, `risk-surfacing` if At Risk milestones found, `milestone-health-review` for governance prep
-- `connect_hook_hint`: Circle(s): Customer/Business, Team/Org — "Generated account structure diagram for {customer}: {n} opportunities across Stages {stages}, {health_snapshot}"
+- `connect_hook_hint`: Impact Area(s): Customer Impact, Culture & Collaboration — "Generated account structure diagram for {customer}: {n} opportunities across Stages {stages}, {health_snapshot}"

@@ -5,7 +5,7 @@ applyTo: "mcp/msx/**"
 
 # CRM Query Strategy (Scope-Before-Retrieve)
 
-**Never call `msx-crm:get_milestones` with `mine: true` (or no filters) as the first action.** This returns all milestones and produces 500KB+ payloads. Always narrow scope before retrieval.
+**Never call `msx-crm:get_milestones` without a scoping parameter.** The tool now rejects unscoped calls — `mine` no longer defaults to `true`. Always provide at least one of: `customerKeyword`, `opportunityKeyword`, `opportunityId`, `opportunityIds`, `milestoneNumber`, `milestoneId`, `ownerId`, or explicit `mine: true`.
 
 ## Step 0 — VAULT-PREFETCH (mandatory when OIL is available)
 
@@ -41,6 +41,8 @@ Prefer composite tools over chaining primitives:
 
 Preferred tool for milestone queries needing filtering. See `crm-entity-schema.instructions.md` for full schema.
 
+**Guardrails**: `crm_query` enforces an entity allowlist and a 500-record pagination ceiling. Only entity sets in `ALLOWED_ENTITY_SETS` are permitted. Queries to unlisted entities are rejected with a descriptive error.
+
 - Entity set: `msp_engagementmilestones` (NOT `msp_milestones` or `msp_milestoneses`)
 - Use `$filter` for status, date range, opportunity, or owner
 - Use `$select` for only needed fields (avoid full-record payloads)
@@ -62,7 +64,7 @@ Preferred tool for milestone queries needing filtering. See `crm-entity-schema.i
 | `milestoneId` | string (GUID) | Direct milestone lookup |
 | `milestoneNumber` | string | e.g. "7-123456789" |
 | `ownerId` | string (GUID) | Filter by owner |
-| `mine` | boolean | Current user's milestones (default if no other filter) |
+| `mine` | boolean | Current user's milestones (**must be explicit** — no default) |
 | `statusFilter` | 'active' \| 'all' | Filter by status group |
 | `keyword` | string | Case-insensitive keyword filter |
 | `format` | 'full' \| 'summary' | Response format |
@@ -83,7 +85,8 @@ For "which milestones need tasks":
 
 | Pattern | Status |
 |---|---|
-| `get_milestones(mine: true)` → "which ones need attention?" | ❌ Unscoped |
+| `get_milestones(mine: true)` → "which ones need attention?" | ❌ Unscoped — use customerKeyword or opportunityId instead |
+| `get_milestones({})` or `get_milestones()` with no params | ❌ Rejected — scoping required |
 | `crm_query({ entitySet: "msp_milestones" })` | ❌ Wrong entity set |
 | `crm_query` with `msp_forecastedconsumptionrecurring` | ❌ Field doesn't exist |
 | `crm_query` with `msp_estimatedcompletiondate` | ❌ Use `msp_milestonedate` |

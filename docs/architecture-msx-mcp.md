@@ -143,6 +143,12 @@ Read tools call `crmClient.request(...)` or `crmClient.requestAllPages(...)`, wh
 - Execute GET with retry/timeout handling.
 - Return parsed JSON payload to MCP client.
 
+**Guardrails on generic read tools:**
+- `crm_query` and `crm_get_record` enforce an **entity allowlist** (`ALLOWED_ENTITY_SETS` in `src/tools.js`). Queries to unlisted entity sets are rejected.
+- `crm_query` auto-pagination is capped at **500 records** (`CRM_QUERY_MAX_RECORDS`). Responses include `truncated: true` when the ceiling is hit.
+- All invocations emit **structured NDJSON audit records** to stderr via `src/audit.js`.
+- Purpose-built tools (e.g., `get_milestones`, `list_opportunities`) bypass the allowlist because they use hard-coded entity paths and field selections.
+
 ```mermaid
 sequenceDiagram
   participant User
@@ -171,7 +177,7 @@ sequenceDiagram
 
 ### Primary Read Tools
 - `crm_auth_status`, `crm_whoami`
-- `crm_query`, `crm_get_record`
+- `crm_query` (entity-allowlisted, pagination-capped), `crm_get_record` (entity-allowlisted)
 - `list_accounts_by_tpid`, `list_opportunities`
 - `get_milestones`, `get_milestone_activities`
 - `get_task_status_options`
@@ -211,13 +217,29 @@ sequenceDiagram
 
 This is design guidance and not yet wired into `src/tools.js`.
 
+## Data Governance Controls
+
+| Control | Scope | Implementation |
+|---|---|---|
+| **Entity allowlist** | `crm_query`, `crm_get_record` | `ALLOWED_ENTITY_SETS` in `src/tools.js` — rejects unlisted entity sets. Covers: accounts, contacts, opportunities, milestones, deal teams, workloads, tasks, system users, currencies, connections, connection roles, process stages, and metadata. |
+| **Pagination ceiling** | `crm_query` | `CRM_QUERY_MAX_RECORDS` (500) — caps auto-pagination and `$top` |
+| **Audit logging** | `crm_query`, `crm_get_record` | NDJSON to stderr via `src/audit.js` — tool name, entity, params, record count, blocked status |
+| **Approval queue** | All write tools | Stage → Review → Execute with human-in-the-loop confirmation |
+| **Ownership verification** | `update_milestone` | Verifies caller owns the milestone or is on the deal team before staging |
+| **Identity verification** | `execute_operation` | Re-checks milestone number at execution time to prevent wrong-target writes |
+
+Purpose-built tools (`get_milestones`, `list_opportunities`, etc.) bypass the entity allowlist and pagination ceiling because they already constrain scope through hard-coded entity paths, field selections, and business-logic filters.
+
 ## Key Implementation Files
 
 ### MSX CRM Server (`mcp/msx/`)
 - `src/index.js` — server bootstrap and stdio transport.
-- `src/tools.js` — MCP tool contracts and dry-run update behavior.
+- `src/tools.js` — MCP tool contracts, entity allowlist (`ALLOWED_ENTITY_SETS`), pagination ceiling (`CRM_QUERY_MAX_RECORDS`), and approval queue integration.
 - `src/auth.js` — Azure CLI token acquisition and token metadata.
-- `src/crm.js` — OData request layer, retries, pagination.
+- `src/crm.js` — OData request layer, retries, pagination (with configurable `maxRecords` ceiling).
+- `src/validation.js` — GUID normalization, TPID validation, OData string sanitization.
+- `src/approval-queue.js` — EventEmitter-based staged write queue with TTL expiry.
+- `src/audit.js` — Structured NDJSON audit logger for tool invocations.
 
 ### OIL Server (`mcp/oil/`) — optional
 - `src/index.ts` — server bootstrap and stdio transport.

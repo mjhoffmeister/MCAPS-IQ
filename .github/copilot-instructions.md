@@ -21,6 +21,7 @@ At session start (or first account-team request), probe which mediums are querya
 | **CRM** | `crm_auth_status` or `crm_whoami` | No CRM reads/writes this session |
 | **Vault** | `get_vault_context()` via OIL (`oil` MCP) | Skip VAULT-PREFETCH; operate stateless |
 | **WorkIQ / M365** | `ask_work_iq` with a minimal scoped query | Communication gap detection limited |
+| **Power BI** | `ExecuteQuery` with `EVALUATE TOPN(1, 'Dim_Calendar')` via `powerbi-remote` | Skip PBI steps; note data unavailable |
 
 Cache probe results for the session. Two-medium answers are acceptable; single-medium must flag the gap. Never fabricate cross-medium insights from a single source.
 
@@ -56,6 +57,8 @@ Cache probe results for the session. Two-medium answers are acceptable; single-m
 
 **Connect Hooks**: Capture measurable impact evidence. See `.github/instructions/connect-hooks.instructions.md`.
 
+**Power BI**: Analytics medium for ACR telemetry, scorecards, and incentive baselines. See `.github/instructions/powerbi-mcp.instructions.md`. Prompts live in `.github/prompts/pbi-*.prompt.md`.
+
 ## Response Expectations
 
 - Keep outputs concise and action-oriented.
@@ -69,6 +72,8 @@ Cache probe results for the session. Two-medium answers are acceptable; single-m
 | **1** | `.github/instructions/*.instructions.md` | By `description` match or `applyTo` glob | ≤600 lines combined |
 | **2** | `.github/skills/{name}/SKILL.md` | By `description` match (full content injected when matched) | ≤500 lines per skill |
 | **3** | `.github/documents/` | Explicit tool read only | No auto-load |
+
+**Morning brief**: The `morning-brief` skill (`.github/skills/morning-brief/SKILL.md`) is a speed-optimized daily briefing that launches parallel vault, CRM, and WorkIQ retrieval. It serves as both a practical daily tool and a template for users to fork and customize. Trigger with: "morning brief", "start my day", "catch me up".
 
 **Skill loading**: Skills use the folder convention `.github/skills/{name}/SKILL.md` and are auto-loaded by VS Code / Copilot CLI when the user's prompt matches a skill's `description` keywords. Matched skills appear in context with their full content (Flow, Decision Logic, Output Schema). When a `next_action` or role card references a skill that was not auto-loaded, fall back to `read_file` at `.github/skills/{name}/SKILL.md`.
 

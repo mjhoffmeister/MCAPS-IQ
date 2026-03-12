@@ -157,6 +157,24 @@ function resolvePicklistLabel(options, value) {
   return match ? `${match.label} (${num})` : String(num);
 }
 
+/**
+ * Resolve a picklist input that may be a numeric code or a human-readable label.
+ * Returns the numeric code, or undefined if unresolvable.
+ */
+function resolveOptionValue(options, input) {
+  if (input === undefined || input === null) return undefined;
+  // Already a number — validate it exists
+  if (typeof input === 'number') {
+    return options.some(o => o.value === input) ? input : undefined;
+  }
+  // String: try numeric parse first
+  const asNum = Number(input);
+  if (!isNaN(asNum) && options.some(o => o.value === asNum)) return asNum;
+  // String label match (case-insensitive)
+  const match = options.find(o => o.label.toLowerCase() === String(input).toLowerCase().trim());
+  return match ? match.value : undefined;
+}
+
 /** Map of CRM payload keys to their picklist arrays for resolution. */
 const PICKLIST_MAP = {
   msp_milestoneworkload: WORKLOAD_TYPES,
@@ -209,6 +227,13 @@ function toIsoDate(value) {
   return date.toISOString().slice(0, 10);
 }
 
+/** Map task statusCode to the required statecode for Dynamics 365 state transitions. */
+function taskStateForStatus(statusCode) {
+  if ([5].includes(statusCode)) return 1;       // Completed
+  if ([6].includes(statusCode)) return 2;       // Cancelled
+  return 0;                                      // Open
+}
+
 function fv(record, field) {
   return record[`${field}@OData.Community.Display.V1.FormattedValue`] ?? null;
 }
@@ -251,6 +276,62 @@ function buildMilestoneSummary(milestones, crmBaseUrl) {
       recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
     }))
   };
+}
+
+/**
+ * Triage format: classifies milestones into urgency buckets and strips
+ * verbose OData annotations for a compact, action-oriented response.
+ */
+function buildMilestoneTriage(milestones, crmBaseUrl) {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const soon = new Date(now);
+  soon.setDate(soon.getDate() + 14);
+  const soonStr = soon.toISOString().split('T')[0];
+
+  const buckets = { overdue: [], due_soon: [], blocked: [], on_track: [] };
+  const summary = { total: milestones.length, overdue: 0, due_soon: 0, blocked: 0, on_track: 0, byCommitment: { Committed: 0, Uncommitted: 0 } };
+
+  for (const m of milestones) {
+    const status = fv(m, 'msp_milestonestatus') || 'Unknown';
+    const date = m.msp_milestonedate || null;
+    const commitment = commitmentLabel(m);
+    summary.byCommitment[commitment] += 1;
+
+    const compact = {
+      id: m.msp_engagementmilestoneid,
+      number: m.msp_milestonenumber,
+      name: m.msp_name,
+      status,
+      commitment,
+      date,
+      opportunity: fv(m, '_msp_opportunityid_value'),
+      workload: fv(m, '_msp_workloadlkid_value'),
+      recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
+    };
+    if (m.tasks) compact.tasks = m.tasks;
+
+    if (status === 'Blocked' || status === 'At Risk') {
+      buckets.blocked.push(compact);
+      summary.blocked++;
+    } else if (date && date < todayStr) {
+      buckets.overdue.push(compact);
+      summary.overdue++;
+    } else if (date && date <= soonStr) {
+      buckets.due_soon.push(compact);
+      summary.due_soon++;
+    } else {
+      buckets.on_track.push(compact);
+      summary.on_track++;
+    }
+  }
+
+  // Sort each bucket by date ascending
+  for (const list of Object.values(buckets)) {
+    list.sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+  }
+
+  return { summary, ...buckets };
 }
 
 async function applyTaskFilter(crmClient, milestones, mode) {
@@ -498,7 +579,7 @@ export function registerTools(server, crmClient) {
   // ── get_milestones ──────────────────────────────────────────
   server.tool(
     'get_milestones',
-    'Get engagement milestones scoped by customer name, opportunity name/GUID, milestoneId, milestone number, or owner. Always requires a scoping parameter — never returns all milestones unscoped. Resolves customer/opportunity keywords to GUIDs internally — no need to call list_opportunities first. Supports batch opportunityIds, status/keyword filtering, task-presence filtering, and inline task embedding.',
+    'Get engagement milestones scoped by customer name, opportunity name/GUID, milestoneId, milestone number, or owner. Always requires a scoping parameter — never returns all milestones unscoped. Resolves customer/opportunity keywords to GUIDs internally — no need to call list_opportunities first. Supports batch opportunityIds, status/keyword filtering, task-presence filtering, and inline task embedding. When mine=true, only active milestones are returned by default (excludes Completed/Cancelled/Closed); pass statusFilter="all" to override. Use format="triage" for urgency-classified output (overdue, due_soon, blocked, on_track) — ideal for morning briefs and health reviews.',
     {
       customerKeyword: z.string().optional().describe('Customer name keyword — resolves accounts → opportunities → milestones in one call'),
       opportunityKeyword: z.string().optional().describe('Opportunity name keyword — resolves matching opportunities → milestones in one call'),
@@ -507,14 +588,19 @@ export function registerTools(server, crmClient) {
       milestoneNumber: z.string().optional().describe('Milestone number to search for, e.g. "7-123456789"'),
       milestoneId: z.string().optional().describe('Direct milestone GUID lookup'),
       ownerId: z.string().optional().describe('Owner system user GUID to list milestones for'),
-      mine: z.boolean().optional().describe('When explicitly set to true, returns milestones owned by the authenticated CRM user. Must be set explicitly — does NOT default to true. Prefer customerKeyword, opportunityKeyword, or opportunityId for narrower scoping.'),
+      mine: z.boolean().optional().describe('When explicitly set to true, returns milestones owned by the authenticated CRM user. Automatically filters to active milestones (excludes Completed/Cancelled/Closed) unless statusFilter="all" is passed. Must be set explicitly — does NOT default to true. Prefer customerKeyword, opportunityKeyword, or opportunityId for narrower scoping.'),
       statusFilter: z.enum(['active', 'all']).optional().describe('Filter by status: active = Not Started/On Track/Blocked/At Risk'),
       keyword: z.string().optional().describe('Case-insensitive keyword filter across milestone name, opportunity, and workload'),
-      format: z.enum(['full', 'summary']).optional().describe('Response format: full (default) or summary (grouped compact output)'),
+      format: z.enum(['full', 'summary', 'triage']).optional().describe('Response format: full (default), summary (grouped compact), or triage (urgency-classified: overdue / due_soon / blocked / on_track)'),
       taskFilter: z.enum(['all', 'with-tasks', 'without-tasks']).optional().describe('Filter milestones by task presence'),
       includeTasks: z.boolean().optional().describe('When true, embeds linked tasks inline on each milestone (avoids separate get_milestone_activities call). Default: false')
     },
     async ({ customerKeyword, opportunityKeyword, opportunityId, opportunityIds, milestoneNumber, milestoneId, ownerId, mine, statusFilter, keyword, format, taskFilter: taskFilterParam, includeTasks }) => {
+      // When mine=true, default to active milestones only (skip Completed/Cancelled/Closed)
+      if (mine === true && statusFilter === undefined) {
+        statusFilter = 'active';
+      }
+
       // Direct GUID lookup
       if (milestoneId) {
         const nid = normalizeGuid(milestoneId);
@@ -623,6 +709,7 @@ export function registerTools(server, crmClient) {
           milestones = await embedTasksOnMilestones(crmClient, milestones);
         }
         if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
+        if (format === 'triage') return text(buildMilestoneTriage(milestones, getCrmBase()));
         return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
       } else if (opportunityId) {
         const nid = normalizeGuid(opportunityId);
@@ -668,6 +755,7 @@ export function registerTools(server, crmClient) {
         milestones = await embedTasksOnMilestones(crmClient, milestones);
       }
       if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
+      if (format === 'triage') return text(buildMilestoneTriage(milestones, getCrmBase()));
       return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
     }
   );
@@ -767,9 +855,9 @@ export function registerTools(server, crmClient) {
       name: z.string().describe('Milestone name/title'),
       milestoneDate: z.string().describe('Required. Milestone date in YYYY-MM-DD format'),
       monthlyUse: z.number().describe('Required. Monthly use value'),
-      milestoneCategory: z.number().describe('Required. Milestone category code (e.g. 861980002=Production)'),
-      commitmentRecommendation: z.number().optional().describe('Commitment recommendation code'),
-      milestoneStatus: z.number().optional().describe('Milestone status code'),
+      milestoneCategory: z.number().describe(`Required. Milestone category: ${MILESTONE_CATEGORIES.map(o => `${o.value}=${o.label}`).join(', ')}`),
+      commitmentRecommendation: z.number().optional().describe(`Commitment recommendation: ${COMMITMENT_RECOMMENDATIONS.map(o => `${o.value}=${o.label}`).join(', ')}`),
+      milestoneStatus: z.union([z.number(), z.string()]).optional().describe(`Milestone status (name or code): ${MILESTONE_STATUSES.map(o => `${o.label}=${o.value}`).join(', ')}`),
       workloadId: z.string().describe('Required. Workload GUID (lookup) — use _msp_workloadlkid_value from an existing milestone on the same opportunity, or query msp_workloads by msp_name'),
       ownerId: z.string().optional().describe('System user GUID to assign as owner. Defaults to current user if omitted'),
       transactionCurrencyId: z.string().optional().describe('Transaction currency GUID'),
@@ -848,7 +936,11 @@ export function registerTools(server, crmClient) {
       payload.msp_milestonecategory = milestoneCategory;
 
       if (commitmentRecommendation !== undefined) payload.msp_commitmentrecommendation = commitmentRecommendation;
-      if (milestoneStatus !== undefined) payload.msp_milestonestatus = milestoneStatus;
+      if (milestoneStatus !== undefined) {
+        const resolved = resolveOptionValue(MILESTONE_STATUSES, milestoneStatus);
+        if (resolved === undefined) return error(`Invalid milestoneStatus "${milestoneStatus}". Valid: ${MILESTONE_STATUSES.map(o => `${o.label} (${o.value})`).join(', ')}`);
+        payload.msp_milestonestatus = resolved;
+      }
       if (forecastComments !== undefined) payload.msp_forecastcomments = forecastComments;
 
       // Required milestone view fields — validated above, always present
@@ -965,7 +1057,10 @@ export function registerTools(server, crmClient) {
       if (subject !== undefined) payload.subject = subject;
       if (dueDate !== undefined) payload.scheduledend = dueDate;
       if (description !== undefined) payload.description = description;
-      if (statusCode !== undefined) payload.statuscode = statusCode;
+      if (statusCode !== undefined) {
+        payload.statuscode = statusCode;
+        payload.statecode = taskStateForStatus(statusCode);
+      }
       if (Object.keys(payload).length === 0) return error('No fields to update');
 
       // Fetch before-state for diff preview
@@ -1054,9 +1149,9 @@ export function registerTools(server, crmClient) {
       name: z.string().optional().describe('New milestone name/title (cannot be empty)'),
       milestoneDate: z.string().optional().describe('New milestone date YYYY-MM-DD'),
       monthlyUse: z.number().optional().describe('New monthly use value'),
-      milestoneCategory: z.number().optional().describe('New milestone category code'),
-      commitmentRecommendation: z.number().optional().describe('New commitment recommendation code'),
-      milestoneStatus: z.number().optional().describe('New milestone status code'),
+      milestoneCategory: z.number().optional().describe(`Milestone category: ${MILESTONE_CATEGORIES.map(o => `${o.value}=${o.label}`).join(', ')}`),
+      commitmentRecommendation: z.number().optional().describe(`Commitment recommendation: ${COMMITMENT_RECOMMENDATIONS.map(o => `${o.value}=${o.label}`).join(', ')}`),
+      milestoneStatus: z.union([z.number(), z.string()]).optional().describe(`Milestone status (name or code): ${MILESTONE_STATUSES.map(o => `${o.label}=${o.value}`).join(', ')}`),
       workloadId: z.string().optional().describe('New workload GUID (use null to clear)'),
       ownerId: z.string().optional().describe('New owner system user GUID'),
       transactionCurrencyId: z.string().optional().describe('New transaction currency GUID'),
@@ -1079,7 +1174,11 @@ export function registerTools(server, crmClient) {
       if (monthlyUse !== undefined) payload.msp_monthlyuse = monthlyUse;
       if (milestoneCategory !== undefined) payload.msp_milestonecategory = milestoneCategory;
       if (commitmentRecommendation !== undefined) payload.msp_commitmentrecommendation = commitmentRecommendation;
-      if (milestoneStatus !== undefined) payload.msp_milestonestatus = milestoneStatus;
+      if (milestoneStatus !== undefined) {
+        const resolved = resolveOptionValue(MILESTONE_STATUSES, milestoneStatus);
+        if (resolved === undefined) return error(`Invalid milestoneStatus "${milestoneStatus}". Valid: ${MILESTONE_STATUSES.map(o => `${o.label} (${o.value})`).join(', ')}`);
+        payload.msp_milestonestatus = resolved;
+      }
       if (forecastComments !== undefined) payload.msp_forecastcomments = forecastComments;
       if (workloadType !== undefined) payload.msp_milestoneworkload = workloadType;
       if (deliveredBy !== undefined) payload.msp_deliveryspecifiedfield = deliveredBy;
@@ -1879,6 +1978,17 @@ export function registerTools(server, crmClient) {
         if (!result.ok && result.status !== 204 && op.fallbackEntitySet) {
           result = await crmClient.request(op.fallbackEntitySet, { method: 'POST', body: op.fallbackPayload });
         }
+        // Third fallback: direct PATCH with state+status
+        if (!result.ok && result.status !== 204) {
+          const taskId = op.description.match(/task ([a-f0-9-]+)/)?.[1];
+          if (taskId) {
+            const sc = op.fallbackPayload?.Status || 5;
+            result = await crmClient.request(`tasks(${taskId})`, {
+              method: 'PATCH',
+              body: { statecode: taskStateForStatus(sc), statuscode: sc }
+            });
+          }
+        }
       } else {
         result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
       }
@@ -1935,6 +2045,17 @@ export function registerTools(server, crmClient) {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
             if (!result.ok && result.status !== 204 && op.fallbackEntitySet) {
               result = await crmClient.request(op.fallbackEntitySet, { method: 'POST', body: op.fallbackPayload });
+            }
+            // Third fallback: direct PATCH with state+status
+            if (!result.ok && result.status !== 204) {
+              const taskId = op.description.match(/task ([a-f0-9-]+)/)?.[1];
+              if (taskId) {
+                const sc = op.fallbackPayload?.Status || 5;
+                result = await crmClient.request(`tasks(${taskId})`, {
+                  method: 'PATCH',
+                  body: { statecode: taskStateForStatus(sc), statuscode: sc }
+                });
+              }
             }
           } else {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#
+# pre-push hook — sync subtrees when pushing to remote
+#
+# Reads the push refspec from stdin to detect the commit range,
+# then delegates to scripts/subtree-sync.sh.
+#
+
+# pre-push receives lines: <local ref> <local sha> <remote ref> <remote sha>
+RANGE=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+    # New branch — no prior remote SHA to diff against
+    continue
+  fi
+  if [[ "$local_sha" != "0000000000000000000000000000000000000000" ]]; then
+    RANGE="${remote_sha}..${local_sha}"
+    break
+  fi
+done
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SYNC_SCRIPT="$REPO_ROOT/scripts/subtree-sync.sh"
+
+if [[ ! -x "$SYNC_SCRIPT" ]]; then
+  exit 0
+fi
+
+if [[ -n "$RANGE" ]]; then
+  "$SYNC_SCRIPT" --range "$RANGE"
+else
+  "$SYNC_SCRIPT"
+fi
