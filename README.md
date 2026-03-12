@@ -98,6 +98,7 @@ See [all scenario prompts by role →](docs/scenario-prompts.md)
 ## Guided Flows (Slash Commands)
 
 Type `/` in the Copilot chat panel and pick a flow. Each one detects your role and tailors the experience.
+*Note: Accessing prompts stored in the .github/prompts directory through `/` only works for VS Code Copilot Chat experience. For GitHub Copilot CLI, try just describing the prompt. `/getting-started` --> 'Help me get this environment set up'"*
 
 | Command              | When to use             | What it does                                                              |
 | -------------------- | ----------------------- | ------------------------------------------------------------------------- |
