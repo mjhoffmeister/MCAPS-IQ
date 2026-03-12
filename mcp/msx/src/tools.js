@@ -25,6 +25,8 @@ export const ALLOWED_ENTITY_SETS = new Set([
   'connectionroles',
   // BPF stage name resolution (mcem-stage-identification)
   'processstages',
+  // Access team queries (manage_deal_team / manage_milestone_team)
+  'teams',
   // Metadata endpoints (used by get_task_status_options pattern)
   'EntityDefinitions',
 ]);
@@ -935,6 +937,7 @@ export function registerTools(server, crmClient) {
           opportunityId: oppNid,
           opportunityName
         },
+        recordUrl: buildRecordUrl(getCrmBase(), 'opportunity', oppNid),
         fieldSummary: resolvePayloadLabels(payload),
         payload,
         message: `Staged ${op.id}: ${op.description}. Approve via execute_operation or from the approval UI.`
@@ -985,6 +988,7 @@ export function registerTools(server, crmClient) {
         staged: true,
         operationId: op.id,
         description: op.description,
+        recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', nid),
         payload,
         message: `Staged ${op.id}: ${op.description}. Approve via execute_operation or from the approval UI.`
       });
@@ -1033,6 +1037,7 @@ export function registerTools(server, crmClient) {
         staged: true,
         operationId: op.id,
         description: op.description,
+        recordUrl: buildRecordUrl(getCrmBase(), 'task', nid),
         before: op.beforeState,
         after: payload,
         message: `Staged ${op.id}: ${op.description}. Approve via execute_operation or from the approval UI.`
@@ -1085,6 +1090,7 @@ export function registerTools(server, crmClient) {
         staged: true,
         operationId: op.id,
         description: op.description,
+        recordUrl: buildRecordUrl(getCrmBase(), 'task', nid),
         before: op.beforeState,
         statusCode,
         message: `Staged ${op.id}: ${op.description}. Approve via execute_operation or from the approval UI.`
@@ -1250,6 +1256,7 @@ export function registerTools(server, crmClient) {
         staged: true,
         operationId: op.id,
         description: op.description,
+        recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', nid),
         identity,
         before: resolvePayloadLabels(before),
         after: resolvePayloadLabels(payload),
@@ -1717,6 +1724,59 @@ export function registerTools(server, crmClient) {
     }
   );
 
+  // ── Post-write rich result helper ─────────────────────────
+  // After a successful CRM write, re-fetch the record and return
+  // its final state with a direct MSX deep-link.
+  const REFETCH_MAP = {
+    create_milestone:  { entity: 'msp_engagementmilestone', set: 'msp_engagementmilestones', select: MILESTONE_SELECT, idField: 'msp_engagementmilestoneid' },
+    update_milestone:  { entity: 'msp_engagementmilestone', set: 'msp_engagementmilestones', select: MILESTONE_SELECT, idField: 'msp_engagementmilestoneid' },
+    create_task:       { entity: 'task', set: 'tasks', select: INLINE_TASK_SELECT, idField: 'activityid' },
+    update_task:       { entity: 'task', set: 'tasks', select: INLINE_TASK_SELECT, idField: 'activityid' },
+    close_task:        { entity: 'task', set: 'tasks', select: INLINE_TASK_SELECT, idField: 'activityid' },
+  };
+
+  async function buildPostWriteResult(op, writeResult) {
+    const meta = REFETCH_MAP[op.type];
+    if (!meta) return null; // non-milestone/task ops — skip rich result
+
+    // Determine record ID
+    let recordId;
+    if (op.method === 'POST') {
+      // Creates: prefer entityId from OData-EntityId header, then response body
+      recordId = writeResult.entityId || writeResult.data?.[meta.idField];
+    }
+    if (!recordId) {
+      // Updates / closes: parse GUID from entitySet (e.g. "tasks(guid)")
+      const m = op.entitySet.match(/\(([0-9a-f-]{36})\)/i);
+      recordId = m?.[1];
+    }
+    if (!recordId && op.type === 'close_task') {
+      // Fallback: extract from description "Close task <guid>"
+      const m = op.description.match(/task ([a-f0-9-]+)/i);
+      recordId = m?.[1];
+    }
+    if (!recordId) return null;
+
+    const base = getCrmBase();
+    const recordUrl = buildRecordUrl(base, meta.entity, recordId);
+
+    try {
+      const refetch = await crmClient.request(`${meta.set}(${recordId})`, {
+        query: { $select: meta.select }
+      });
+      if (refetch.ok && refetch.data) {
+        const record = refetch.data;
+        const result = { ...record, recordUrl };
+        if (meta.entity === 'msp_engagementmilestone') {
+          result.commitment = commitmentLabel(record);
+        }
+        return result;
+      }
+    } catch { /* re-fetch is best-effort */ }
+
+    return { recordId, recordUrl };
+  }
+
   // ── execute_operation ──────────────────────────────────────
   server.tool(
     'execute_operation',
@@ -1776,13 +1836,21 @@ export function registerTools(server, crmClient) {
             });
           }
         }
+      } else if (op.type.endsWith('_deal_team_member') || op.type.endsWith('_milestone_team_member')) {
+        // Record team operations: try bound action first, fallback to unbound
+        result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
+        if (!result.ok && result.status !== 204) {
+          const actionName = op.type.startsWith('add_') ? 'AddUserToRecordTeam' : 'RemoveUserFromRecordTeam';
+          result = await crmClient.request(actionName, { method: 'POST', body: op.payload });
+        }
       } else {
         result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
       }
 
       if (result.ok || result.status === 204) {
         queue.markExecuted(id, result.data);
-        return text({ success: true, executed: id, type: op.type, description: op.description });
+        const rich = await buildPostWriteResult(op, result);
+        return text({ success: true, executed: id, type: op.type, description: op.description, ...(rich && { result: rich }) });
       }
 
       queue.markFailed(id, result.data?.message);
@@ -1844,13 +1912,21 @@ export function registerTools(server, crmClient) {
                 });
               }
             }
+          } else if (op.type.endsWith('_deal_team_member') || op.type.endsWith('_milestone_team_member')) {
+            // Record team operations: try bound action first, fallback to unbound
+            result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
+            if (!result.ok && result.status !== 204) {
+              const actionName = op.type.startsWith('add_') ? 'AddUserToRecordTeam' : 'RemoveUserFromRecordTeam';
+              result = await crmClient.request(actionName, { method: 'POST', body: op.payload });
+            }
           } else {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
           }
 
           if (result.ok || result.status === 204) {
             queue.markExecuted(op.id, result.data);
-            results.push({ id: op.id, success: true });
+            const rich = await buildPostWriteResult(op, result);
+            results.push({ id: op.id, success: true, ...(rich && { result: rich }) });
           } else {
             queue.markFailed(op.id, result.data?.message);
             results.push({ id: op.id, success: false, reason: result.data?.message });
@@ -1893,6 +1969,300 @@ export function registerTools(server, crmClient) {
         cancelled: rejected.length,
         operations: rejected.map(op => ({ id: op.id, type: op.type, description: op.description })),
       });
+    }
+  );
+
+  // ── manage_deal_team ─────────────────────────────────────────
+  const OPP_TEAM_TEMPLATE_ID = 'cc923a9d-7651-e311-9405-00155db3ba1e';
+
+  server.tool(
+    'manage_deal_team',
+    'List, add, or remove deal team members on an opportunity via D365 Access Teams. ' +
+      'For "add": resolves a person by email or systemUserId, then stages an AddUserToRecordTeam action ' +
+      'to add them to the opportunity access team (the "Deal Team" tab in MSX). ' +
+      'For "list": returns current access team members. ' +
+      'For "remove": stages a RemoveUserFromRecordTeam action to remove a user.',
+    {
+      action: z.enum(['list', 'add', 'remove']).describe('Action to perform'),
+      opportunityId: z.string().describe('Opportunity GUID'),
+      email: z.string().optional().describe('Email address of the person to add/remove (used to resolve systemuserid)'),
+      systemUserId: z.string().optional().describe('SystemUser GUID (if known — skips email lookup)')
+    },
+    async ({ action, opportunityId, email, systemUserId }) => {
+      const oppNid = normalizeGuid(opportunityId);
+      if (!isValidGuid(oppNid)) return error('Invalid opportunityId GUID');
+
+      // ── LIST ──
+      if (action === 'list') {
+        const teamResult = await crmClient.requestAllPages('teams', {
+          query: {
+            $filter: `_regardingobjectid_value eq '${oppNid}' and _teamtemplateid_value eq '${OPP_TEAM_TEMPLATE_ID}'`,
+            $select: 'teamid,name',
+            $expand: 'teammembership_association($select=systemuserid,fullname,title)',
+            $top: '1'
+          }
+        });
+        if (!teamResult.ok) return error(`List deal team failed (${teamResult.status}): ${teamResult.data?.message}`);
+
+        const teams = teamResult.data?.value || [];
+        if (!teams.length) {
+          return text({ opportunityId: oppNid, teamExists: false, count: 0, members: [], message: 'No deal team exists yet (0 members).' });
+        }
+
+        const team = teams[0];
+        const members = (team.teammembership_association || []).map(m => ({
+          systemUserId: m.systemuserid,
+          fullName: m.fullname,
+          title: m.title
+        }));
+        return text({ opportunityId: oppNid, teamId: team.teamid, teamExists: true, count: members.length, members });
+      }
+
+      // ── Resolve user for add/remove ──
+      let resolvedUserId = systemUserId ? normalizeGuid(systemUserId) : null;
+      let displayName = null;
+
+      if (!resolvedUserId && email) {
+        const sanitizedEmail = sanitizeODataString(email.trim());
+        const userResult = await crmClient.requestAllPages('systemusers', {
+          query: {
+            $filter: `internalemailaddress eq '${sanitizedEmail}'`,
+            $select: 'systemuserid,fullname,internalemailaddress',
+            $top: '5'
+          }
+        });
+        if (userResult.ok && userResult.data?.value?.length) {
+          resolvedUserId = normalizeGuid(userResult.data.value[0].systemuserid);
+          displayName = userResult.data.value[0].fullname;
+        } else {
+          return error(`No systemuser found with email "${email}". Verify the email address is correct.`);
+        }
+      }
+
+      if (!resolvedUserId || !isValidGuid(resolvedUserId)) {
+        return error('Either email or systemUserId is required to add/remove a deal team member.');
+      }
+
+      if (!displayName) {
+        const userResult = await crmClient.request(`systemusers(${resolvedUserId})`, {
+          query: { $select: 'fullname' }
+        });
+        if (userResult.ok && userResult.data) displayName = userResult.data.fullname;
+      }
+
+      // ── ADD ──
+      if (action === 'add') {
+        const payload = {
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.opportunity',
+            opportunityid: oppNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: OPP_TEAM_TEMPLATE_ID
+          }
+        };
+
+        const queue = getApprovalQueue();
+        const op = queue.stage({
+          type: 'add_deal_team_member',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.AddUserToRecordTeam`,
+          method: 'POST',
+          payload,
+          beforeState: null,
+          description: `Add ${displayName || resolvedUserId} to deal team on opportunity ${oppNid}`
+        });
+        return text({
+          staged: true,
+          operationId: op.id,
+          description: op.description,
+          recordUrl: buildRecordUrl(getCrmBase(), 'opportunity', oppNid),
+          resolvedUserId,
+          displayName,
+          message: `Staged ${op.id}: ${op.description}. Approve via execute_operation.`
+        });
+      }
+
+      // ── REMOVE ──
+      if (action === 'remove') {
+        const payload = {
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.opportunity',
+            opportunityid: oppNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: OPP_TEAM_TEMPLATE_ID
+          }
+        };
+
+        const queue = getApprovalQueue();
+        const op = queue.stage({
+          type: 'remove_deal_team_member',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.RemoveUserFromRecordTeam`,
+          method: 'POST',
+          payload,
+          beforeState: null,
+          description: `Remove ${displayName || resolvedUserId} from deal team on opportunity ${oppNid}`
+        });
+        return text({
+          staged: true,
+          operationId: op.id,
+          description: op.description,
+          recordUrl: buildRecordUrl(getCrmBase(), 'opportunity', oppNid),
+          resolvedUserId,
+          displayName,
+          message: `Staged ${op.id}: ${op.description}. Approve via execute_operation.`
+        });
+      }
+
+      return error(`Unknown action: ${action}`);
+    }
+  );
+
+  // ── manage_milestone_team ──────────────────────────────────
+  const MILESTONE_TEAM_TEMPLATE_ID = '316e4735-9e83-eb11-a812-0022481e1be0';
+
+  server.tool(
+    'manage_milestone_team',
+    'List, add, or remove members on a milestone\'s access team (the "Milestone Team" tab in MSX). ' +
+      'Uses Dynamics 365 Access Teams with the "Milestone Team" team template. ' +
+      'Add/remove are staged for human approval via execute_operation.',
+    {
+      action: z.enum(['list', 'add', 'remove']).describe('Action to perform'),
+      milestoneId: z.string().describe('Engagement milestone GUID'),
+      email: z.string().optional().describe('Email address of the person to add/remove (used to resolve systemuserid)'),
+      systemUserId: z.string().optional().describe('SystemUser GUID (if known — skips email lookup)')
+    },
+    async ({ action, milestoneId, email, systemUserId }) => {
+      const msNid = normalizeGuid(milestoneId);
+      if (!isValidGuid(msNid)) return error('Invalid milestoneId GUID');
+
+      // ── LIST ──
+      if (action === 'list') {
+        const teamResult = await crmClient.requestAllPages('teams', {
+          query: {
+            $filter: `_regardingobjectid_value eq '${msNid}' and _teamtemplateid_value eq '${MILESTONE_TEAM_TEMPLATE_ID}'`,
+            $select: 'teamid,name',
+            $expand: 'teammembership_association($select=systemuserid,fullname,title)',
+            $top: '1'
+          }
+        });
+        if (!teamResult.ok) return error(`List milestone team failed (${teamResult.status}): ${teamResult.data?.message}`);
+
+        const teams = teamResult.data?.value || [];
+        if (!teams.length) {
+          return text({ milestoneId: msNid, teamExists: false, count: 0, members: [], message: 'No milestone team exists yet (0 members).' });
+        }
+
+        const team = teams[0];
+        const members = (team.teammembership_association || []).map(m => ({
+          systemUserId: m.systemuserid,
+          fullName: m.fullname,
+          title: m.title
+        }));
+        return text({ milestoneId: msNid, teamId: team.teamid, teamExists: true, count: members.length, members });
+      }
+
+      // ── Resolve user for add/remove ──
+      let resolvedUserId = systemUserId ? normalizeGuid(systemUserId) : null;
+      let displayName = null;
+
+      if (!resolvedUserId && email) {
+        const sanitizedEmail = sanitizeODataString(email.trim());
+        const userResult = await crmClient.requestAllPages('systemusers', {
+          query: {
+            $filter: `internalemailaddress eq '${sanitizedEmail}'`,
+            $select: 'systemuserid,fullname,internalemailaddress',
+            $top: '5'
+          }
+        });
+        if (userResult.ok && userResult.data?.value?.length) {
+          resolvedUserId = normalizeGuid(userResult.data.value[0].systemuserid);
+          displayName = userResult.data.value[0].fullname;
+        } else {
+          return error(`No systemuser found with email "${email}".`);
+        }
+      }
+
+      if (!resolvedUserId || !isValidGuid(resolvedUserId)) {
+        return error('Either email or systemUserId is required to add/remove a milestone team member.');
+      }
+
+      if (!displayName) {
+        const userResult = await crmClient.request(`systemusers(${resolvedUserId})`, {
+          query: { $select: 'fullname' }
+        });
+        if (userResult.ok && userResult.data) displayName = userResult.data.fullname;
+      }
+
+      // ── ADD ──
+      if (action === 'add') {
+        const payload = {
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.msp_engagementmilestone',
+            msp_engagementmilestoneid: msNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: MILESTONE_TEAM_TEMPLATE_ID
+          }
+        };
+
+        const queue = getApprovalQueue();
+        const op = queue.stage({
+          type: 'add_milestone_team_member',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.AddUserToRecordTeam`,
+          method: 'POST',
+          payload,
+          beforeState: null,
+          description: `Add ${displayName || resolvedUserId} to milestone team on ${msNid}`
+        });
+        return text({
+          staged: true,
+          operationId: op.id,
+          description: op.description,
+          recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', msNid),
+          resolvedUserId,
+          displayName,
+          message: `Staged ${op.id}: ${op.description}. Approve via execute_operation.`
+        });
+      }
+
+      // ── REMOVE ──
+      if (action === 'remove') {
+        const payload = {
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.msp_engagementmilestone',
+            msp_engagementmilestoneid: msNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: MILESTONE_TEAM_TEMPLATE_ID
+          }
+        };
+
+        const queue = getApprovalQueue();
+        const op = queue.stage({
+          type: 'remove_milestone_team_member',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.RemoveUserFromRecordTeam`,
+          method: 'POST',
+          payload,
+          beforeState: null,
+          description: `Remove ${displayName || resolvedUserId} from milestone team on ${msNid}`
+        });
+        return text({
+          staged: true,
+          operationId: op.id,
+          description: op.description,
+          recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', msNid),
+          resolvedUserId,
+          displayName,
+          message: `Staged ${op.id}: ${op.description}. Approve via execute_operation.`
+        });
+      }
+
+      return error(`Unknown action: ${action}`);
     }
   );
 

@@ -143,7 +143,17 @@ export function createCrmClient(authService) {
         try { data = await response.json(); } catch { /* empty 204 */ }
       }
 
-      return { ok: true, status: response.status, data };
+      // For POST creates, capture new entity ID from OData-EntityId header
+      let entityId = null;
+      if (method === 'POST') {
+        const oeid = response.headers.get('OData-EntityId');
+        if (oeid) {
+          const m = oeid.match(/\(([0-9a-f-]{36})\)/i);
+          if (m) entityId = m[1];
+        }
+      }
+
+      return { ok: true, status: response.status, data, entityId };
     } catch (err) {
       // On 401, clear the cached token and retry once with a fresh token
       if (err.status === 401 && !opts._authRetried) {

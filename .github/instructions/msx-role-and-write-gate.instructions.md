@@ -55,12 +55,14 @@ Before building the confirmation packet for milestone create/update operations:
 ### Required confirmation packet (must be shown to user)
 - Role being applied (SE/CSA/CSAM/Specialist)
 - Customer/account name
-- Opportunity name + ID
-- Milestone/task name + ID
+- Opportunity name + [CRM link](https://microsoftsales.crm.dynamics.com/main.aspx?etn=opportunity&id=<GUID>&pagetype=entityrecord)
+- Milestone/task name + [CRM link](https://microsoftsales.crm.dynamics.com/main.aspx?etn=<etn>&id=<GUID>&pagetype=entityrecord)
 - Current values relevant to the change
 - Proposed new values (with picklist labels resolved to "Label (code)" format)
 - Why the change is needed (business intent)
 - Expected impact and any risk
+
+**Linkification**: Every opportunity, milestone, and task in the confirmation packet must be a clickable CRM link. Use `recordUrl` from `get_milestones` when available, otherwise construct from the entity logical name and GUID (see `crm-entity-schema.instructions.md` § CRM Record URL Pattern).
 
 ### Confirmation language
 Ask for explicit approval in a separate step, for example:

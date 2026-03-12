@@ -142,3 +142,25 @@ Skills may include a `connect_hook_hint` in their Output Schema to pre-classify 
 - Cross-role `next_action` must name the owning role and recommend engagement (no auto-invoke).
 - Risk findings always include: one-sentence risk, evidence source, role to act, minimum intervention.
 - `connect_hook_hint` (optional): pre-classified Connects impact area(s) and one-line hook template for passive evidence capture.
+
+### CRM Record Linkification (Mandatory)
+
+Whenever displaying milestones, opportunities, or tasks from MSX CRM, **always include a clickable link** to the CRM record. This applies to all output formats — tables, lists, confirmation packets, health reports, and triage summaries.
+
+**URL pattern:**
+```
+https://microsoftsales.crm.dynamics.com/main.aspx?etn=<entityLogicalName>&id=<GUID>&pagetype=entityrecord
+```
+
+| Entity | `etn` value | GUID source |
+|---|---|---|
+| Opportunity | `opportunity` | `opportunityid` |
+| Milestone | `msp_engagementmilestone` | `msp_engagementmilestoneid` or `id` from `get_milestones` |
+| Task | `task` | `activityid` |
+
+**Rendering rules:**
+- If `get_milestones` returns a `recordUrl` field, use it directly — do not reconstruct.
+- Format as a markdown link with the record name as display text: `[Milestone Name](url)`.
+- In tables, use a dedicated "Link" column or make the name column itself a link.
+- In confirmation packets and write-gate output, every milestone and task must be linked.
+- For tasks, construct the URL from `activityid` when `recordUrl` is not provided: `https://microsoftsales.crm.dynamics.com/main.aspx?etn=task&id=<activityid>&pagetype=entityrecord`.
