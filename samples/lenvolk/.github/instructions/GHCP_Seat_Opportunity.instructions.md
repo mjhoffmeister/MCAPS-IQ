@@ -8,7 +8,7 @@ Canonical source: **Dev Services Hub — Metric Glossary** (OneNote, maintained 
 Report: **GHCP & Dev Services Hub** in MSX Insights → Acc. View tab.
 Weekly extract: `.docs/Weekly/<YYYY-MM-DD>_GHCP-Seats-report.xlsx` (see `gh-stack-browser-extraction` skill).
 
-> For full metric glossary, seat definitions, penetration metrics, pipeline/outlook formulas, new logo incentive rules, engagement metrics, cross-sell metrics, and Excel column mapping, read `.github/documents/ghcp-metric-formulas.md`.
+> For full metric glossary, seat definitions, penetration metrics, pipeline/outlook formulas, new logo incentive rules, engagement metrics, cross-sell metrics, and Excel column mapping, read `.docs/documents/ghcp-metric-formulas.md`.
 
 ---
 

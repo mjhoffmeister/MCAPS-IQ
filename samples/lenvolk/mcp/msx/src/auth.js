@@ -139,6 +139,7 @@ export function createAuthService({ crmUrl, tenantId }) {
   const getAuthStatus = () =>
     state.metadata ? { ...state.metadata } : { isAuthenticated: false };
   const getCrmUrl = () => state.crmUrl;
+  const clearToken = () => { state.token = null; state.metadata = null; };
 
-  return { ensureAuth, getToken, getAuthStatus, getCrmUrl, _state: state };
+  return { ensureAuth, getToken, getAuthStatus, getCrmUrl, clearToken, _state: state };
 }

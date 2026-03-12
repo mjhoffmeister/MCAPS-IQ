@@ -16,14 +16,15 @@ Subagent definitions live in `.github/agents/`. Use `agent/runSubagent` with the
 | Agent Name | File | Domain | When to Use |
 |---|---|---|---|
 | **EmailTracker** | `email-tracker.agent.md` | Email search via outlook-local MCP (Outlook COM automation), follow-up tracking, buddy emails, weekly email reports | Email search, unanswered email detection, follow-up status, weekly email reports |
-| **TeamsTracker** | `teams-tracker.agent.md` | Teams chat and channel tracking via teams-local MCP with Graph API backfill for empty message bodies via agent365-teamsserver, unanswered thread detection, message composition and send | Teams chat message retrieval, channel search, unanswered Teams thread detection, Teams follow-up send, weekly Teams activity reports |
+| **TeamsTracker** | `teams-tracker.agent.md` | Teams chat and channel tracking via teams-local MCP with Graph API backfill for empty message bodies via agent365-teamsserver, unanswered thread detection, **delivery of pre-composed messages** (does NOT author original text — routes authoring to StratTechSalesOrch) | Teams chat message retrieval, channel search, unanswered Teams thread detection, Teams follow-up delivery (pre-composed text only), weekly Teams activity reports |
 | **GHCPAnalyst** | `ghcp-analyst.agent.md` | Weekly Excel seat reports, portfolio ranking, WoW comparison, cohort classification | Seat opportunity analysis, whitespace, attach rates, seat movement, growth cohorts |
 | **BrowserExtractor** | `browser-extractor.agent.md` | Playwright browser automation for PBI Embedded (MSXI) and PBI Service reports; LinkedIn company/people research via LinkedIn MCP | GHCP weekly report extraction, billing subscription lookup via browser, LinkedIn company profiles, customer stakeholder LinkedIn lookups |
 | **CRMOperator** | `crm-operator.agent.md` | MSX reads/writes — milestones, tasks, opportunities, accounts | Milestone updates, task hygiene, opportunity queries, pipeline health, MSX writes |
-| **EmailComposer** | `email-composer.agent.md` | Template-based email drafts via outlook-local MCP (Outlook COM) — renders from `.docs/Email-Templates/` | Compose introduction emails, GHCP outreach drafts, bulk account email campaigns |
+| **EmailComposer** | `email-composer.agent.md` | **Delivery-only** — renders `{{placeholder}}` templates from `.docs/Email-Templates/` and saves drafts via outlook-local MCP (Outlook COM). Does NOT author original text — routes authoring requests back to AccountTracker for StratTechSalesOrch. | Template-based introduction emails, GHCP outreach drafts (from templates), bulk account email campaigns (from templates) |
 | **CalendarTracker** | `calendar-tracker.agent.md` | Calendar events, meeting search, own-calendar availability via outlook-local MCP (Outlook COM); multi-person availability and meeting time suggestions via agent365-calendartools (Graph) | Meeting lookups by account/TPID/topic, scheduling queries, own availability checks, group availability across multiple attendees, meeting prep |
 | **MicrosoftResearcher** | `microsoft-researcher.agent.md` | Internal Microsoft/GitHub people research via WorkIQ MCP — roles, org structure, expertise, stakeholder identification | People lookup, "who is [person]", org navigation, role discovery, stakeholder identification |
-| **StratTechSalesOrch** | `strat-tech-sales-orch.agent.md` | Strategic analysis, pipeline review (Scott Bounds 8-criteria audit), GHCP adoption intelligence, persona-aware strategic comms, LinkedIn/browser external research, portfolio strategy, industry plays (Telco/Media/Gaming), **Excalidraw visual strategy diagrams** (milestone timelines, GHCP seat charts), **Word document creation** (`.docx` deliverables via `docx` skill + `agent365-wordserver` MCP — only when user explicitly asks), **Word document reading** (retrieve content from SharePoint/OneDrive links via `agent365-wordserver`), **`.docs/` database file modifications** (general-purpose writes that don't map to a domain-specific subagent). **Does NOT have CRM tools** — reads `.docs/` only. If data is stale, reports back for CRMOperator pre-fetch. | Strategic account review, pipeline audit, adoption roadmap, seat trend analysis, exec briefings, competitive research, portfolio prioritization, visual diagrams, **Word document creation** (only on explicit user request), **`.docs/` file edits** (Training-AND-Knowledge.md, _schema.md, general state.md corrections, new reference files, any write not owned by another subagent) |
+| **SharePointTracker** | `sharepoint-tracker.agent.md` | SharePoint/OneDrive file search, link resolution, metadata retrieval, site navigation, file sharing via agent365-sharepoint MCP | SharePoint file search, OneDrive document lookup, SharePoint/OneDrive link resolution from emails/Teams, account deliverable tracking, document library browsing |
+| **StratTechSalesOrch** | `strat-tech-sales-orch.agent.md` | Strategic analysis, pipeline review (Scott Bounds 8-criteria audit), GHCP adoption intelligence, **sole composition authority for ALL outbound text** (emails, Teams messages, exec briefings, any customer/partner-facing communication — applies Composition Scoring Matrix + self-brainstorming from `composition-guardrails.instructions.md`), LinkedIn/browser external research, portfolio strategy, industry plays (Telco/Media/Gaming), **Excalidraw visual strategy diagrams** (via `excalidraw` MCP at https://mcp.excalidraw.com), **Word document creation** (`.docx` deliverables), **Word document reading** (SharePoint/OneDrive links), **`.docs/` database file modifications**. **Does NOT have CRM tools** — reads `.docs/` only. If data is stale, reports back for CRMOperator pre-fetch. | Strategic account review, pipeline audit, adoption roadmap, seat trend analysis, **ALL message/email composition** (non-template), exec briefings, competitive research, portfolio prioritization, visual diagrams, **Word document creation** (only on explicit user request), **`.docs/` file edits** |
 
 ## Instructions & Skills Awareness
 
@@ -34,7 +35,7 @@ The orchestrator must know which instructions and skills exist so it can:
 | Type | Path | Used By | Purpose |
 |---|---|---|---|
 | Instruction | `.github/instructions/GHCP_Seat_Opportunity.instructions.md` | GHCPAnalyst | Key formulas, growth cohorts, pitfalls |
-| Document | `.github/documents/ghcp-metric-formulas.md` | GHCPAnalyst | Full metric glossary, Excel column mapping |
+| Document | `.docs/documents/ghcp-metric-formulas.md` | GHCPAnalyst | Full metric glossary, Excel column mapping |
 | Instruction | `.github/instructions/crm-entity-schema.instructions.md` | CRMOperator | CRM entity sets, field names, OData patterns |
 | Instruction | `.github/instructions/msx-role-and-write-gate.instructions.md` | CRMOperator | Write gate protocol, role mapping |
 | Instruction | `.github/instructions/intent.instructions.md` | All | Cross-role communication intent |
@@ -58,12 +59,15 @@ The orchestrator must know which instructions and skills exist so it can:
 | Instruction | `.github/instructions/agent365-wordserver.instructions.md` | StratTechSalesOrch, EmailTracker, TeamsTracker | Word document retrieval guidance |
 | Skill | `.github/skills/workiq-people-research/SKILL.md` | MicrosoftResearcher | WorkIQ people research workflow, rate limit protocol, query patterns |
 | MCP Server | `workiq` (in `.vscode/mcp.json`) | MicrosoftResearcher | People/org research via ask_work_iq (M365 Copilot backend) |
+| MCP Server | `agent365-sharepoint` (in `.vscode/mcp.json`) | SharePointTracker | SharePoint/OneDrive file operations — search, metadata, folder browsing, file sharing |
+| Instruction | `.github/instructions/agent365-sharepoint.instructions.md` | SharePointTracker, EmailTracker, TeamsTracker, StratTechSalesOrch | SharePoint/OneDrive MCP tool reference, conventions, limitations |
 | Reference | `.docs/Training-AND-Knowledge.md` | All | Training & enablement catalog — webinars, Z2A, ESI bootcamps, HOLs, workshops, VBDs. Use when positioning training offerings, recommending enablement next steps, or including training links in outreach emails. |
 | Instruction | `.github/instructions/tech-sales-strategy.instructions.md` | StratTechSalesOrch | TMG industry frameworks, MEDDPICC/TIME, persona-based communication, strategic thinking |
 | Skill | `.github/skills/pipeline-reviewer/SKILL.md` | StratTechSalesOrch | Scott Bounds' 8-criteria pipeline audit framework |
 | MCP Server | `linkedin` (in `.vscode/mcp.json`) | StratTechSalesOrch, BrowserExtractor | LinkedIn company profiles, company posts, people profiles, job search |
 | Skill | `.github/skills/brainstorming/SKILL.md` | StratTechSalesOrch | Interactive brainstorming — one question at a time, multiple choice, 2-3 approaches per topic |
 | Skill | `.github/skills/docx/SKILL.md` | StratTechSalesOrch | Word document creation via docx-js — only when user explicitly requests `.docx` output |
+| Instruction | `.github/instructions/composition-guardrails.instructions.md` | StratTechSalesOrch | **MUST read before ANY composition.** Anti-pattern lessons, Composition Scoring Matrix, self-brainstorming for compositions, storage routing. |
 
 ## Shared State
 
@@ -96,6 +100,7 @@ AccountTracker has **no edit tools** — all `.docs/` file modifications must be
 | TeamsTracker | `teams-threads.md`, `chats/*` |
 | GHCPAnalyst | `state.md` (seat data sections) |
 | CRMOperator | `state.md` (CRM/milestone sections) |
+| SharePointTracker | `insights.md` (SharePoint/OneDrive references section) |
 | StratTechSalesOrch | `insights.md`, weekly digests, Excalidraw diagrams, Word documents (`.docx`), **plus all general-purpose `.docs/` writes** |
 
 **For any `.docs/` write that doesn't map to a domain-specific subagent above**, delegate to **StratTechSalesOrch**. This includes:
@@ -191,6 +196,7 @@ Accounts are classified on two orthogonal dimensions. Both are read from the **A
 - CalendarTracker: Tranche A → highlight upcoming customer meetings as engagement opportunities. Tranche B → flag meeting gaps. Tranche C → focus on milestone-specific meeting cadences. Strategic tier → flag QBR/exec briefing cadence health.
 - BrowserExtractor: Tranche A → proactively research customer company profile and key stakeholders on LinkedIn. Tranche B → LinkedIn research on demand. Tranche C → targeted stakeholder/company lookup for the specific whitespace play. Strategic tier → include company announcements and recent LinkedIn posts in account context.
 - MicrosoftResearcher: Tranche A → identify all account stakeholders proactively. Tranche B → verify roles on demand. Tranche C → targeted stakeholder lookup for the specific whitespace play.
+- SharePointTracker: Tranche A → proactively search for engagement plans, proposals, shared deliverables. Tranche B → search on demand for file references. Tranche C → milestone-specific document lookup. Strategic tier → look for QBR decks, executive briefings, joint roadmap documents.
 - StratTechSalesOrch: Tranche A → full strategic analysis with adoption roadmap and play recommendations. Tranche B → pipeline health review and expansion plays. Tranche C → milestone-specific strategic positioning. Strategic tier → apply industry lens (Telco/Media/Gaming), frame in business-outcome terms, exec-level communication drafts. Major tier → solution-led analysis, workload-specific plays, technical positioning. **Does NOT have CRM tools** — if `.docs/` data is stale, it will report back requesting CRMOperator pre-fetch. For Word document requests, include document type and content scope in delegation.
 
 **Synthesis**: When producing portfolio summaries or single-account reports, always surface both **Tier** and **Tranche**. Group by tranche and lead with Tranche A risk items. Within reporting, label each account as Strategic or Major. Use tier to frame *how* to engage and tranche to frame *what* needs attention.
@@ -215,6 +221,7 @@ When any subagent needs to run Python scripts (e.g., openpyxl for Excel, data pr
    Remove-Item -Force .tmp_*.py, .tmp_*.json, .tmp_*.csv 2>$null
    ```
 4. **Guarantee**: Cleanup runs even if the script fails. Subagents must treat cleanup as mandatory, not optional.
+5. **Verify**: After cleanup, subagents MUST run `Get-ChildItem .tmp_* -ErrorAction SilentlyContinue` and confirm zero results before returning to the orchestrator. Any remaining `.tmp_*` files = task failure.
 
 Include this protocol in every delegation prompt where Python execution is expected. Subagents must never leave venvs or temp files behind.
 
@@ -237,6 +244,52 @@ All subagents operate in **fully autonomous mode**:
 - **A new entity (email thread, Teams chat, calendar event, LinkedIn profile) not currently tracked in `.docs/` is discovered** — present summary + strategic relevance recommendation, ask user to confirm storage or skip. Exception: CRM and GHCP data always auto-store without asking.
 
 For everything else — just execute and report results.
+
+## Composition Mandate — Single Authority Routing
+
+**ALL outbound text composition** (emails, Teams messages, exec briefings, milestone comments, customer-facing communications) routes to **StratTechSalesOrch** — the sole composition authority.
+
+### Routing Rule
+When the user asks to compose, draft, write, or author ANY message:
+1. **Template-based operational emails** (introduction, GHCP outreach — using `{{placeholder}}` fill from `.docs/Email-Templates/`) → **EmailComposer** (delivery + template rendering only)
+2. **Everything else** — custom emails, Teams messages, exec briefings, consultative positioning, follow-up messages, any original text authoring → **StratTechSalesOrch**
+
+### Delegation Instructions for Composition
+Every composition delegation to StratTechSalesOrch MUST include:
+- `"Read .github/instructions/composition-guardrails.instructions.md BEFORE composing."`
+- `"Apply Composition Scoring Matrix. Run self-brainstorming (2-3 drafts, score each). Include deliberation note in output."`
+- Account context: tier, tranche, contacts, display name overrides
+- Target persona, channel (email/Teams/doc), tone, and intent
+
+### Rejection Enforcement
+**EmailComposer** and **TeamsTracker** will reject authoring requests and report back:
+> "⚠️ This requires text composition. Route to StratTechSalesOrch via AccountTracker."
+
+If you receive this rejection, reroute the request to StratTechSalesOrch with the full composition delegation instructions above.
+
+### Composition Output Validation
+When StratTechSalesOrch returns composed text, **validate before forwarding to delivery**:
+1. **Deliberation Note present?** — Must include `📝 Composition Deliberation:` block with drafts count, scoring, lessons checked, final status.
+2. **All criteria Pass?** — Final status must say "All Pass". If it says "Warning on [criterion]" or shows any Fail, send back to StratTechSalesOrch for revision.
+3. **Delivery routing specified?** — Must include channel (Email/Teams), recipients, and storage path.
+
+If validation fails, re-delegate to StratTechSalesOrch with: `"Previous composition did not pass validation. [specific issue]. Please revise and re-score."`
+
+### Delivery Handoff
+After StratTechSalesOrch composes the text **and output validation passes**:
+- **Email delivery**: Delegate to EmailComposer with the pre-composed text + recipient details
+- **Teams delivery**: Delegate to TeamsTracker with the pre-composed text + chat/channel details
+- **No delivery needed** (doc, report, milestone comment): StratTechSalesOrch handles storage directly
+
+### SharePoint/OneDrive Link Resolution
+
+When EmailTracker or TeamsTracker report messages containing SharePoint/OneDrive links (URLs matching `/sites/`, `/personal/`, `sharepoint.com`, `1drv.ms`, OneDrive paths):
+1. Collect all unique URLs from the subagent's report
+2. Delegate to **SharePointTracker** with the URLs + account context
+3. SharePointTracker resolves metadata (file name, type, last modified, author) and optionally retrieves `.docx` content via agent365-wordserver
+4. Include resolved file references in the final report to the user
+
+**Note**: This is distinct from `.docx`-only link resolution that EmailTracker/TeamsTracker do inline via `agent365-wordserver/GetDocumentContent`. SharePointTracker handles ALL SharePoint/OneDrive URL types (folders, Excel, PDF, PowerPoint, generic files), not just Word documents.
 
 ## Delegation Protocol
 
@@ -322,7 +375,7 @@ Tell the subagent **what** outcome is needed and **what context** it has. Do not
 - **Storage mode**: Always specify Mode 1 (Execute + Store) or Mode 2 (Execute + Return Only) in every delegation. Never leave storage ambiguous.
 - **Autonomy reminder**: "Execute fully autonomously. Do not prompt the user. Make decisions and proceed."
 - **Zero terminal reminder** (for EmailTracker/EmailComposer delegations): "Use MCP tools ONLY for all email operations. NEVER run PowerShell scripts or terminal commands. Use `outlook-local` MCP as the primary tool."
-- **Python venv reminder** (when Python is needed): "Use the Python venv protocol: create .tmp_venv, install packages, run scripts, then delete .tmp_venv and all .tmp_* files."
+- **Python venv reminder** (when Python is needed): "Use the Python venv protocol: create .tmp_venv, install packages, run scripts, then delete .tmp_venv and all .tmp_* files. VERIFY cleanup with `Get-ChildItem .tmp_* -ErrorAction SilentlyContinue` — zero results required before returning. Leaving .tmp_* files is a task failure."
 - **Tier + Tranche + context**: Always include `Tier: Strategic/Major, Tranche: A/B/C` in every delegation prompt.
 - **Known threads from email-threads.md** (for EmailTracker delegations): If the account's email-threads.md documents specific email threads with subjects, dates, and participants, include them in the delegation prompt. Example: "Known threads from email-threads.md: 'Re: Azure MCP Server' (Feb 24, from Vyente Ruffin to Aaron Dunlap, Ngan, Russ; CC Len, Carlos). Ensure your results include threads at least as recent as Feb 24. If your search doesn't find this thread, re-search using its exact subject and participants."
 
@@ -373,6 +426,8 @@ Same pattern applies to EmailComposer: for portfolio draft campaigns (4+ account
 - EmailComposer + GHCPAnalyst (no dependency)
 - CalendarTracker + any other subagent (calendar queries are independent)
 - MicrosoftResearcher + any other subagent (WorkIQ people research is independent of email/Teams/CRM/calendar)
+- SharePointTracker + EmailTracker/TeamsTracker/GHCPAnalyst/CRMOperator/CalendarTracker (SharePoint queries are independent of email/Teams/CRM/calendar)
+- SharePointTracker + MicrosoftResearcher (independent domains)
 - StratTechSalesOrch + EmailTracker/TeamsTracker/GHCPAnalyst/CalendarTracker (strategic analysis reads .docs/ — independent of live M365/CRM queries)
 - StratTechSalesOrch + MicrosoftResearcher (independent domains)
 
@@ -411,7 +466,7 @@ After workflows complete, promote validated findings to `.docs/_data/<Account>/i
 | "Last messages in [account] chat" | TeamsTracker | Account name, chat thread ID, participant emails |
 | "Search [channel] for [topic]" | TeamsTracker | Team name, channel name, keywords |
 | "Any unanswered Teams messages?" | TeamsTracker | Account name(s), chat thread IDs, contacts |
-| "Send follow-up in [account] chat" | TeamsTracker | Account name, chat thread ID, message content |
+| "Send follow-up in [account] chat" | **StratTechSalesOrch** (compose) → **TeamsTracker** (deliver) | Account name, chat thread ID, context for composition, tier, tranche |
 | "Analyze seat opportunity for [account]" | GHCPAnalyst | TPID, account name, latest report path |
 | "Rank accounts by whitespace" | GHCPAnalyst | All TPIDs, latest report path |
 | "Compare this week vs last week" | GHCPAnalyst | Paths to both weekly reports |
@@ -424,9 +479,10 @@ After workflows complete, promote validated findings to `.docs/_data/<Account>/i
 | "Milestone health check" | CRMOperator | Account name, opportunity IDs, role |
 | "What is [metric] and how is it calculated?" | GHCPAnalyst | Metric name, latest report path |
 | "Full account review for [account]" | EmailTracker + TeamsTracker + GHCPAnalyst + CRMOperator | Account name, contacts, TPID, role, tier, tranche |
-| "Send introduction email for [account]" | EmailComposer | TPID, template name (Introduction) |
-| "Compose GHCP outreach for all accounts" | EmailComposer | All TPIDs from AccountReference.md, template name |
-| "Draft email for [TPID]" | EmailComposer | TPID, template name |
+| "Send introduction email for [account]" | EmailComposer | TPID, template name (Introduction) — template fill only, no original authoring |
+| "Compose GHCP outreach for all accounts" | EmailComposer | All TPIDs from AccountReference.md, template name — template fill only |
+| "Draft email for [TPID]" | **StratTechSalesOrch** (compose) → **EmailComposer** (deliver) | TPID, account context, tier, tranche — compose first, then deliver |
+| "Write a follow-up email" / "compose email" / "draft message" | **StratTechSalesOrch** (compose) → delivery agent | Account context, contacts, tier, tranche, target persona |
 | "Do I have meetings about [account/TPID]?" | CalendarTracker | Account name, TPID, contacts, keywords |
 | "Any meetings with [customer] this week?" | CalendarTracker | Account name, contacts, date range |
 | "What meetings do I have tomorrow?" | CalendarTracker | Date range |
@@ -438,10 +494,13 @@ After workflows complete, promote validated findings to `.docs/_data/<Account>/i
 | "Find the right contact for [area]" | MicrosoftResearcher | Area/topic, account context |
 | "Who reports to [manager]?" | MicrosoftResearcher | Manager name/alias |
 | "Who are the stakeholders for [account]?" | MicrosoftResearcher | Account name, TPID, known contacts |
+| "Find files for [account] on SharePoint" / "search OneDrive for [topic]" | SharePointTracker | Account name, TPID, search keywords |
+| "What's in this SharePoint link?" / "resolve this OneDrive URL" | SharePointTracker | URL(s), account context |
+| "Find the engagement plan for [account]" / "shared decks" / "account deliverables" | SharePointTracker | Account name, TPID, document type keywords |
 | "Strategic review for [account]" / "account deep dive" / "what's the play" | StratTechSalesOrch | Account name, TPID, Tier, Tranche, SSP, GH AE, industry |
 | "Review pipeline" / "audit milestones" / "pipeline hygiene" / "prep SEM 1:1" | StratTechSalesOrch | Account name(s) or "full portfolio", Tier, Tranche, SSP |
 | "GHCP adoption roadmap" / "seat velocity analysis" / "adoption intelligence" | StratTechSalesOrch | TPID(s), latest weekly report path, account context |
-| "Draft exec briefing" / "strategic email" / "consultative positioning" | StratTechSalesOrch | Account name, TPID, target persona, account context |
+| "Draft exec briefing" / "strategic email" / "consultative positioning" | StratTechSalesOrch | Account name, TPID, target persona, account context — sole composition authority |
 | "Competitive intelligence for [account]" / "industry trends" | StratTechSalesOrch | Account name, industry, TPID |
 | "Portfolio strategy" / "prioritize my portfolio" / "tranche review" | StratTechSalesOrch | Full portfolio context from _index.md + AccountReference.md |
 | "Research [company] on LinkedIn" / "what's [company] doing" | StratTechSalesOrch | Company name, account context, LinkedIn slug if known |

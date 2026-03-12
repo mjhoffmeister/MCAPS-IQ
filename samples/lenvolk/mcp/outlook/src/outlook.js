@@ -22,8 +22,8 @@ const SCRIPTS = {
 };
 
 const TIMEOUTS = {
-  single: 30_000,   // 30s for single-account operations
-  batch: 120_000,   // 120s for batch operations
+  single: 60_000,   // 60s for single-account operations
+  batch: 180_000,   // 180s for batch operations
   health: 10_000    // 10s for health check
 };
 
@@ -122,13 +122,46 @@ export async function runPowerShell({ script, args, timeout, inputPath, outputPa
  */
 export async function searchEmailsSingle({ contacts, daysBack = 30, accountName = '', keywords = [] }) {
   const outputPath = tempPath('outlook_search', 'json');
+
+  // For multi-contact searches, use batch infrastructure to avoid PowerShell
+  // -File mode comma-separated arg parsing issues on Windows.
+  if (contacts.length > 1) {
+    const inputPath = tempPath('outlook_single_in', 'json');
+    const spec = [{
+      account: accountName || 'default',
+      contacts,
+      keywords: keywords.length > 0 ? keywords : undefined,
+      daysBack
+    }];
+    await writeFile(inputPath, JSON.stringify(spec), 'utf-8');
+
+    const result = await runPowerShell({
+      script: SCRIPTS.searchBatch,
+      args: ['-InputPath', inputPath, '-OutputPath', outputPath],
+      timeout: TIMEOUTS.single,
+      inputPath,
+      outputPath
+    });
+
+    // Unwrap batch result to match single-search format
+    if (result.ok && result.data) {
+      const key = accountName || 'default';
+      const accountData = result.data[key];
+      if (accountData) return { ok: true, data: accountData };
+      // If keyed by index or different format, return raw
+      return result;
+    }
+    return result;
+  }
+
+  // Single contact — original path (no parsing issues)
   const args = [
-    '-Contacts', ...contacts,
+    '-Contacts', contacts[0],
     '-DaysBack', String(daysBack),
     '-OutputPath', outputPath
   ];
   if (accountName) args.push('-AccountName', accountName);
-  if (keywords.length > 0) args.push('-Keywords', ...keywords);
+  if (keywords.length > 0) args.push('-Keywords', keywords.join(','));
 
   return runPowerShell({
     script: SCRIPTS.searchSingle,
@@ -163,7 +196,7 @@ export async function searchEmailsBatch(specs) {
  * @param {object} params - { to, cc?, bcc?, subject, body, bodyType? }
  * @returns {Promise<{ ok: boolean, data?: any, error?: string }>}
  */
-export async function createDraftSingle({ to, cc = [], bcc = [], subject, body, bodyType = 'HTML' }) {
+export async function createDraftSingle({ to, cc = [], bcc = [], subject, body, bodyType = 'HTML', attachments = [] }) {
   const outputPath = tempPath('outlook_draft', 'json');
   const bodyFile = tempPath('outlook_draft_body', 'html');
   await writeFile(bodyFile, body, 'utf-8');
@@ -176,6 +209,7 @@ export async function createDraftSingle({ to, cc = [], bcc = [], subject, body, 
   ];
   if (cc.length > 0) args.push('-Cc', cc.join('; '));
   if (bcc.length > 0) args.push('-Bcc', bcc.join('; '));
+  if (attachments.length > 0) args.push('-Attachments', attachments.join(','));
 
   return runPowerShell({
     script: SCRIPTS.draftSingle,
@@ -219,7 +253,7 @@ export async function getRecentEmails({ maxResults = 10, daysBack = 7, folders =
     '-Folders', folders,
     '-OutputPath', outputPath
   ];
-  if (keywords.length > 0) args.push('-Keywords', ...keywords);
+  if (keywords.length > 0) args.push('-Keywords', keywords.join(','));
 
   return runPowerShell({
     script: SCRIPTS.recentEmails,

@@ -145,6 +145,14 @@ export function createCrmClient(authService) {
 
       return { ok: true, status: response.status, data };
     } catch (err) {
+      // 401 retry: clear cached token, re-authenticate, retry once
+      if (err.status === 401 && !opts._authRetried) {
+        authService.clearToken();
+        const retry = await authService.ensureAuth();
+        if (retry.success) {
+          return request(entityPath, { ...opts, _authRetried: true });
+        }
+      }
       return {
         ok: false,
         status: err.status || 500,
@@ -184,5 +192,8 @@ export function createCrmClient(authService) {
     return { ok: true, status: 200, data: { ...first.data, value: allValues } };
   };
 
-  return { request, requestAllPages, buildUrl };
+  const clearToken = () => authService.clearToken();
+  const ensureAuth = (settings) => authService.ensureAuth(settings);
+
+  return { request, requestAllPages, buildUrl, clearToken, ensureAuth };
 }

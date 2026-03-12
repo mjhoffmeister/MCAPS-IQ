@@ -29,7 +29,7 @@ Analyze GHCP seat opportunity data from MSXI weekly reports, produce actionable 
 | Account roster | `.docs/Weekly/Template GHCP-Seats-report.xlsx` | Canonical list of tracked accounts (TPIDs) |
 | Customer notes | `.docs/_data/<Account>/state.md` | Context: identity, milestones, flags, billing |
 | Metric definitions | Instruction: `GHCP_Seat_Opportunity.instructions.md` | Key formulas, growth cohorts, pitfalls |
-| Metric glossary | Document: `.github/documents/ghcp-metric-formulas.md` | Full glossary, seat definitions, Excel column mapping |
+| Metric glossary | Document: `.docs/documents/ghcp-metric-formulas.md` | Full glossary, seat definitions, Excel column mapping |
 
 ## Prerequisites
 
@@ -218,6 +218,6 @@ For key formulas, growth cohorts, and common pitfalls, see the instruction file:
 `GHCP_Seat_Opportunity.instructions.md`
 
 For full metric glossary, seat definitions, penetration metrics, pipeline formulas, cross-sell metrics, and Excel column mapping, see:
-`.github/documents/ghcp-metric-formulas.md`
+`.docs/documents/ghcp-metric-formulas.md`
 
 For cohort classification logic, see: [references/cohort-logic.md](references/cohort-logic.md)

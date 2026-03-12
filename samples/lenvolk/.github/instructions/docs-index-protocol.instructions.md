@@ -26,7 +26,9 @@ After `_index.md` identifies the account, read only the files needed for the ope
 |---|---|
 | Email search | `_data/<Account>/contacts.md` → AccountReference.md (for TPID/keywords) |
 | Teams search | `_data/<Account>/teams-threads.md` → `contacts.md` |
-| Milestone review | `_data/<Account>/state.md` → AccountReference.md (for OppID) |
+| Milestone review | `_data/<Account>/state.md` (check milestones section + `updated:` date) → CRM only if stale/missing |
+| Opportunity lookup | `_data/<Account>/state.md` (check identity/milestones for opp IDs) → CRM only if stale/missing |
+| Milestone/opp write | `_data/<Account>/state.md` (for IDs/context) → CRM (validate live state before writing) |
 | Account deep dive | `_data/<Account>/state.md` → `contacts.md` → `insights.md` |
 | Meeting prep | `_data/<Account>/state.md` → `contacts.md` → `email-threads.md` |
 | Connect hook capture | `_data/<Account>/insights.md` (append) |

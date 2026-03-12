@@ -1,5 +1,5 @@
 ---
-description: "Enrich account files to Windstream-Unity quality: contacts, email threads, Teams catalog, observations, and risk signals."
+description: "Enrich account files to account name or names: contacts, email threads, Teams catalog, observations, and risk signals."
 ---
 
 # Enrich Account
@@ -12,14 +12,14 @@ Build out an account's `.docs/_data/` files to gold standard. Populates contacts
 
 ## Workflow
 
-### Step 1 — Assess Current State (context load order)
+### Step 1 — Assess Current State (Index-First)
 
-For each account, load context in this order:
-1. Read `.docs/_data/<Account>/contacts.md` → check if contacts and email domains exist or are stub-only. This is the PRIMARY contact source.
-2. Read `.docs/_data/<Account>/email-threads.md` → check if thread catalog exists or is stub-only.
-3. Read `.docs/_data/<Account>/state.md` → check completeness (identity, milestones, flags).
-4. Read `.docs/_data/<Account>/teams-threads.md` → check if Teams data exists or is stub-only.
-5. Read `.docs/AccountReference.md` for SSP, GH AE, TPID, OppIDs, **Tier** (Strategic/Major), **Tranche** (A/B/C).
+For each account, load context:
+1. Read `.docs/_index.md` → find account row for current seats, freshness, flags.
+2. Read `.docs/_data/<Account>/contacts.md` → check if contacts and email domains exist or are stub-only.
+3. Read `.docs/_data/<Account>/email-threads.md` → check if thread catalog exists or is stub-only.
+4. Read `.docs/_data/<Account>/state.md` → check completeness (identity, milestones, flags).
+5. Read `.docs/_data/<Account>/teams-threads.md` → check if Teams data exists or is stub-only.
 
 Classify each account as: **Stub** (empty/template only), **Partial** (some data), or **Rich** (gold-standard).
 

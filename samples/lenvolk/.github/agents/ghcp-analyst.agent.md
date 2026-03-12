@@ -38,14 +38,16 @@ Remove-Item -Recurse -Force .tmp_venv
 Remove-Item -Force .tmp_*.py, .tmp_*.json, .tmp_*.csv 2>$null
 ```
 
-Never leave `.tmp_venv/` or `.tmp_*` files behind. Cleanup is mandatory.
+**Verification step**: After cleanup, run `Get-ChildItem .tmp_* -ErrorAction SilentlyContinue | Select-Object Name` and confirm zero results. If any `.tmp_*` files remain, delete them. Do NOT return results to the orchestrator until all temp files are gone.
+
+**Hard rule**: Leaving `.tmp_*` files behind is a task failure — even if the analysis succeeded.
 
 ## Skill & Instruction References
 
 | Type | Path | Purpose |
 |---|---|---|
 | Instruction | `.github/instructions/GHCP_Seat_Opportunity.instructions.md` | Key formulas, worked example, growth cohorts, pitfalls |
-| Document | `.github/documents/ghcp-metric-formulas.md` | Full metric glossary, seat definitions, penetration, pipeline, cross-sell, Excel column mapping |
+| Document | `.docs/documents/ghcp-metric-formulas.md` | Full metric glossary, seat definitions, penetration, pipeline, cross-sell, Excel column mapping |
 | Skill | `.github/skills/ghcp-seat-opportunity/SKILL.md` | Full workflow definitions for all 6 analysis types |
 | Reference | `.github/skills/ghcp-seat-opportunity/references/cohort-logic.md` | Growth framework cohort classification algorithm |
 | Instruction | `.github/instructions/local-notes.instructions.md` | `.docs/` conventions and storage routing |
@@ -59,7 +61,7 @@ Never leave `.tmp_venv/` or `.tmp_*` files behind. Cleanup is mandatory.
 | Report template | `.docs/Weekly/Template GHCP-Seats-report.xlsx` | Column layout and account list for report generation |
 | Customer notes | `.docs/_data/<Account>/state.md` | Context: team, opportunities, prior findings |
 | Metric definitions | `.github/instructions/GHCP_Seat_Opportunity.instructions.md` | Key formulas, growth cohorts, pitfalls |
-| Metric glossary | `.github/documents/ghcp-metric-formulas.md` | Full glossary, seat definitions, Excel column mapping |
+| Metric glossary | `.docs/documents/ghcp-metric-formulas.md` | Full glossary, seat definitions, Excel column mapping |
 | Cohort logic | `.github/skills/ghcp-seat-opportunity/references/cohort-logic.md` | Growth framework classification |
 
 ## Tool: openpyxl

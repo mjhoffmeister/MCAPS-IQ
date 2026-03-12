@@ -2,6 +2,8 @@
 
 MCP server for Dynamics 365 / MSX CRM operations. Gives GitHub Copilot (and any MCP-compatible AI agent) read/write access to opportunities, milestones, tasks, and account data — with a **human-in-the-loop approval queue** for all write operations.
 
+> **Want to understand how it works?** See the [Documentation Guide](docs/README.md) for architecture walkthroughs, the staged write flow, and milestone query optimization.
+
 ## Features
 
 - **Read tools** — query opportunities, milestones, tasks, accounts, and metadata via OData

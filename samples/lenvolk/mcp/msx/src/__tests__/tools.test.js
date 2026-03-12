@@ -1048,7 +1048,7 @@ describe('registerTools', () => {
       // Verify staged op uses AddUserToRecordTeam
       const queue = getApprovalQueue();
       const ops = queue.listPending();
-      expect(ops[0].entitySet).toBe('AddUserToRecordTeam');
+      expect(ops[0].entitySet).toContain('AddUserToRecordTeam');
     });
 
     it('add with systemUserId resolves display name', async () => {
@@ -1097,7 +1097,7 @@ describe('registerTools', () => {
       expect(parsed.staged).toBe(true);
       const queue = getApprovalQueue();
       const ops = queue.listPending();
-      expect(ops[0].entitySet).toBe('RemoveUserFromRecordTeam');
+      expect(ops[0].entitySet).toContain('RemoveUserFromRecordTeam');
     });
 
     it('remove errors without email or systemUserId', async () => {
@@ -1152,55 +1152,51 @@ describe('registerTools', () => {
       expect(parsed.count).toBe(0);
     });
 
-    it('add resolves email but returns privilege error', async () => {
-      // First call: email lookup (resolves user)
+    it('add resolves email and stages bound action', async () => {
+      // Email lookup (resolves user)
       crm.requestAllPages.mockResolvedValueOnce({
         ok: true, status: 200, data: { value: [
           { systemuserid: validUserId, fullname: 'Miro Masat', internalemailaddress: 'miromasat@github.com' }
         ] }
       });
-      // Second call: team existence check (team exists)
-      crm.requestAllPages.mockResolvedValueOnce({
-        ok: true, status: 200, data: { value: [{ teamid: 'ms-team-1' }] }
-      });
       const result = await callTool(server, 'manage_milestone_team', {
         action: 'add', milestoneId: validMsId, email: 'miromasat@github.com'
       });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('prvWriteTeam');
-      expect(result.content[0].text).toContain('Miro Masat');
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.staged).toBe(true);
+      expect(parsed.displayName).toBe('Miro Masat');
+      const queue = getApprovalQueue();
+      const ops = queue.listPending();
+      expect(ops[0].entitySet).toContain('AddUserToRecordTeam');
     });
 
-    it('add with systemUserId returns privilege error with display name', async () => {
-      // First call: display name lookup
+    it('add with systemUserId stages bound action with display name', async () => {
+      // Display name lookup
       crm.request.mockResolvedValueOnce({
         ok: true, status: 200, data: { fullname: 'Miro Masat' }
-      });
-      // Second call: team existence check (team exists)
-      crm.requestAllPages.mockResolvedValueOnce({
-        ok: true, status: 200, data: { value: [{ teamid: 'ms-team-1' }] }
       });
       const result = await callTool(server, 'manage_milestone_team', {
         action: 'add', milestoneId: validMsId, systemUserId: validUserId
       });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('prvWriteTeam');
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.staged).toBe(true);
+      expect(parsed.resolvedUserId).toBe(validUserId);
     });
 
-    it('add returns no-team error when access team does not exist', async () => {
+    it('add stages operation even when no access team exists yet', async () => {
       crm.requestAllPages.mockResolvedValueOnce({
         ok: true, status: 200, data: { value: [
           { systemuserid: validUserId, fullname: 'Miro Masat', internalemailaddress: 'miromasat@github.com' }
         ] }
       });
-      crm.requestAllPages.mockResolvedValueOnce({
-        ok: true, status: 200, data: { value: [] }
-      });
       const result = await callTool(server, 'manage_milestone_team', {
         action: 'add', milestoneId: validMsId, email: 'miromasat@github.com'
       });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('No access team exists');
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.staged).toBe(true);
     });
 
     it('add errors when email not found', async () => {
@@ -1214,7 +1210,7 @@ describe('registerTools', () => {
       expect(result.content[0].text).toContain('No systemuser found');
     });
 
-    it('remove resolves email but returns privilege error', async () => {
+    it('remove resolves email and stages bound action', async () => {
       crm.requestAllPages.mockResolvedValueOnce({
         ok: true, status: 200, data: { value: [
           { systemuserid: validUserId, fullname: 'Miro Masat', internalemailaddress: 'miromasat@github.com' }
@@ -1223,9 +1219,12 @@ describe('registerTools', () => {
       const result = await callTool(server, 'manage_milestone_team', {
         action: 'remove', milestoneId: validMsId, email: 'miromasat@github.com'
       });
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('prvWriteTeam');
-      expect(result.content[0].text).toContain('Miro Masat');
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.staged).toBe(true);
+      const queue = getApprovalQueue();
+      const ops = queue.listPending();
+      expect(ops[0].entitySet).toContain('RemoveUserFromRecordTeam');
     });
 
     it('remove errors without email or systemUserId', async () => {

@@ -10,7 +10,11 @@
   "scripts": {
     "setup": "node scripts/init.js",
     "check": "node scripts/init.js --check",
-    "postinstall": "node scripts/init.js"
+    "postinstall": "node scripts/init.js",
+    "docs:install": "pip install -r site/requirements.txt",
+    "docs:serve": "mkdocs serve",
+    "docs:build": "mkdocs build",
+    "docs:deploy": "mkdocs gh-deploy --force"
   },
   "engines": {
     "node": ">=18"

@@ -34,6 +34,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- Handle comma-separated arrays from -File mode ---
+if ($Contacts.Count -eq 1 -and $Contacts[0] -match ',') {
+    $Contacts = $Contacts[0] -split ','
+}
+if ($Keywords.Count -eq 1 -and $Keywords[0] -match ',') {
+    $Keywords = $Keywords[0] -split ','
+}
+
 # --- Ensure Outlook is running ---
 $outlookProcess = Get-Process -Name "OUTLOOK" -ErrorAction SilentlyContinue
 if (-not $outlookProcess) {

@@ -44,6 +44,8 @@ param(
     [ValidateSet("HTML", "Text")]
     [string]$BodyType = "HTML",
 
+    [string[]]$Attachments = @(),
+
     [string]$OutputPath = ""
 )
 
@@ -89,6 +91,15 @@ try {
         $mail.HTMLBody = $Body
     } else {
         $mail.Body = $Body
+    }
+
+    # Add attachments if provided
+    foreach ($att in $Attachments) {
+        if ($att -and (Test-Path $att)) {
+            $mail.Attachments.Add($att) | Out-Null
+        } else {
+            Write-Warning "Attachment not found, skipping: $att"
+        }
     }
 
     # Save as draft (do NOT send)

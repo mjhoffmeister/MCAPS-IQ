@@ -103,6 +103,7 @@ All Excalidraw visual diagrams (strategy maps, architecture views, milestone lan
 - Always use the account name and date — never use descriptive names like `strategy-map.excalidraw`.
 - One diagram per account per date. If regenerated on the same date, overwrite the existing file.
 - The `Drawing_Excalidraw/` folder is shared across all accounts — do not create per-account subfolders within it.
+- **Tooling**: Use the `excalidraw` MCP server (https://mcp.excalidraw.com) `create_drawing` tool to create/overwrite diagrams. The tool validates Excalidraw JSON and rejects empty elements arrays. Use `list_drawings` to enumerate existing files and `export_to_svg` for SVG rendering. The MSX Dashboard also serves diagrams as SVG via `/api/drawings/:name/svg`.
 
 ### Contact Resolution (for Email/Teams Search)
 
@@ -131,31 +132,37 @@ All contact data is now consolidated in `.docs/_data/<Account>/contacts.md`:
 
 ### 1. CRM Query Prefetch (.docs/ → CRM)
 
-**Before any CRM query workflow**, check `.docs/` for relevant customer context:
+**Before any CRM query workflow**, check `.docs/` for relevant customer data — milestones, opportunities, and context:
 
 1. Read `.docs/_index.md` for portfolio overview and to identify the active roster.
 2. If the query targets a specific customer, read `.docs/_data/<Account>/state.md` to extract:
-   - Known opportunity names/IDs (avoids discovery queries).
+   - Known milestone numbers, names, statuses, dates, and owners.
+   - Known opportunity names/IDs, stages, and close dates.
    - Seat data, tranche, flags (avoids redundant queries).
-3. Use notes context to **scope** the CRM query — filter by known opportunity IDs, target specific milestones, or skip customers the user doesn't track.
+3. **If state.md has the data and was updated within 7 days**, return it directly for read-only queries. Do not call CRM.
+4. **If the data is stale (>7 days), missing, or the query involves writes**, use notes context to **scope** the CRM query — filter by known opportunity IDs, target specific milestones, or skip customers the user doesn't track.
+5. After CRM returns, update `.docs/_data/<Account>/state.md` with validated data and refresh the `updated:` date.
 
 **When to skip notes prefetch:**
 - The user provides an explicit opportunity ID or customer name not in `.docs/_data/`.
 - The user explicitly asks to search broadly beyond their tracked customers.
+- The user explicitly requests live/fresh CRM data.
 
 ### 2. Freshness Rules (When to Use CRM vs .docs/)
 
 | Scenario | Source |
 |---|---|
 | "Who are my active customers?" | **Notes** (`.docs/_index.md` portfolio index) |
-| "What milestones need attention for Contoso?" | **CRM** (fresh state), notes for context |
+| "What milestones need attention for Contoso?" | **Notes first** (state.md milestones section, if updated ≤7 days) → **CRM** (if stale/missing) |
+| "Show me milestones for Contoso" | **Notes first** (state.md) → **CRM** only if not found or stale |
+| "What opportunities are open for Contoso?" | **Notes first** (state.md identity/milestones) → **CRM** only if not found or stale |
 | "What did we discuss last time about Contoso?" | **Notes** (insights.md, email-threads.md) |
-| "Create a task for milestone X" | **CRM** (fresh milestone state → write) |
-| "Which customers have at-risk milestones?" | **Notes** (`_index.md` roster) → **CRM** (filtered query) |
-| "Summarize my account health" | **Notes** (`_index.md` + per-account state.md) → **CRM** (fresh state per customer) |
-| "What's the status of opportunity Y?" | **CRM** (always fresh for status) |
+| "Create a task for milestone X" | **Notes** (state.md for IDs/context) → **CRM** (validate live state before write) |
+| "Which customers have at-risk milestones?" | **Notes** (`_index.md` flags + per-account state.md) → **CRM** only for stale accounts |
+| "Summarize my account health" | **Notes** (`_index.md` + per-account state.md) → **CRM** (fresh state per customer only if stale) |
+| "What's the status of opportunity Y?" | **Notes first** (state.md) → **CRM** if stale (>7 days) or user requests live data |
 
-**Rule of thumb:** Use `.docs/` for *who/what/why* context. Use CRM for *current state* data. When both are needed, notes scope first, CRM validates second.
+**Rule of thumb:** For milestones and opportunities, always check `.docs/` first. If state.md has the data and was updated within 7 days, use it directly for read-only queries. Use CRM only when data is not found locally, is stale (>7 days), the query involves writes (validate live state before writing), or the user explicitly requests live data. Use `.docs/` for *who/what/why* context. Use CRM for *current state validation* when notes are stale. When both are needed, notes scope first, CRM validates second.
 
 ### 3. Post-Workflow Promotion (CRM → .docs/)
 

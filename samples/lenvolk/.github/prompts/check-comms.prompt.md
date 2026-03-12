@@ -12,10 +12,10 @@ Quick communication health check for one or more accounts. Searches email, Teams
 
 ## Workflow
 
-### Step 1 — Resolve Accounts
+### Step 1 — Resolve Accounts (Index-First)
 
-- Read `.docs/AccountReference.md` to resolve names/TPIDs → account folder, SSP, GH AE, **Tier** (Strategic/Major), **Tranche** (A/B/C).
-- For each account:
+- Read `.docs/_index.md` → find account rows, note freshness dates (skip accounts with Email/Teams < 1 day old unless forced).
+- For each in-scope account:
   - Read `.docs/_data/<Account>/contacts.md` for the full contact roster and email domains.
   - Read `.docs/_data/<Account>/teams-threads.md` for known Teams channels/chats.
   - Read `.docs/_data/<Account>/state.md` for flagged issues.

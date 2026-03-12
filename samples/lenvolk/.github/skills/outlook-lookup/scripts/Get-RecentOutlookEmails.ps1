@@ -35,6 +35,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- Handle comma-separated arrays from -File mode ---
+if ($Keywords.Count -eq 1 -and $Keywords[0] -match ',') {
+    $Keywords = $Keywords[0] -split ','
+}
+
 # Clamp MaxResults
 if ($MaxResults -lt 1) { $MaxResults = 1 }
 if ($MaxResults -gt 100) { $MaxResults = 100 }

@@ -131,7 +131,8 @@ export function registerTools(server) {
       bcc: z.array(z.string()).optional().describe('BCC email addresses'),
       subject: z.string().describe('Email subject line'),
       body: z.string().describe('Email body (HTML or plain text)'),
-      bodyType: z.enum(['HTML', 'Text']).default('HTML').describe('Body format: HTML or Text')
+      bodyType: z.enum(['HTML', 'Text']).default('HTML').describe('Body format: HTML or Text'),
+      attachments: z.array(z.string()).optional().describe('File paths to attach to the email')
     },
     async (params) => {
       // Validate To
@@ -162,7 +163,8 @@ export function registerTools(server) {
         bcc: params.bcc ? params.bcc.map(e => e.trim()) : [],
         subject: params.subject,
         body: params.body,
-        bodyType: params.bodyType
+        bodyType: params.bodyType,
+        attachments: params.attachments || []
       });
 
       if (!result.ok) return error(`Draft creation failed: ${result.error}`);

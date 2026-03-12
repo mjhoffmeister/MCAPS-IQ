@@ -165,6 +165,7 @@ Local and cloud MCP servers provide M365 data access, plus additional MCP server
 | `outlook-local` (calendar) | Calendar events, meeting search, user's own availability via Outlook COM | Meeting lookups, own availability checks, account meeting history |
 | `agent365-calendartools` | Multi-person free/busy schedules, group availability, meeting time suggestions via Microsoft Graph | Finding a time across multiple attendees, checking if someone else is free, scheduling across account teams |
 | `agent365-wordserver` | Word document reading, creation, and comment collaboration | Document link resolution in emails/Teams messages, document content retrieval |
+| `agent365-sharepoint` | SharePoint and OneDrive file operations — site discovery, file search, metadata, folder browsing, sharing | SharePoint file search, document link resolution, OneDrive navigation, account deliverable tracking |
 | `workiq` | People/org research — roles, reporting lines, expertise, stakeholder identification | Person profile lookups, "who is my manager", org navigation, role discovery |
 | `linkedin` | LinkedIn company profiles, company posts, people profiles, job/people search (read-only) | Customer company research, stakeholder LinkedIn lookups, company announcements. Does NOT support personal feed browsing or interactions (like/comment/share). |
 
@@ -172,7 +173,7 @@ Local and cloud MCP servers provide M365 data access, plus additional MCP server
 
 - For broad M365 asks (emails/meetings/chats/files/transcripts), always narrow scope before retrieval.
 - If role mapping and M365 scoping both apply, resolve role first, then scope the M365 query.
-- Choose the right server: use `teams-local` for Teams-specific data (with `agent365-teamsserver` as backfill for empty message bodies), `outlook-local` for email search and the user's own calendar/scheduling, `agent365-calendartools` for multi-person availability and group meeting scheduling, `agent365-wordserver` for Word document content, and `workiq` for person/org profile lookups.
+- Choose the right server: use `teams-local` for Teams-specific data (with `agent365-teamsserver` as backfill for empty message bodies), `outlook-local` for email search and the user's own calendar/scheduling, `agent365-calendartools` for multi-person availability and group meeting scheduling, `agent365-wordserver` for Word document content, `agent365-sharepoint` for SharePoint/OneDrive file search, metadata, and document library navigation, and `workiq` for person/org profile lookups.
 
 ### Email Search: Participant-First Rule (Outlook-Local Primary)
 
@@ -277,7 +278,7 @@ This repository uses a tiered context model to keep the agent focused on relevan
 - **Frontmatter requirements**: Every skill file MUST have `name`, `description`, and `argument-hint` in YAML frontmatter.
 - **Rule**: Only one role skill should typically be active per workflow. The copilot-instructions routing (role selection) determines which.
 
-### Tier 3 — Reference Documents (`.github/documents/`)
+### Tier 3 — Reference Documents (`.docs/documents/`)
 - **What**: Large reference material (specs, protocol docs, SDK docs). Never auto-loaded.
 - **Loaded when**: Explicitly read via tool call when the agent needs detailed reference.
 - **Rule**: Do not put actionable instructions in documents. Keep instructions in Tier 1/2; use documents for lookup.

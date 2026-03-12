@@ -44,9 +44,50 @@ If execution fails, retry once with adjusted parameters. If still failing, repor
 
 Reference: `.github/instructions/msx-role-and-write-gate.instructions.md` for staging mechanics.
 
+## Database-First Resolution Protocol
+
+**Every milestone or opportunity query MUST check `.docs/` before calling CRM tools.** The local database is the first-pass source. CRM is the fallback for data not found locally or when freshness demands live state.
+
+### Resolution Order
+
+1. **Read `.docs/_index.md`** — get portfolio roster, seat data, flags, freshness timestamps.
+2. **Read `.docs/_data/<Account>/state.md`** — extract milestones (numbers, names, status, dates, owners), opportunities (IDs, names, stages, close dates), flags, and tranche context.
+3. **Evaluate freshness** — check the `updated:` frontmatter date in state.md:
+   - If updated within **7 days** and the query is **read-only** (status check, list milestones, show opportunities): **return data from `.docs/` directly**. Do not call CRM.
+   - If updated within **7 days** but the query involves **writes** (update milestone, create task, close task): use `.docs/` IDs/context to scope the CRM call, but **validate live state from CRM before writing**.
+   - If **older than 7 days** or **no state.md exists**: proceed to CRM query (Step 4).
+   - If the user explicitly requests **fresh/live CRM data**: skip to Step 4 regardless of freshness.
+4. **Query CRM** — use the Scope-Before-Retrieve rules in the Read Operations section. Use IDs and context from `.docs/` to narrow the CRM query.
+5. **Promote findings** — after any CRM query, update `.docs/_data/<Account>/state.md` with validated data and refresh the `updated:` date. Update `_manifest.md` and `_index.md` per the write protocol.
+
+### What Counts as "Found"
+
+- **Milestones found**: state.md has a `## Milestones` section with milestone numbers, names, statuses, and dates.
+- **Opportunities found**: state.md has opportunity IDs and names under `## Identity` or `## Milestones` subsections.
+- **Not found**: no `_data/<Account>/` folder exists, or state.md lacks the relevant section, or the account isn't in `_index.md`.
+
+### Portfolio Queries (Multi-Account)
+
+For "show all my milestones" or "which accounts have at-risk milestones":
+1. Read `_index.md` for the full roster and flags.
+2. For accounts with relevant flags (at-risk, overdue), read their state.md files.
+3. Only escalate to CRM for accounts where state.md is stale (>7 days) or missing milestone data.
+4. Never call `get_milestones(mine: true)` when `_index.md` + state.md files can answer the question.
+
+### After CRM Workflows
+
+After any CRM read or write, promote validated findings back to `.docs/`:
+1. Update `.docs/_data/<Account>/state.md` with current milestone/opportunity data.
+2. Append significant findings to `.docs/_data/<Account>/insights.md` with datestamp.
+3. Update `_manifest.md` and `_index.md` per the write protocol.
+4. Do NOT promote speculative or unvalidated information.
+
 ## Read Operations
 
-### Scope-Before-Retrieve Rule
+### Database-First Rule
+**Always follow the Database-First Resolution Protocol (above) before any CRM read.** Check `.docs/_data/<Account>/state.md` first. Only proceed to CRM tools when the data is not found locally, is stale (>7 days), or the user explicitly requests live data.
+
+### Scope-Before-Retrieve Rule (for CRM queries)
 **Never call `get_milestones` with `mine: true` as the first action.** Always narrow scope first.
 
 Resolution order:
@@ -84,12 +125,6 @@ crm_query({
 get_milestone_activities({ milestoneIds: ["ms1", "ms2", "ms3"] })
 ```
 
-## Context Layer
-
-Before CRM queries, check `.docs/_data/<Account>/state.md` for account context (flags, milestones, prior findings) to scope queries appropriately. Don't query CRM blind when notes tell you who matters.
-
-After CRM workflows, promote validated findings to `.docs/_data/<Account>/insights.md`.
-
 ## CRM Token Recovery
 
 If any CRM tool call returns a **401**, **auth expired**, or **"Not logged in"** error mid-workflow:
@@ -109,6 +144,7 @@ Do NOT run `az login`, `az account get-access-token`, or any terminal commands f
 
 ## Guardrails
 
+- **Database-first**: Always check `.docs/_data/<Account>/state.md` before calling any CRM read tool for milestones or opportunities. Only go to CRM when data is missing, stale (>7 days), involves writes, or user requests live data.
 - **Autonomous**: Never prompt the user. Infer roles, execute writes, report results.
 - Never guess CRM property names
 - Never call `get_milestones(mine: true)` unscoped
@@ -119,10 +155,12 @@ Do NOT run `az login`, `az account get-access-token`, or any terminal commands f
 ## Scope Boundary
 
 **What I do:**
-- CRM reads: milestones, tasks, opportunities, accounts, contacts via `msx-crm/*` MCP tools
+- **Database-first resolution**: check `.docs/_data/<Account>/state.md` for milestones/opportunities before calling CRM
+- CRM reads: milestones, tasks, opportunities, accounts, contacts via `msx-crm/*` MCP tools (when data not found locally or stale)
 - CRM writes: milestone updates, task creation/updates, opportunity modifications (with role-based write gate)
 - Pipeline health checks, milestone activity retrieval
 - Scope-before-retrieve for all CRM queries
+- Promote CRM findings back to `.docs/` after queries
 
 **What I do NOT do — reject and reroute if delegated:**
 - Email search or email composition → **EmailTracker** / **EmailComposer**

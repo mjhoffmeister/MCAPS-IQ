@@ -39,6 +39,18 @@ const TASK_CATEGORIES = [
   { label: 'Workshop', value: 861980001 }
 ];
 
+// Default due-date offsets (in days from today) per task category
+const DEFAULT_ACTIVITY_DUE_DATE_DAYS = {
+  606820005: 20, // Technical Close/Win Plan
+  861980004: 10, // Architecture Design Session
+  861980006: 15, // Blocker Escalation
+  861980008: 15, // Briefing
+  861980007: 20, // Consumption Plan
+  861980002: 15, // Demo
+  861980005: 60, // PoC/Pilot
+  861980001: 30  // Workshop
+};
+
 const text = (content) => ({ content: [{ type: 'text', text: typeof content === 'string' ? content : JSON.stringify(content, null, 2) }] });
 const error = (msg) => ({ content: [{ type: 'text', text: msg }], isError: true });
 
@@ -520,9 +532,20 @@ export function registerTools(server, crmClient, pbiClient) {
 
       const payload = {
         subject,
+        scheduleddurationminutes: 60,
+        prioritycode: 1,
         'regardingobjectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
       };
-      if (category !== undefined) payload.msp_taskcategory = category;
+      if (category !== undefined) {
+        payload.msp_taskcategory = category;
+        // Auto-calculate due date from category defaults when no explicit dueDate
+        if (!dueDate && DEFAULT_ACTIVITY_DUE_DATE_DAYS[category] !== undefined) {
+          const d = new Date();
+          d.setUTCHours(0, 0, 0, 0);
+          d.setUTCDate(d.getUTCDate() + DEFAULT_ACTIVITY_DUE_DATE_DAYS[category]);
+          payload.scheduledend = d.toISOString().slice(0, 10);
+        }
+      }
       if (dueDate) payload.scheduledend = dueDate;
       if (description) payload.description = description;
       if (ownerId) {
@@ -1488,6 +1511,22 @@ export function registerTools(server, crmClient, pbiClient) {
     }
   );
 
+  // ── crm_refresh_auth ────────────────────────────────────────
+  server.tool(
+    'crm_refresh_auth',
+    'Force-refresh the CRM auth token without restarting the MCP server. ' +
+      'Call this after the user runs "az login" to recover from expired tokens.',
+    {},
+    async () => {
+      crmClient.clearToken();
+      const result = await crmClient.ensureAuth();
+      if (!result.success) return error(`Auth refresh failed: ${result.error}. Ask user to run: az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47`);
+      const whoami = await crmClient.request('WhoAmI');
+      if (!whoami.ok) return error(`Token refreshed but WhoAmI failed: ${whoami.data?.message}`);
+      return text({ refreshed: true, userId: whoami.data?.UserId });
+    }
+  );
+
   // ── manage_deal_team ─────────────────────────────────────────
   const OPP_TEAM_TEMPLATE_ID = 'cc923a9d-7651-e311-9405-00155db3ba1e';
 
@@ -1568,16 +1607,22 @@ export function registerTools(server, crmClient, pbiClient) {
 
       // ── ADD ──
       if (action === 'add') {
+        // Use bound action on systemuser (matches Dynamics UI behavior)
         const payload = {
-          Record: { '@odata.id': `opportunities(${oppNid})` },
-          SystemUserId: resolvedUserId,
-          TeamTemplate: { '@odata.id': `teamtemplates(${OPP_TEAM_TEMPLATE_ID})` }
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.opportunity',
+            opportunityid: oppNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: OPP_TEAM_TEMPLATE_ID
+          }
         };
 
         const queue = getApprovalQueue();
         const op = queue.stage({
           type: 'add_deal_team_member',
-          entitySet: 'AddUserToRecordTeam',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.AddUserToRecordTeam`,
           method: 'POST',
           payload,
           beforeState: null,
@@ -1595,16 +1640,22 @@ export function registerTools(server, crmClient, pbiClient) {
 
       // ── REMOVE ──
       if (action === 'remove') {
+        // Use bound action on systemuser (matches Dynamics UI behavior)
         const payload = {
-          Record: { '@odata.id': `opportunities(${oppNid})` },
-          SystemUserId: resolvedUserId,
-          TeamTemplate: { '@odata.id': `teamtemplates(${OPP_TEAM_TEMPLATE_ID})` }
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.opportunity',
+            opportunityid: oppNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: OPP_TEAM_TEMPLATE_ID
+          }
         };
 
         const queue = getApprovalQueue();
         const op = queue.stage({
           type: 'remove_deal_team_member',
-          entitySet: 'RemoveUserFromRecordTeam',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.RemoveUserFromRecordTeam`,
           method: 'POST',
           payload,
           beforeState: null,
@@ -1629,11 +1680,10 @@ export function registerTools(server, crmClient, pbiClient) {
 
   server.tool(
     'manage_milestone_team',
-    'List members on a milestone\'s access team (the "Milestone Team" tab in MSX). ' +
+    'List, add, or remove members on a milestone\'s access team (the "Milestone Team" tab in MSX). ' +
       'Uses Dynamics 365 Access Teams with the "Milestone Team" team template. ' +
-      'Only "list" is functional via API — "add" and "remove" are blocked because standard MSX security ' +
-      'roles lack prvWriteTeam/prvCreateTeam privileges. The tool will resolve the user and return their ' +
-      'name for manual addition via the MSX UI.',
+      'All actions use bound actions on the systemuser entity (AddUserToRecordTeam / RemoveUserFromRecordTeam). ' +
+      'Add/remove are staged for human approval via execute_operation.',
     {
       action: z.enum(['list', 'add', 'remove']).describe('Action to perform'),
       milestoneId: z.string().describe('Engagement milestone GUID'),
@@ -1706,45 +1756,64 @@ export function registerTools(server, crmClient, pbiClient) {
 
       // ── ADD ──
       if (action === 'add') {
-        // Check if access team already exists — if not, the API will fail with
-        // prvCreateTeam privilege error because team auto-creation requires it.
-        const existingTeam = await crmClient.requestAllPages('teams', {
-          query: {
-            $filter: `_regardingobjectid_value eq '${msNid}' and _teamtemplateid_value eq '${MILESTONE_TEAM_TEMPLATE_ID}'`,
-            $select: 'teamid',
-            $top: '1'
+        const queue = getApprovalQueue();
+        const payload = {
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.msp_engagementmilestone',
+            msp_engagementmilestoneid: msNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: MILESTONE_TEAM_TEMPLATE_ID
           }
+        };
+        const op = queue.stage({
+          type: 'add_milestone_team_member',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.AddUserToRecordTeam`,
+          method: 'POST',
+          payload,
+          beforeState: null,
+          description: `Add ${displayName || resolvedUserId} to milestone team on ${msNid}`
         });
-        const teamExists = existingTeam.ok && existingTeam.data?.value?.length > 0;
-        if (!teamExists) {
-          return error(
-            'No access team exists for this milestone yet. The D365 AddUserToRecordTeam action ' +
-            'requires prvCreateTeam and prvWriteTeam privileges on the team entity, which most MSX ' +
-            'user roles lack. Please add members via the MSX UI (Milestone Team tab) — the UI uses ' +
-            'elevated server-side privileges to manage the team.'
-          );
-        }
-
-        // Even with an existing team, AddUserToRecordTeam requires prvWriteTeam,
-        // which most MSX user roles also lack. Warn proactively.
-        return error(
-          'Milestone team management via API is not available — the AddUserToRecordTeam action ' +
-          'requires prvWriteTeam privilege on the team entity, which your CRM security roles lack. ' +
-          'Please add or remove milestone team members via the MSX UI (Milestone Team tab). ' +
-          'The UI uses elevated server-side plugins that bypass this restriction. ' +
-          `User to add: ${displayName || email || resolvedUserId}`
-        );
+        return text({
+          staged: true,
+          operationId: op.id,
+          description: op.description,
+          resolvedUserId,
+          displayName,
+          message: `Staged ${op.id}: ${op.description}. Approve via execute_operation.`
+        });
       }
 
       // ── REMOVE ──
       if (action === 'remove') {
-        // RemoveUserFromRecordTeam also requires prvWriteTeam, which is missing.
-        return error(
-          'Milestone team management via API is not available — the RemoveUserFromRecordTeam action ' +
-          'requires prvWriteTeam privilege on the team entity, which your CRM security roles lack. ' +
-          'Please remove milestone team members via the MSX UI (Milestone Team tab). ' +
-          `User to remove: ${displayName || email || resolvedUserId}`
-        );
+        const queue = getApprovalQueue();
+        const payload = {
+          Record: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.msp_engagementmilestone',
+            msp_engagementmilestoneid: msNid
+          },
+          TeamTemplate: {
+            '@odata.type': 'Microsoft.Dynamics.CRM.teamtemplate',
+            teamtemplateid: MILESTONE_TEAM_TEMPLATE_ID
+          }
+        };
+        const op = queue.stage({
+          type: 'remove_milestone_team_member',
+          entitySet: `systemusers(${resolvedUserId})/Microsoft.Dynamics.CRM.RemoveUserFromRecordTeam`,
+          method: 'POST',
+          payload,
+          beforeState: null,
+          description: `Remove ${displayName || resolvedUserId} from milestone team on ${msNid}`
+        });
+        return text({
+          staged: true,
+          operationId: op.id,
+          description: op.description,
+          resolvedUserId,
+          displayName,
+          message: `Staged ${op.id}: ${op.description}. Approve via execute_operation.`
+        });
       }
 
       return error(`Unknown action: ${action}`);
