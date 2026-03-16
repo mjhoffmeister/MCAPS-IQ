@@ -40,7 +40,8 @@ Use `ask_work_iq` to pull recent M365 activity with this customer/project. This 
 ### Step 4 — CRM Validation (if customer is tracked)
 
 If the customer has a vault file with opportunity IDs:
-- Use `list_opportunities({ customerKeyword: "<customer>" })` to get current opportunity status.
+- Use `list_opportunities({ customerKeyword: "<customer>", format: "full", includeDealTeam: true })` to get current opportunity status with stage/estimated close/deal-team.
+- If customer-keyword lookup returns no opportunities, use known IDs and call `list_opportunities({ opportunityIds: [...] })`.
 - Use `find_milestones_needing_tasks({ customerKeywords: ["<customer>"] })` if milestone context is relevant.
 - This ensures the meeting prep reflects **current CRM state**, not stale vault notes.
 

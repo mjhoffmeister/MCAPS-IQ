@@ -1,6 +1,6 @@
 ---
 name: pipeline-hygiene-triage
-description: 'Pipeline hygiene triage for Specialist: flags stale opportunities, missing CRM fields, close-date slippage, and low-quality entries. Generates exception report with bulk-fix suggestions for forecast prep. Chains with handoff-readiness-validation and risk-surfacing for weekly pipeline review. Triggers: portfolio cleanup, stale opportunities, missing fields, forecast prep, pipeline exceptions, close-date slip, weekly review, pipeline review.'
+description: 'Pipeline hygiene triage for Specialist: flags stale opportunities, missing CRM fields, close-date slippage, and low-quality entries. Generates exception report with bulk-fix suggestions for forecast prep. Chains with handoff-readiness-validation and risk-surfacing for weekly pipeline review. Triggers: portfolio cleanup, stale opportunities, missing fields, forecast prep, pipeline exceptions, close-date slip, weekly review, pipeline review. DO NOT USE FOR: CSAM milestone governance reviews — use milestone-health-review instead.'
 argument-hint: 'Scope by opportunityId(s) or sweep all active Specialist-owned pipeline'
 ---
 
@@ -20,7 +20,7 @@ Detects and prioritizes pipeline hygiene exceptions across active Stage 2–3 op
 
 ## Flow
 
-1. Call `msx-crm:get_my_active_opportunities` — single call for all active opportunities.
+1. Call `msx-crm:get_my_active_opportunities({ maxResults: 100 })` — single call for active opportunities with bounded payload.
 2. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, `format: 'summary'` — one call returns all milestones across opportunities. Add `includeTasks: true` if task state is needed.
 3. Score and rank exceptions by severity.
 4. Generate dry-run `msx-crm:update_milestone` and `msx-crm:update_task` payloads for top exceptions.

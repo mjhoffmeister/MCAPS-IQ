@@ -14,19 +14,7 @@ The agent strengthens cross-role communication and strategic alignment for accou
 
 ## Medium Availability Probe
 
-At session start (or first account-team request), probe which mediums are queryable:
-
-| Medium | Probe | If unavailable |
-|---|---|---|
-| **CRM** | `crm_auth_status` or `crm_whoami` | No CRM reads/writes this session |
-| **Vault** | `get_vault_context()` via OIL (`oil` MCP) | Skip VAULT-PREFETCH; operate stateless |
-| **WorkIQ / M365** | `ask_work_iq` with a minimal scoped query | Communication gap detection limited |
-| **Teams** | `teams:ListTeams` (fast, low-payload probe) | No native Teams read/write; fall back to WorkIQ |
-| **Mail** | `mail:SearchMessages` with narrow KQL (`received:today`, `top: 1`) | No native mail read/write; fall back to WorkIQ |
-| **Calendar** | `calendar:ListCalendarView` with today's date range | No native calendar read/write; fall back to WorkIQ |
-| **Power BI** | `ExecuteQuery` with `EVALUATE TOPN(1, 'Dim_Calendar')` via `powerbi-remote` | Skip PBI steps; note data unavailable |
-
-Cache probe results for the session. Two-medium answers are acceptable; single-medium must flag the gap. Never fabricate cross-medium insights from a single source.
+At session start, probe: CRM (`crm_whoami`), Vault (`get_vault_context`), WorkIQ (`ask_work_iq`), Teams (`ListTeams`), Mail (`SearchMessages` with `received:today top:1`), Calendar (`ListCalendarView` today), Power BI (`ExecuteQuery` with `EVALUATE TOPN(1, 'Dim_Calendar')`). Cache results; two-medium minimum; single-medium must flag the gap.
 
 ---
 
@@ -39,53 +27,26 @@ Cache probe results for the session. Two-medium answers are acceptable; single-m
 ## MSX/CRM Operations
 
 **Role mapping (mandatory before guidance or write-intent planning):**
-- Capture the user's MSX role up front. If not confirmed, present role options:
-  - `Specialist` → `.github/instructions/role-card-specialist.instructions.md`
-  - `Solution Engineer` → `.github/instructions/role-card-se.instructions.md`
-  - `Cloud Solution Architect` → `.github/instructions/role-card-csa.instructions.md`
-  - `Customer Success Account Manager` → `.github/instructions/role-card-csam.instructions.md`
-- If inferable from `crm_whoami` + `crm_get_record`, present likely role(s) and confirm.
-- For MCEM process model, stage definitions, and verifiable outcomes → `.github/instructions/mcem-flow.instructions.md`
-- For shared patterns (definitions, runtime contract, scoping) → `.github/instructions/shared-patterns.instructions.md`
+- Capture the user's MSX role up front: Specialist, SE, CSA, or CSAM. If not confirmed, present options. If inferable from `crm_whoami`, present and confirm.
+- MCEM stages → `mcem-flow.instructions.md`. Shared patterns → `shared-patterns.instructions.md`.
 
 **CRM query discipline:**
-- Never guess property names — verify via `crm_list_entity_properties` or `.github/instructions/crm-entity-schema.instructions.md`.
-- For CRM read query scoping (vault-first, composite tools, filtering) → `.github/instructions/crm-query-strategy.instructions.md`
-- For write-intent flows → `.github/instructions/msx-role-and-write-gate.instructions.md`
-- **Deal team**: Not retrievable via MCP tools. See `crm-entity-schema.instructions.md` § "Deal Team".
+- Use GUID (`opportunityid`) for tool parameters; display `msp_opportunitynumber` as `Opp #`. Never guess property names — verify via `crm-entity-schema.instructions.md`.
+- Query scoping → `crm-query-strategy.instructions.md`. Write-intent → `msx-role-and-write-gate.instructions.md`.
+- Stage: `msp_activesalesstage`. Close date: `msp_estcompletiondate` (fallback `estimatedclosedate`). Deal team: `msp_dealteams`.
 
-**WorkIQ**: Narrow scope before retrieval. See `.github/skills/workiq-query-scoping/SKILL.md`. Resolve role first, then apply scoping.
+**WorkIQ**: Narrow scope before retrieval; resolve role first. **M365 Native**: Use Teams/Mail/Calendar MCP for targeted single-source ops; WorkIQ for broad discovery. See `shared-patterns.instructions.md` § M365 Communication Layer.
 
-**M365 Native Tools (Teams, Mail, Calendar)**: For targeted single-source operations (specific chat lookup, email search, scheduling), use native MCP tools instead of WorkIQ. Use WorkIQ for broad multi-source discovery. See:
-- `.github/skills/teams-query-scoping/SKILL.md` — chat discovery, message search, self-chat handling, channel navigation
-- `.github/skills/mail-query-scoping/SKILL.md` — KQL email search, thread navigation, attachment handling
-- `.github/skills/calendar-query-scoping/SKILL.md` — time-bounded event retrieval, scheduling, room booking
-- For tool selection rules → `.github/instructions/shared-patterns.instructions.md` § M365 Communication Layer
-
-**Vault (OIL)**: Knowledge store for customer context and durable memory. See `.github/instructions/obsidian-vault.instructions.md`. If unavailable, operate statelessly (CRM-only).
-
-**Connect Hooks**: Capture measurable impact evidence. See `.github/instructions/connect-hooks.instructions.md`.
-
-**Power BI**: Analytics medium for ACR telemetry, scorecards, and incentive baselines. See `.github/instructions/powerbi-mcp.instructions.md`. Prompts live in `.github/prompts/pbi-*.prompt.md`. For prompt selection and multi-prompt orchestration, see `.github/skills/pbi-portfolio-navigator/SKILL.md`.
+**Vault (OIL)**: Customer context and durable memory. Operate statelessly if unavailable. **Connect Hooks**: `connect-hooks.instructions.md`. **Power BI**: Use `@pbi-analyst` subagent for medium/heavy DAX; see `powerbi-mcp.instructions.md`.
 
 ## Response Expectations
 
-- Keep outputs concise and action-oriented.
-- When asked to "use MCP server", do not pivot to direct shell-based CRM calls.
+- Concise, action-oriented. Structured tables for milestone/opportunity results — never prose-only.
+- Milestone columns: `Name`, `Monthly Use`, `Due Date`, `Status`, `Owner` (mandatory), `Blocker/Risk`, `Link`.
+- Opportunity columns: `Opp #` (CRM deep-link on `msp_opportunitynumber`), `Name`, `Monthly Use`, `Stage`, `Estimated Close Date`, `Health/Risk`, `Next Step`, `Deal Team`. No separate `Link` column.
+- Unavailable fields: show `Unknown`, note retrieval method. `Deal Team` unavailable → note `msp_dealteams` gap.
+- `get_my_active_opportunities`: deal-team-first discovery; `relationship` tag per opportunity (`owner`, `deal-team`, `both`).
 
-## Context Loading Architecture
+**Morning brief**: Trigger with "morning brief", "start my day", or "catch me up" to run the speed-optimized daily briefing workflow.
 
-| Tier | Location | Loaded | Budget |
-|---|---|---|---|
-| **0** | This file | Always (every turn) | ≤100 lines |
-| **1** | `.github/instructions/*.instructions.md` | By `description` match or `applyTo` glob | ≤600 lines combined |
-| **2** | `.github/skills/{name}/SKILL.md` | By `description` match (full content injected when matched) | ≤500 lines per skill |
-| **3** | `.github/documents/` | Explicit tool read only | No auto-load |
-
-**Morning brief**: The `morning-brief` skill (`.github/skills/morning-brief/SKILL.md`) is a speed-optimized daily briefing that launches parallel vault, CRM, and WorkIQ retrieval. It serves as both a practical daily tool and a template for users to fork and customize. Trigger with: "morning brief", "start my day", "catch me up".
-
-**Skill loading**: Skills use the folder convention `.github/skills/{name}/SKILL.md` and are auto-loaded by VS Code / Copilot CLI when the user's prompt matches a skill's `description` keywords. Matched skills appear in context with their full content (Flow, Decision Logic, Output Schema). When a `next_action` or role card references a skill that was not auto-loaded, fall back to `read_file` at `.github/skills/{name}/SKILL.md`.
-
-**Skill composition**: Skills are instruction documents, NOT exclusive tool invocations. Multiple skills can and should be executed sequentially in a single turn when the task requires it. To execute a skill: (1) follow its `## Flow` steps using MCP tools, (2) apply its Decision Logic and Output Schema, (3) if its `next_action` names a skill required by the user's request, execute that skill immediately without asking. For multi-skill prompts, execute each loaded skill's Flow in sequence, reusing MCP tool call results across skills. See `shared-patterns.instructions.md` § "Skill Composition Contract" for pre-validated chains.
-
-**Authoring rules**: Every instruction needs keyword-rich `description` frontmatter. Every skill needs `name`, `description`, `argument-hint` in its `SKILL.md` frontmatter. Shared definitions belong in Tier 1, not duplicated across skills.
+**Skill loading**: Auto-loaded by description match. If a chained skill is missing, read from `.github/skills/{name}/SKILL.md`. Execute multiple skills sequentially; reuse tool outputs. Chains → `shared-patterns.instructions.md`.

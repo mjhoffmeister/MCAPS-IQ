@@ -1,6 +1,6 @@
 ---
 name: account-structure-diagram
-description: 'Excalidraw diagram generator: produces visual maps of account structure — opportunities, milestones, deal-team roles, MCEM stage positions, and role-specific prioritized views. Assembles CRM + vault data into a renderable .excalidraw.md file. Chains with mcem-stage-identification and role-orchestration for enriched stage/role context. Triggers: diagram, visualize account, draw structure, Excalidraw, account map, opportunity map, visual overview, show me the account, structural view, architecture diagram, customer map, portfolio visualization.'
+description: 'Excalidraw diagram generator: produces visual maps of account structure — opportunities, milestones, deal-team roles, MCEM stage positions, and role-specific prioritized views. Assembles CRM + vault data into a renderable .excalidraw.md file. Chains with mcem-stage-identification and role-orchestration for enriched stage/role context. Triggers: diagram, visualize account, draw structure, Excalidraw, account map, opportunity map, visual overview, show me the account, structural view, customer map, portfolio visualization. DO NOT USE FOR: architecture feasibility reviews or technical POC planning — use architecture-feasibility-check.'
 argument-hint: 'Provide customer name, opportunityId(s), or account TPID — optionally specify role for a prioritized lens'
 ---
 

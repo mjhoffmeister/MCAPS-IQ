@@ -20,7 +20,7 @@ Synthesizes signals from CRM, M365 (WorkIQ), and vault to surface execution, rel
 
 ## Flow
 
-1. **CRM signals** — Call `msx-crm:crm_get_record` on opportunity + `msx-crm:get_milestones({ opportunityId, statusFilter: 'active', includeTasks: true })` for milestone state with inline tasks.
+1. **CRM signals** — Call `msx-crm:crm_get_record` on opportunity + `msx-crm:get_milestones({ opportunityId, statusFilter: 'active', format: 'triage', includeTasks: true })` for milestone state pre-classified by urgency with inline tasks.
 2. **M365 signals** — Call `ask_work_iq` with scoped query (apply WorkIQ scoping skill) for communication recency, engagement frequency, and sentiment.
 3. **Vault signals** — If vault is available, call `oil:get_vault_context()` for customer notes, prior risk flags, and relationship history.
 4. Classify risks by type and severity (see taxonomy below).

@@ -72,3 +72,4 @@ ENV/
 env/
 
 .connect/
+.vscode/

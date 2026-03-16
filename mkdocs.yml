@@ -140,6 +140,8 @@ nav:
     - System Overview: architecture/overview.md
     - MCP Servers & Tools: architecture/mcp-servers.md
     - Skills & Instructions: architecture/skills-instructions.md
+    - Skill Architecture: architecture/skill-architecture.md
+    - Context Optimization: architecture/context-optimization.md
     - Safety & Write Operations: architecture/safety.md
     - Threat Model: architecture/threat-model.md
   - Integrations:

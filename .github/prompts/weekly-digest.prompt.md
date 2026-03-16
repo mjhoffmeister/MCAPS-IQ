@@ -37,7 +37,8 @@ Use `ask_work_iq` to surface meetings, emails, and chats that may not have corre
 ### Step 4 — CRM Health Check
 
 For each tracked customer touched this week:
-- `list_opportunities({ customerKeyword: "<customer>" })` → current pipeline state.
+- `list_opportunities({ customerKeyword: "<customer>", format: "full", includeDealTeam: true })` → current pipeline state with Stage (`msp_activesalesstage`) and Estimated Close Date (`msp_estcompletiondate`, fallback `estimatedclosedate`).
+- If customer-keyword lookup is empty but milestones are present, re-query with `list_opportunities({ opportunityIds: [...] })`.
 - `find_milestones_needing_tasks({ customerKeywords: ["<customers>"] })` → milestone hygiene.
 - Surface any risks: overdue milestones, milestones without tasks, stale opportunities.
 

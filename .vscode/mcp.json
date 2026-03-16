@@ -1,10 +1,11 @@
 {
 	"servers": {
+		
 		"workiq": {
 			"command": "npx",
 			"args": [
 				"-y",
-				"@microsoft/workiq",
+				"@microsoft/workiq@0.4.0",
 				"mcp"
 			],
 			"type": "stdio"
@@ -14,7 +15,8 @@
 			"command": "node",
 			"args": ["scripts/msx-start.js"]
 		},
-        "powerbi-remote": {
+
+		"powerbi-remote": {
             "type": "http",
             "url": "https://api.fabric.microsoft.com/v1/mcp/powerbi"
         },
@@ -28,6 +30,28 @@
 			"type": "stdio",
 			"command": "node",
 			"args": ["scripts/oil-start.js"]
+		},
+
+		// Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
+		// Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
+		// "github": {
+		// 	"type": "http",
+		// 	"url": "https://api.githubcopilot.com/mcp/"
+		// }
+		"calendar": {
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_CalendarTools",
+			"headers": {},
+		},
+		"teams": {
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_TeamsServer",
+			"headers": {},
+		},
+		"mail":{
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_MailTools",
+			"headers": {},
 		}
 
 	}

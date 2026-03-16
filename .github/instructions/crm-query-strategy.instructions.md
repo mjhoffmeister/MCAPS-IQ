@@ -34,7 +34,8 @@ Prefer composite tools over chaining primitives:
 - **`msx-crm:get_milestones({ opportunityKeyword: "Azure Migration" })`** — resolves opportunity name → milestones in one call. No need to call `list_opportunities` first.
 - `msx-crm:get_milestones({ opportunityIds: [...], statusFilter: 'active', format: 'summary' })` — batch mode with status filtering and compact output.
 - `msx-crm:find_milestones_needing_tasks({ customerKeywords: [...] })` — specialized: finds milestones *without* tasks.
-- `msx-crm:list_opportunities({ customerKeyword: "..." })` — resolves account names to opportunity GUIDs (use `get_milestones` with `customerKeyword` instead if you need milestones).
+- `msx-crm:list_opportunities({ customerKeyword: "...", includeDealTeam: true, format: "full" })` — opportunity-level view with stage/estimated close/deal-team enrichment.
+- `msx-crm:list_opportunities({ opportunityKeyword: "..." })` or `msx-crm:list_opportunities({ opportunityIds: [...] })` — use these when customer keyword/account mapping is weak.
 - `msx-crm:get_milestone_activities({ milestoneIds: [...] })` — batch task retrieval grouped by milestone (or use `get_milestones` with `includeTasks: true`).
 
 ## Step 3 — crm_query for Filtered Lookups

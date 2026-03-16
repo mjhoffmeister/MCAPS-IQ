@@ -27,35 +27,11 @@ Approach B: Inline with DAX Pre-Aggregation (light prompts only)
 
 ## DAX-Side Pre-Aggregation
 
-Push analysis logic into DAX to reduce returned rows before they enter context. This is lossless — it computes at the source rather than discarding data after retrieval.
+Push analysis logic into DAX to reduce returned rows before they enter context. This is lossless — computes at the source rather than discarding data after retrieval.
 
-### 1. Aggregate in DAX, not in-context
-
-Instead of pulling 200 milestone rows and counting in-context, use DAX:
-
-```dax
--- BAD: pulls all rows, agent counts in context
-EVALUATE SELECTCOLUMNS('F_AzureConsumptionPipe', "Status", [MilestoneStatus], ...)
-
--- GOOD: counts server-side, returns 1 row per account
-EVALUATE SUMMARIZECOLUMNS(
-    'DimCustomer'[TPID],
-    "Active_Milestones", CALCULATE(COUNTROWS('F_AzureConsumptionPipe'),
-        'F_AzureConsumptionPipe'[MilestoneStatus] IN {"In Progress", "Not Started"}),
-    "Blocked_Milestones", CALCULATE(COUNTROWS('F_AzureConsumptionPipe'),
-        'F_AzureConsumptionPipe'[MilestoneStatus] = "Blocked")
-)
-```
-
-### 2. Use TOPN aggressively
-
-- Portfolio summary: `TOPN(50, ...)` — no one reviews 100 accounts in one pass.
-- Opportunity detail: `TOPN(30, ...)` by conversion score proxy (stage + commitment).
-- SL5 service detail: `TOPN(20, ...)` by absolute MoM change — only the movers matter.
-
-### 3. Combine related queries
-
-If two queries use the same dimension grain (e.g., TPID + Pillar), merge them into one `SUMMARIZECOLUMNS` instead of two round-trips. The SL5 prompt's Step 3a/3b split is for debuggability — once validated, merge them.
+- **Aggregate in DAX**: Use `SUMMARIZECOLUMNS` for server-side counts/groups instead of pulling all rows and counting in-context.
+- **Use TOPN aggressively**: Portfolio summary: `TOPN(50)`. Opportunity detail: `TOPN(30)`. Service detail: `TOPN(20)` by absolute MoM change.
+- **Merge related queries**: If two queries share the same dimension grain, combine into one `SUMMARIZECOLUMNS`.
 
 ## Session File Persistence
 
@@ -71,20 +47,13 @@ This is the **full rendered report** — not a compressed digest. Downstream ski
 
 ### Re-read Pattern
 
-Downstream skills consume the persisted report:
+Downstream skills consume the persisted report: read report → extract at-risk TPIDs from Gap Analysis → scope CRM queries (`get_milestones` with `customerKeyword`, `statusFilter: 'active'`) → scope WorkIQ from recommended actions → merge findings → produce unified report.
 
-```
-1. Read .copilot/sessions/pbi/<latest report>.md
-2. Extract at-risk account TPIDs from the Gap Analysis table
-3. Scope CRM queries: msx-crm:get_milestones({ customerKeyword, statusFilter: 'active' })
-4. Scope WorkIQ queries from recommended actions that suggest communication follow-up
-5. Merge CRM/WorkIQ findings with PBI report context
-6. Produce unified report
-```
-
-## Subagent Delegation
+### Subagent Delegation
 
 For medium and heavy PBI prompts, delegate retrieval + analysis to an isolated subagent. The subagent runs the full prompt workflow in its own context window, and the parent receives only the final report.
+
+Use `@pbi-analyst` as the default delegate for these workflows.
 
 ### When to Use Subagent
 
@@ -98,7 +67,7 @@ For medium and heavy PBI prompts, delegate retrieval + analysis to an isolated s
 
 When delegating, instruct the subagent:
 
-> Execute the PBI workflow from [prompt name]. Run all DAX queries against model [ID] with these scope filters: [filters]. Complete the full analysis (gap signals, conversion ranking, recommendations). Return the FINAL REPORT with all tables, rankings, and recommendations rendered. Do not return raw DAX query results. The parent agent will use the report for downstream CRM/WorkIQ correlation.
+> Delegate to `@pbi-analyst` and execute the PBI workflow from [prompt name]. Run all DAX queries against model [ID] with scope filters: [filters]. Complete the full analysis. Return the FINAL REPORT with all tables, rankings, and recommendations rendered — not raw DAX results.
 
 ## Prompt Template Convention
 

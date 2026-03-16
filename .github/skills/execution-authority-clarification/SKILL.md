@@ -1,6 +1,6 @@
 ---
 name: execution-authority-clarification
-description: 'Authority tie-breaker for contradictory guidance: when two roles give conflicting direction on the same work item, assigns a single decision-owner per disputed domain. Breaks deadlock so execution resumes. Triggers: tie-break, conflicting direction, who decides, authority clarification, role disagreement, deadlock, two roles disagree.'
+description: 'Authority tie-breaker for contradictory guidance: when two roles give conflicting direction on the same work item, assigns a single decision-owner per disputed domain. Breaks deadlock so execution resumes. Triggers: tie-break, conflicting direction, who decides, authority clarification, role disagreement, deadlock, two roles disagree, who has final say, authority dispute, escalation path, decision owner.'
 argument-hint: 'Provide opportunityId and milestoneId(s) under disputed direction'
 ---
 

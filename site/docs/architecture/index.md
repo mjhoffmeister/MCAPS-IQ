@@ -32,6 +32,18 @@ MCAPS IQ is a collection of **MCP servers**, **domain skills**, and **instructio
 
     How Copilot knows what to do — the 4-tier context loading model.
 
+-   :material-layers:{ .lg .middle } __[Skill Architecture](skill-architecture.md)__
+
+    ---
+
+    MCEM process spine, atomic skills, role cards, Verifiable Outcomes, and governing principles.
+
+-   :material-tune:{ .lg .middle } __[Context Optimization](context-optimization.md)__
+
+    ---
+
+    How context budget is managed — instruction trimming, subagent delegation, MCP response shaping.
+
 -   :material-shield-check:{ .lg .middle } __[Safety & Write Operations](safety.md)__
 
     ---

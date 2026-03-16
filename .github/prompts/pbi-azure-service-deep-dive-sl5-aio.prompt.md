@@ -102,6 +102,55 @@ To validate whether a measure exists, use a DAX probe: `EVALUATE ROW("test", 'M_
 3. **One model per query** — Never mix Portfolio and SL5 references. They are separate models with separate connections.
 4. **Fail fast on measures** — If a query fails with "cannot be found", check the Measure Availability table above before retrying. Don't guess measure names.
 
+### Capacity Resilience (SL5 Timeout Handling)
+
+The SL5 model (`WWBI_ACRSL5`) frequently exceeds Fabric compute capacity limits. This section defines the retry, backoff, and degraded-mode strategy.
+
+**Known timeout triggers:**
+- Fabric capacity exceeded (`Unable to complete the action because your organization's Fabric compute capacity has exceeded its limits`)
+- DAX query timeout (query runs > 60s and is killed)
+- Multiple concurrent users on the same Fabric capacity
+
+**Retry policy:**
+
+| Attempt | Wait | Action |
+|---|---|---|
+| 1st failure | 0s | Retry immediately with a **lighter query** (fewer measures, add TOPN if missing) |
+| 2nd failure | 30s | Wait, then retry the same lighter query |
+| 3rd failure | — | **Stop SL5 queries. Switch to Degraded Mode.** |
+
+**Lighter query tactics (apply on 1st retry):**
+- Drop trend measures (`T3M_CAGR`, `YoY`) — keep only `ACR_LCM` and `MoM_Change`
+- Add `TOPN(50, ...)` if not already present
+- Remove `SL2` and deeper granularity columns — aggregate at `ServiceCompGrouping` + `SL1` only
+- Drop `ORDER BY` (sorting adds compute cost on large result sets)
+
+**Degraded Mode — Portfolio-Only Fallback:**
+
+When SL5 is unavailable, deliver a partial but still valuable report using **only the Portfolio model**:
+
+1. Run Steps 2a + 2b (Portfolio ACR + pipeline) — these are lightweight and rarely throttled
+2. Run Step 7 (Pipeline by Pillar) — gives pillar-level pipeline even without SL5 consumption
+3. Run Step 8 (Account Attributes) — propensity flags are portfolio-only anyway
+4. **Skip Steps 3–6 entirely** (all SL5-dependent)
+5. Present results with a clear note:
+
+> **⚠️ Partial results — SL5 model unavailable due to Fabric capacity limits.**
+> Portfolio-level ACR and pipeline data is shown below. Service-level breakdown (pillar, service comp group, SL1–SL5) is unavailable this session.
+> To get full service detail: wait 15–30 minutes for capacity recovery, or open the [SL5 report directly](https://msit.powerbi.com/groups/me/reports/53c27067-b282-432b-b3eb-723e2933b945) and apply filters manually.
+
+**Progressive query gating:**
+
+SL5 queries MUST run in this order. If a step fails after retry, skip all subsequent SL5 steps:
+
+```
+Auth probe (Step 0) → Step 3a (pillar totals) → Step 3b (pillar trends) → Step 4a (service detail) → [STOP HERE unless user explicitly asks for deeper drill]
+```
+
+Steps 4b, 5, 5b, and 6 are **on-demand only** — run them only if:
+- The user explicitly asks for YoY trends, SL3–SL5 granularity, subscription detail, or monthly time series
+- AND all prior SL5 steps succeeded without retry
+
 ## Workflow
 
 ### Step 0 — Auth Pre-Check (Both Models)
@@ -120,7 +169,14 @@ Then against **SL5** model:
 EVALUATE TOPN(1, 'DimDate')
 ```
 
-If **either** fails → **stop** and tell the user:
+**Interpreting failures:**
+
+| Error | Meaning | Action |
+|---|---|---|
+| `TypeError: fetch failed`, 401, connection error | Auth expired | Stop all PBI steps. Show auth recovery instructions below. |
+| `Fabric compute capacity has exceeded its limits` | Capacity throttled | Mark that model as **throttled**. If SL5 throttled but Portfolio works → proceed in **Degraded Mode** (see Capacity Resilience above). If both throttled → stop PBI steps, offer manual report links. |
+
+Auth recovery instructions (show only for auth failures):
 
 > Power BI MCP authentication has expired. Please run:
 > ```
@@ -223,47 +279,102 @@ Query the **SL5 model** (`c4a39206-...`) for strategic-pillar-level consumption.
 
 **Step 3a — Pillar ACR totals:**
 
+> **Gate**: This is the first SL5 data query. If it fails with a capacity error, retry once with the lighter variant below. If it fails again, switch to **Degraded Mode** and skip all remaining SL5 steps (3b, 4a, 4b, 5, 5b, 6).
+
 ```dax
 EVALUATE
-CALCULATETABLE(
-    SUMMARIZECOLUMNS(
-        'DimCustomer'[TPAccountName],
-        'DimCustomer'[TPID],
-        'F_ACR'[SuperStrategicPillar],
-        'F_ACR'[StrategicPillar],
-        "ACR", 'M_ACR'[$ ACR],
-        "ACR_LCM", 'M_ACR'[$ ACR Last Closed Month],
-        "AvgDaily_LCM", 'M_ACR'[$ Avg Daily ACR Last Closed Month]
+TOPN(
+    50,
+    CALCULATETABLE(
+        SUMMARIZECOLUMNS(
+            'DimCustomer'[TPAccountName],
+            'DimCustomer'[TPID],
+            'F_ACR'[SuperStrategicPillar],
+            'F_ACR'[StrategicPillar],
+            "ACR_LCM", 'M_ACR'[$ ACR Last Closed Month],
+            "AvgDaily_LCM", 'M_ACR'[$ Avg Daily ACR Last Closed Month]
+        ),
+        'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
+        'DimViewType'[ViewType] = "Curated",
+        <ACCOUNT_FILTER>,
+        <SERVICE_FILTER>
     ),
-    'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
-    'DimViewType'[ViewType] = "Curated",
-    <ACCOUNT_FILTER>,
-    <SERVICE_FILTER>
+    [ACR_LCM], DESC
 )
-ORDER BY [ACR_LCM] DESC
+```
+
+**Lighter retry variant** (if first attempt fails — drops YTD ACR measure):
+
+```dax
+EVALUATE
+TOPN(
+    30,
+    CALCULATETABLE(
+        SUMMARIZECOLUMNS(
+            'DimCustomer'[TPAccountName],
+            'DimCustomer'[TPID],
+            'F_ACR'[StrategicPillar],
+            "ACR_LCM", 'M_ACR'[$ ACR Last Closed Month]
+        ),
+        'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
+        'DimViewType'[ViewType] = "Curated",
+        <ACCOUNT_FILTER>,
+        <SERVICE_FILTER>
+    ),
+    [ACR_LCM], DESC
+)
 ```
 
 **Step 3b — Pillar trend signals:**
 
+> **Gate**: Only run if Step 3a succeeded. If 3a required the lighter retry variant, use the lighter version of 3b too.
+
+Full version:
+
 ```dax
 EVALUATE
-CALCULATETABLE(
-    SUMMARIZECOLUMNS(
-        'DimCustomer'[TPAccountName],
-        'DimCustomer'[TPID],
-        'F_ACR'[SuperStrategicPillar],
-        'F_ACR'[StrategicPillar],
-        "AvgDaily_MoM_Change", 'M_ACR'[$ Avg Daily ACR MoM Change Last Closed Month],
-        "AvgDaily_MoM_Pct", 'M_ACR'[% Avg Daily ACR MoM Change Last Closed Month],
-        "YoY_Pct", 'M_ACR'[% ACR YTD YoY Growth],
-        "T3M_CAGR", 'M_ACR'[% T3M CAGR Last Closed Month]
+TOPN(
+    50,
+    CALCULATETABLE(
+        SUMMARIZECOLUMNS(
+            'DimCustomer'[TPAccountName],
+            'DimCustomer'[TPID],
+            'F_ACR'[SuperStrategicPillar],
+            'F_ACR'[StrategicPillar],
+            "AvgDaily_MoM_Change", 'M_ACR'[$ Avg Daily ACR MoM Change Last Closed Month],
+            "AvgDaily_MoM_Pct", 'M_ACR'[% Avg Daily ACR MoM Change Last Closed Month],
+            "YoY_Pct", 'M_ACR'[% ACR YTD YoY Growth],
+            "T3M_CAGR", 'M_ACR'[% T3M CAGR Last Closed Month]
+        ),
+        'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
+        'DimViewType'[ViewType] = "Curated",
+        <ACCOUNT_FILTER>,
+        <SERVICE_FILTER>
     ),
-    'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
-    'DimViewType'[ViewType] = "Curated",
-    <ACCOUNT_FILTER>,
-    <SERVICE_FILTER>
+    ABS([AvgDaily_MoM_Change]), DESC
 )
-ORDER BY [AvgDaily_MoM_Change] DESC
+```
+
+**Lighter retry variant** (drops YoY and T3M — keeps only MoM):
+
+```dax
+EVALUATE
+TOPN(
+    30,
+    CALCULATETABLE(
+        SUMMARIZECOLUMNS(
+            'DimCustomer'[TPAccountName],
+            'DimCustomer'[TPID],
+            'F_ACR'[StrategicPillar],
+            "AvgDaily_MoM_Change", 'M_ACR'[$ Avg Daily ACR MoM Change Last Closed Month]
+        ),
+        'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
+        'DimViewType'[ViewType] = "Curated",
+        <ACCOUNT_FILTER>,
+        <SERVICE_FILTER>
+    ),
+    ABS([AvgDaily_MoM_Change]), DESC
+)
 ```
 
 Merge 3a + 3b by TPID + StrategicPillar.
@@ -274,56 +385,67 @@ Drill into **service comp group** and **SL1/SL2** for the fastest movers. Split 
 
 **Step 4a — Service-level ACR with MoM movement:**
 
+> **Gate**: Only run if Steps 3a and 3b both succeeded. If either required the lighter variant, drop `SL2` from this query.
+
 ```dax
 EVALUATE
-CALCULATETABLE(
-    SUMMARIZECOLUMNS(
-        'DimCustomer'[TPAccountName],
-        'DimCustomer'[TPID],
-        'F_ACR'[StrategicPillar],
-        'F_ACR'[ServiceCompGrouping],
-        'F_ACR'[ServiceLevel1],
-        'F_ACR'[ServiceLevel2],
-        "ACR_LCM", 'M_ACR'[$ ACR Last Closed Month],
-        "AvgDaily_MoM_Change", 'M_ACR'[$ Avg Daily ACR MoM Change Last Closed Month],
-        "AvgDaily_MoM_Pct", 'M_ACR'[% Avg Daily ACR MoM Change Last Closed Month]
+TOPN(
+    100,
+    CALCULATETABLE(
+        SUMMARIZECOLUMNS(
+            'DimCustomer'[TPAccountName],
+            'DimCustomer'[TPID],
+            'F_ACR'[StrategicPillar],
+            'F_ACR'[ServiceCompGrouping],
+            'F_ACR'[ServiceLevel1],
+            "ACR_LCM", 'M_ACR'[$ ACR Last Closed Month],
+            "AvgDaily_MoM_Change", 'M_ACR'[$ Avg Daily ACR MoM Change Last Closed Month]
+        ),
+        'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
+        'DimViewType'[ViewType] = "Curated",
+        <ACCOUNT_FILTER>,
+        <SERVICE_FILTER>
     ),
-    'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
-    'DimViewType'[ViewType] = "Curated",
-    <ACCOUNT_FILTER>,
-    <SERVICE_FILTER>
+    ABS([AvgDaily_MoM_Change]), DESC
 )
-ORDER BY [AvgDaily_MoM_Change] DESC
 ```
 
-**Step 4b — Service-level YoY and T3M trends:**
+> **Note**: `SL2` is removed from the default query to reduce cardinality. Add it back only for single-account, single-pillar drills where the result set is small.
+
+**Step 4b — Service-level YoY and T3M trends (ON-DEMAND):**
+
+> **Gate**: Run ONLY if the user explicitly asks for YoY or T3M trend data at service level, AND Steps 3–4a all succeeded without retry. Otherwise skip — MoM from Step 4a is sufficient for most analyses.
 
 ```dax
 EVALUATE
-CALCULATETABLE(
-    SUMMARIZECOLUMNS(
-        'DimCustomer'[TPAccountName],
-        'DimCustomer'[TPID],
-        'F_ACR'[StrategicPillar],
-        'F_ACR'[ServiceCompGrouping],
-        'F_ACR'[ServiceLevel1],
-        "YoY_Change", 'M_ACR'[$ ACR YTD YoY Change],
-        "YoY_Pct", 'M_ACR'[% ACR YTD YoY Growth],
-        "T3M_CAGR", 'M_ACR'[% T3M CAGR Last Closed Month]
+TOPN(
+    100,
+    CALCULATETABLE(
+        SUMMARIZECOLUMNS(
+            'DimCustomer'[TPAccountName],
+            'DimCustomer'[TPID],
+            'F_ACR'[StrategicPillar],
+            'F_ACR'[ServiceCompGrouping],
+            'F_ACR'[ServiceLevel1],
+            "YoY_Change", 'M_ACR'[$ ACR YTD YoY Change],
+            "T3M_CAGR", 'M_ACR'[% T3M CAGR Last Closed Month]
+        ),
+        'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
+        'DimViewType'[ViewType] = "Curated",
+        <ACCOUNT_FILTER>,
+        <SERVICE_FILTER>
     ),
-    'DimDate'[IsAzureClosedandCurrentOpen] = "Y",
-    'DimViewType'[ViewType] = "Curated",
-    <ACCOUNT_FILTER>,
-    <SERVICE_FILTER>
+    ABS([YoY_Change]), DESC
 )
-ORDER BY [YoY_Change] DESC
 ```
 
 Merge 4a + 4b by TPID + StrategicPillar + ServiceCompGrouping + ServiceLevel1.
 
-### Step 5 — Pull SL5-Level Detail (deepest granularity, optional)
+### Step 5 — Pull SL5-Level Detail (deepest granularity, ON-DEMAND)
 
-If the user asks for maximum service detail (e.g., "what specific resources are declining?"), drill to SL3–SL5. Keep to 3 measures max at this granularity — high-cardinality dimension columns + many measures = slow/failed queries.
+> **Gate**: Run ONLY if the user explicitly asks for SL3–SL5 granularity AND all prior SL5 steps succeeded without retry. This is the heaviest query in the prompt — expect timeouts on multi-account scopes.
+
+If the user asks for maximum service detail (e.g., "what specific resources are declining?"), drill to SL3–SL5. Keep to 3 measures max at this granularity — high-cardinality dimension columns + many measures = slow/failed queries. **Narrow to a single account + single pillar** before running.
 
 ```dax
 EVALUATE
@@ -353,7 +475,9 @@ TOPN(
 )
 ```
 
-### Step 5b — Pull Subscription-Level Detail (optional, for churn risk)
+### Step 5b — Pull Subscription-Level Detail (ON-DEMAND, for churn risk)
+
+> **Gate**: Run ONLY if Step 11 analysis flags subscription end-date risk AND all prior SL5 steps succeeded without retry. **Narrow to a single account** before running.
 
 If Step 11 flags subscription end-date risk, or user asks about specific subscriptions, pull subscription metadata from `F_ACR`:
 
@@ -381,7 +505,9 @@ ORDER BY [SubscriptionEndDate] ASC
 
 This enables the "subscription end date approaching" recommendation in Step 11.
 
-### Step 6 — Pull Monthly Trend (SL5 Model, time series)
+### Step 6 — Pull Monthly Trend (SL5 Model, ON-DEMAND time series)
+
+> **Gate**: Run ONLY if the user explicitly asks for a time-series trend AND all prior SL5 steps succeeded without retry. **Narrow to a single pillar or service comp group** — monthly × account × pillar is a very large result set.
 
 For trending analysis ("show me the last 6 months of OpenAI growth"), pull monthly ACR by service:
 

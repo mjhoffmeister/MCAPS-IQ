@@ -25,7 +25,8 @@ For each meeting:
 ## Step 3: Pull MSX-CRM context for linked meetings
 
 For each meeting that maps to a known customer:
-1. Use `list_opportunities` to get active opportunities for that customer.
+1. Use `list_opportunities({ customerKeyword: "<customer>", format: "full", includeDealTeam: true })` to get active opportunities with stage/estimated close/deal-team context.
+2. If customer-keyword lookup returns empty but milestones exist, derive opportunity IDs from milestone payload and call `list_opportunities({ opportunityIds: ["<guid>"], format: "full", includeDealTeam: true })`.
 2. Use `get_milestones` to get milestones approaching their dates (next 30 days) or flagged as Blocked.
 3. Note any milestones missing tasks (use `find_milestones_needing_tasks` scoped to the customer).
 

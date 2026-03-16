@@ -63,33 +63,47 @@ The Teams self-chat (personal notepad / "chat with yourself") uses the special I
 
 ## Vault-First UPN Resolution
 
-Teams operations that target a specific person (chat lookup, message send, chat creation) require a UPN or Teams user ID. Direct Graph API or `ListChats` lookups for UPN are **intermittently unreliable** — they fail under throttling, stale tokens, or ambiguous display names.
+Teams operations that target a specific person (chat lookup, message send, chat creation) require a **UPN** (User Principal Name) or Teams user ID. UPN is the user's actual sign-in address — it is often **different from** the user's alias or corporate email shorthand.
 
-**Always resolve identity through OIL vault before falling back to Teams API discovery.**
+**CRITICAL: UPN ≠ alias.** For example:
+- Alias: `jinle` → guessing `jinle@microsoft.com` **FAILS**
+- Actual UPN: `jin.lee@microsoft.com` → **WORKS**
+- Display name in Teams: "Jin Lee (HLS US SE)" → does not reveal UPN
+
+**Never guess UPNs from aliases or display names.** Always resolve through the flow below.
 
 ### Resolution Flow
 
 ```
 Person name known?
-  ├─ oil:get_person_context({ name }) → check email / teamsId fields
-  │   ├─ email or teamsId present? → USE IT (skip all Teams discovery)
+  ├─ [1] oil:get_person_context({ name }) → check email / teams_id fields
+  │   ├─ email or teams_id present? → USE IT (skip all Teams discovery)
   │   └─ Not present? → fall through to discovery
   │
-  ├─ oil:resolve_people_to_customers({ names: [name] })
-  │   └─ Resolves customer association but not UPN → use for scoping only
+  ├─ [2] teams:SearchTeamsMessages({ message: "<person name>" }) → find chats
+  │   └─ Found chatIds? → teams:ListChatMembers({ chatId })
+  │       └─ Extract email + userId from member metadata → USE IT
+  │       └─ Persist to vault (see below)
   │
-  ├─ calendar:ListCalendarView (recent events) → extract UPN from attendees
+  ├─ [3] calendar:ListCalendarView (recent events) → extract UPN from attendees
   │   └─ Found UPN? → use it AND persist to vault (see below)
   │
-  ├─ teams:ListChats() → filter by member displayName
+  ├─ [4] teams:ListChats() → filter by member displayName
   │   └─ Found userId? → use it AND persist to vault (see below)
   │
-  └─ All failed → report to user; do not guess UPNs
+  ├─ [5] All automated methods failed → ASK THE USER
+  │   └─ "I found [Display Name] but couldn't resolve their UPN.
+  │       Do you know their email address? (e.g., first.last@microsoft.com)"
+  │   └─ User confirms → USE IT and persist to vault
+  │
+  └─ User doesn't know → report gap; do not guess UPNs
 ```
+
+**Key principle**: The `ListChatMembers` response returns the **real UPN** in the `email` field and the **Teams GUID** in `userId`. These are the authoritative values — always prefer them over alias guessing.
 
 ### Persisting Resolved UPNs to Vault
 
-When a UPN or Teams ID is discovered through calendar events, Teams chat member lists, or user confirmation, **write it back to the vault** so future lookups are instant and API-free:
+When a UPN or Teams ID is discovered through chat member lists, calendar events, or user confirmation, **write it back to the vault** so future lookups are instant and API-free:
 
 ```
 oil:patch_note({
@@ -100,8 +114,10 @@ oil:patch_note({
 ```
 
 **Vault person file frontmatter fields:**
-- `email` — UPN / email address (e.g., `jane.doe@microsoft.com`)
-- `teams_id` — Teams-specific user ID (GUID from chat member metadata)
+- `email` — UPN / email address (e.g., `jin.lee@microsoft.com` — NOT `jinle@microsoft.com`)
+- `teams_id` — Teams-specific user ID (GUID from chat member metadata, e.g., `c4259a64-c028-47b8-bd06-fe2041db8325`)
+
+**Best source for UPN + teams_id**: `teams:ListChatMembers({ chatId })` returns both fields definitively in every member entry.
 
 ### Why Vault-First?
 
@@ -240,6 +256,7 @@ For group chats, use `chatType: "group"` with multiple members. Resolve all memb
 | Multi-hop channel discovery on every call | Cache `teamId` + `channelId` after first resolution. Reuse for the session. |
 | Posting to wrong chat type | 1:1 chats use `PostMessage` with chatId. Channels use `PostChannelMessage` with teamId + channelId. |
 | Guessing UPNs without vault check | Always check `oil:get_person_context` first. Pattern-guessed UPNs fail for non-standard aliases and waste API calls. |
+| Assuming alias == UPN | `jinle` != `jin.lee@microsoft.com`. Many users have different alias and UPN formats. The only reliable source is `ListChatMembers.email` or vault-cached `email` frontmatter. |
 
 ## Chaining
 

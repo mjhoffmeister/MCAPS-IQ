@@ -1,6 +1,6 @@
 ---
 name: partner-motion-awareness
-description: 'Adjusts guidance when partner-led or co-sell motions are present. Modifies ownership assumptions, delivery attribution, and handoff patterns for partner scenarios at any MCEM stage. Triggers: partner motion, co-sell, partner-led, ISV partner, partner delivery, partner attribution.'
+description: 'Adjusts guidance when partner-led or co-sell motions are present. Modifies ownership assumptions, delivery attribution, and handoff patterns for partner scenarios at any MCEM stage. Triggers: partner motion, co-sell, partner-led, ISV partner, partner delivery, partner attribution, partner POC, SI engagement, partner delivery model, co-sell deal registration.'
 argument-hint: 'Provide opportunityId with partner involvement'
 ---
 
