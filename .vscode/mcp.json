@@ -34,10 +34,10 @@
 
 		// Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
 		// Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
-		// "github": {
-		// 	"type": "http",
-		// 	"url": "https://api.githubcopilot.com/mcp/"
-		// }
+		"github": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/"
+		},
 		"calendar": {
 			"type": "http",
 			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_CalendarTools",

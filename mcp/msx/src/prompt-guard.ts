@@ -7,7 +7,25 @@ import { auditLog } from './audit.js';
 
 // ── Detection patterns ────────────────────────────────────────
 // Each entry: { id, pattern (RegExp), severity, description }
-const INJECTION_PATTERNS = [
+interface InjectionPattern {
+  id: string;
+  pattern: RegExp;
+  severity: 'high' | 'medium';
+  description: string;
+}
+
+export interface InjectionHit {
+  id: string;
+  severity: string;
+  description: string;
+  match: string;
+}
+
+export interface PayloadDetection extends InjectionHit {
+  field: string;
+}
+
+const INJECTION_PATTERNS: InjectionPattern[] = [
   { id: 'PI-01', pattern: /ignore\s+(all\s+)?previous\s+instructions/i, severity: 'high', description: 'Instruction override attempt' },
   { id: 'PI-02', pattern: /you\s+are\s+now\s+(a|an)\b/i, severity: 'high', description: 'Role reassignment attempt' },
   { id: 'PI-03', pattern: /system\s*:\s*you/i, severity: 'high', description: 'Fake system prompt injection' },
@@ -22,12 +40,10 @@ const INJECTION_PATTERNS = [
 
 /**
  * Scan a string value for prompt injection indicators.
- * @param {string} value - Text to scan
- * @returns {Array<{id: string, severity: string, description: string, match: string}>}
  */
-function scanString(value) {
+function scanString(value: string): InjectionHit[] {
   if (!value || typeof value !== 'string') return [];
-  const hits = [];
+  const hits: InjectionHit[] = [];
   for (const { id, pattern, severity, description } of INJECTION_PATTERNS) {
     const m = pattern.exec(value);
     if (m) {
@@ -40,14 +56,10 @@ function scanString(value) {
 /**
  * Recursively scan an object (CRM/M365 response payload) for prompt injection.
  * Returns an array of detections with field path context.
- * @param {any} data - Response object to scan
- * @param {string} [prefix] - Field path prefix for nested objects
- * @param {number} [depth] - Current recursion depth (capped at 5)
- * @returns {Array<{field: string, id: string, severity: string, description: string, match: string}>}
  */
-export function scanPayload(data, prefix = '', depth = 0) {
+export function scanPayload(data: unknown, prefix = '', depth = 0): PayloadDetection[] {
   if (depth > 5 || data == null) return [];
-  const results = [];
+  const results: PayloadDetection[] = [];
 
   if (typeof data === 'string') {
     for (const hit of scanString(data)) {
@@ -58,7 +70,7 @@ export function scanPayload(data, prefix = '', depth = 0) {
       results.push(...scanPayload(data[i], `${prefix}[${i}]`, depth + 1));
     }
   } else if (typeof data === 'object') {
-    for (const [key, value] of Object.entries(data)) {
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
       // Skip OData annotation fields and IDs — not user-controlled content
       if (key.startsWith('@') || key.endsWith('id') || key === 'ts') continue;
       results.push(...scanPayload(value, prefix ? `${prefix}.${key}` : key, depth + 1));
@@ -70,11 +82,8 @@ export function scanPayload(data, prefix = '', depth = 0) {
 
 /**
  * Scan external data and log detections. Returns the detections array.
- * @param {any} data - Response data from external service
- * @param {string} source - Source identifier (e.g. "crm_query", "email")
- * @returns {Array} Detections (empty if clean)
  */
-export function detectInjection(data, source) {
+export function detectInjection(data: unknown, source: string): PayloadDetection[] {
   const detections = scanPayload(data);
   if (detections.length > 0) {
     auditLog({
@@ -90,10 +99,8 @@ export function detectInjection(data, source) {
 
 /**
  * Format detections as a human-readable warning prefix for tool responses.
- * @param {Array} detections
- * @returns {string} Warning text (empty string if no detections)
  */
-export function formatDetectionWarning(detections) {
+export function formatDetectionWarning(detections: PayloadDetection[]): string {
   if (!detections || detections.length === 0) return '';
   const lines = detections.map(d =>
     `  - [${d.id}] ${d.description} in field "${d.field}" (severity: ${d.severity}, matched: "${d.match}")`
@@ -105,10 +112,8 @@ export function formatDetectionWarning(detections) {
 /**
  * Format a concise warning for write-operation staging.
  * Surfaced in the staged operation response so the user sees it before approval.
- * @param {Array} detections
- * @returns {string|null} Warning text or null if clean
  */
-export function formatWriteWarning(detections) {
+export function formatWriteWarning(detections: PayloadDetection[]): string | null {
   if (!detections || detections.length === 0) return null;
   const high = detections.filter(d => d.severity === 'high');
   const summary = high.length > 0

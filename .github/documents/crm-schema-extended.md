@@ -21,8 +21,8 @@ Prefer discovery over memorizing long field lists.
 
 For complete option tables:
 
-- `get_milestone_field_options({ field: "preferredAzureRegion" })`
-- `get_milestone_field_options({ field: "azureCapacityType" })`
+- `get_milestone_field_options({ field: "preferredAzureRegion" })` — standard Picklist
+- `get_milestone_field_options({ field: "azureCapacityType" })` — **MultiSelectPicklist** (uses `MultiSelectPicklistAttributeMetadata` + `GlobalOptionSet` in OData metadata, not `PicklistAttributeMetadata` + `OptionSet`)
 
 ## Additional Invalid Patterns
 

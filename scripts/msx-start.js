@@ -71,14 +71,13 @@ if (existing.length) {
 
 // ── Start MSX CRM server ──────────────────────────────────────────
 try {
-  await import("../mcp/msx/src/index.js");
+  await import("../mcp/msx/dist/index.js");
 } catch (err) {
   console.error("MSX CRM MCP server failed to start:", err.message || err);
   console.error("");
   console.error("Troubleshooting:");
   console.error("  1. Run 'node scripts/init.js' to install dependencies.");
-  console.error("  2. Run 'az login' to authenticate with Azure CLI.");
-  console.error("  3. If the problem persists, try using the GitHub Copilot CLI instead:");
-  console.error("       npm install -g @github/copilot");
+  console.error("  2. Run 'cd mcp/msx && npm run build' to compile TypeScript.");
+  console.error("  3. Run 'az login' to authenticate with Azure CLI.");
   process.exit(1);
 }

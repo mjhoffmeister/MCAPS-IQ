@@ -7,7 +7,44 @@ import { homedir } from 'node:os';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
-const base64UrlDecode = (value) => {
+export interface AuthMetadata {
+  isAuthenticated: boolean;
+  userName: string;
+  audience: string;
+  expiresAt: Date | null;
+  minutesRemaining: number;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+}
+
+export interface AuthResult {
+  success: boolean;
+  metadata?: AuthMetadata;
+  error?: string;
+}
+
+export interface AuthServiceConfig {
+  crmUrl: string;
+  tenantId: string;
+}
+
+export interface AuthService {
+  ensureAuth(settings?: Partial<AuthServiceConfig>): Promise<AuthResult>;
+  getToken(): string | null;
+  getAuthStatus(): AuthMetadata | { isAuthenticated: false };
+  getCrmUrl(): string;
+  clearToken(): void;
+  _state: AuthState;
+}
+
+interface AuthState {
+  token: string | null;
+  metadata: AuthMetadata | null;
+  crmUrl: string;
+  tenantId: string;
+}
+
+const base64UrlDecode = (value: string): string => {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalized.padEnd(
     normalized.length + ((4 - (normalized.length % 4)) % 4),
@@ -16,7 +53,7 @@ const base64UrlDecode = (value) => {
   return Buffer.from(padded, 'base64').toString('utf-8');
 };
 
-const parseTokenMetadata = (token, crmUrl) => {
+const parseTokenMetadata = (token: string | null, crmUrl: string): AuthMetadata | null => {
   if (!token) return null;
   try {
     const payload = token.split('.')[1];
@@ -33,7 +70,7 @@ const parseTokenMetadata = (token, crmUrl) => {
       audience: json.aud || crmUrl,
       expiresAt,
       minutesRemaining,
-      isExpired: expiresAt ? expiresAt <= Date.now() : false,
+      isExpired: expiresAt ? expiresAt.getTime() <= Date.now() : false,
       isExpiringSoon: minutesRemaining > 0 && minutesRemaining <= 10
     };
   } catch {
@@ -43,8 +80,8 @@ const parseTokenMetadata = (token, crmUrl) => {
 
 // Resolve the az CLI path once — VS Code MCP servers inherit a restricted PATH
 // that may miss user-installed locations (conda, homebrew, etc.)
-let _azCliPath;
-const getAzureCliCommand = () => {
+let _azCliPath: string | undefined;
+const getAzureCliCommand = (): string => {
   if (_azCliPath) return _azCliPath;
   if (process.platform === 'win32') { _azCliPath = 'az.cmd'; return _azCliPath; }
 
@@ -74,10 +111,10 @@ const getAzureCliCommand = () => {
   return _azCliPath;
 };
 
-export function createAuthService({ crmUrl, tenantId }) {
-  const state = { token: null, metadata: null, crmUrl, tenantId };
+export function createAuthService({ crmUrl, tenantId }: AuthServiceConfig): AuthService {
+  const state: AuthState = { token: null, metadata: null, crmUrl, tenantId };
 
-  const generateAccessToken = (settings = {}) =>
+  const generateAccessToken = (settings: Partial<AuthServiceConfig> = {}): Promise<string> =>
     new Promise((resolve, reject) => {
       const resource = settings.crmUrl || state.crmUrl;
       const tenant = settings.tenantId || state.tenantId;
@@ -97,8 +134,9 @@ export function createAuthService({ crmUrl, tenantId }) {
       let stdout = '';
       let stderr = '';
       let completed = false;
+      let timeoutId: ReturnType<typeof setTimeout>;
 
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (!completed) {
           completed = true;
           proc.kill();
@@ -106,15 +144,15 @@ export function createAuthService({ crmUrl, tenantId }) {
         }
       }, DEFAULT_TIMEOUT_MS);
 
-      const cleanup = () => {
+      const cleanup = (): void => {
         clearTimeout(timeoutId);
         completed = true;
       };
 
-      proc.stdout.on('data', (d) => { stdout += d.toString(); });
-      proc.stderr.on('data', (d) => { stderr += d.toString(); });
+      proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
+      proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
 
-      proc.on('error', (error) => {
+      proc.on('error', (error: NodeJS.ErrnoException) => {
         cleanup();
         if (error.code === 'ENOENT') {
           reject(
@@ -149,7 +187,7 @@ export function createAuthService({ crmUrl, tenantId }) {
       });
     });
 
-  const isTokenUsable = () => {
+  const isTokenUsable = (): boolean => {
     if (!state.token || !state.metadata) return false;
     // Re-evaluate expiration against current time (metadata.expiresAt is a Date)
     if (state.metadata.expiresAt) {
@@ -160,15 +198,15 @@ export function createAuthService({ crmUrl, tenantId }) {
     return true;
   };
 
-  const clearToken = () => {
+  const clearToken = (): void => {
     state.token = null;
     state.metadata = null;
   };
 
-  const ensureAuth = async (settings = {}) => {
+  const ensureAuth = async (settings: Partial<AuthServiceConfig> = {}): Promise<AuthResult> => {
     // If we have a token with sufficient remaining lifetime, reuse it
     if (isTokenUsable()) {
-      return { success: true, metadata: { ...state.metadata } };
+      return { success: true, metadata: { ...state.metadata } as AuthMetadata };
     }
 
     const resource = settings.crmUrl || state.crmUrl;
@@ -179,18 +217,18 @@ export function createAuthService({ crmUrl, tenantId }) {
       state.metadata = parseTokenMetadata(token, resource);
       state.crmUrl = resource;
       state.tenantId = tenant;
-      return { success: true, metadata: { ...state.metadata } };
+      return { success: true, metadata: { ...state.metadata } as AuthMetadata };
     } catch (error) {
       state.token = null;
       state.metadata = null;
-      return { success: false, error: error.message };
+      return { success: false, error: (error as Error).message };
     }
   };
 
-  const getToken = () => state.token;
-  const getAuthStatus = () =>
-    state.metadata ? { ...state.metadata } : { isAuthenticated: false };
-  const getCrmUrl = () => state.crmUrl;
+  const getToken = (): string | null => state.token;
+  const getAuthStatus = (): AuthMetadata | { isAuthenticated: false } =>
+    state.metadata ? { ...state.metadata } : { isAuthenticated: false as const };
+  const getCrmUrl = (): string => state.crmUrl;
 
   return { ensureAuth, getToken, getAuthStatus, getCrmUrl, clearToken, _state: state };
 }

@@ -30,8 +30,8 @@ const SERVERS = [
     name: "msx-crm",
     dir: join(ROOT, "mcp", "msx"),
     install: "npm install",
-    build: null, // plain JS — no build step
-    verify: "src/index.js",
+    build: "npm run build",
+    verify: "dist/index.js",
   },
   {
     name: "oil (Obsidian Intelligence Layer)",

@@ -166,6 +166,32 @@ Need to modify? → UpdateEvent with eventId + changed fields
 Need to cancel? → CancelEvent (organizer) or DeleteEventById (attendee)
 ```
 
+## OrderBy Property Names
+
+The Calendar MCP `orderby` parameter uses **PascalCase property names** — not OData nested paths. Using Graph API OData paths like `start/dateTime` will fail.
+
+| Correct | Incorrect |
+|---|---|
+| `Start` | `start/dateTime` |
+| `End` | `end/dateTime` |
+| `Subject` | `subject` |
+| `CreatedDateTime` | `createdDateTime` |
+| `LastModifiedDateTime` | `lastModifiedDateTime` |
+
+**Valid `orderby` properties** (subset of most useful):
+`Start`, `End`, `Subject`, `CreatedDateTime`, `LastModifiedDateTime`, `Importance`, `IsAllDay`, `Sensitivity`, `ShowAs`, `Type`
+
+Example:
+```
+calendar:ListCalendarView({
+  startDateTime: "<start-ISO>",
+  endDateTime: "<end-ISO>",
+  orderby: "Start asc"
+})
+```
+
+**Do NOT use**: `start/dateTime`, `end/dateTime`, or any lowercase/nested path form.
+
 ## Common Pitfalls
 
 | Pitfall | Prevention |
@@ -175,6 +201,7 @@ Need to cancel? → CancelEvent (organizer) or DeleteEventById (attendee)
 | Not expanding recurring events | `ListCalendarView` auto-expands recurrences. `ListEvents` returns only the series master. |
 | `DeleteEventById` when you're the organizer | Use `CancelEvent` to notify attendees. `DeleteEventById` is silent. |
 | Hard-coding timezone | Always resolve dynamically via `GetUserDateAndTimeZoneSettings`. |
+| Using `start/dateTime` in `orderby` | Calendar MCP uses PascalCase names (`Start`, `End`), not OData nested paths. See **OrderBy Property Names** above. |
 
 ## Chaining
 

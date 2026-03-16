@@ -2,34 +2,35 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools, ALLOWED_ENTITY_SETS, CRM_QUERY_MAX_RECORDS, isEntityAllowed } from '../tools.js';
 import { resetApprovalQueue, getApprovalQueue } from '../approval-queue.js';
+import type { CrmClient, CrmResponse } from '../crm.js';
 
 // Build a mock CRM client that records calls and returns configurable responses
-function mockCrmClient(responses = {}) {
+function mockCrmClient(responses: Record<string, CrmResponse> = {}): CrmClient {
   return {
-    request: vi.fn(async (path, opts) => {
+    request: vi.fn(async (path: string, _opts?: unknown) => {
       if (responses[path]) return responses[path];
       // Default: success with empty data
       return { ok: true, status: 200, data: {} };
     }),
-    requestAllPages: vi.fn(async (path, opts) => {
+    requestAllPages: vi.fn(async (path: string, _opts?: unknown) => {
       if (responses[path]) return responses[path];
       return { ok: true, status: 200, data: { value: [] } };
     }),
     buildUrl: vi.fn(),
     getCrmUrl: vi.fn(() => 'https://test.crm.dynamics.com')
-  };
+  } as unknown as CrmClient;
 }
 
 // Helper: call a registered tool by invoking the server's tool handler
-async function callTool(server, name, args = {}) {
-  const tool = server._registeredTools?.[name];
+async function callTool(server: McpServer, name: string, args: Record<string, unknown> = {}) {
+  const tool = (server as unknown as { _registeredTools: Record<string, { handler: (args: Record<string, unknown>) => Promise<unknown> }> })._registeredTools?.[name];
   if (!tool) throw new Error(`Tool "${name}" not registered`);
   return tool.handler(args);
 }
 
 describe('registerTools', () => {
-  let server;
-  let crm;
+  let server: McpServer;
+  let crm: CrmClient;
 
   beforeEach(() => {
     resetApprovalQueue();

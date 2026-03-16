@@ -3,21 +3,27 @@
   "version": "0.1.0",
   "description": "MCP server for Dynamics 365 / MSX CRM operations",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "bin": {
-    "msx-mcp": "src/index.js"
+    "msx-mcp": "dist/index.js"
   },
   "scripts": {
-    "start": "node src/index.js",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "keywords": ["mcp", "dynamics365", "crm", "msx"],
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1"
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.3",
     "vitest": "^4.0.18"
   }
 }

@@ -8,19 +8,37 @@ const DEFAULT_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 let counter = 0;
 
-/**
- * @typedef {Object} StagedOperation
- * @property {string}      id           - Unique operation ID (OP-1, OP-2, …)
- * @property {string}      type         - Tool name that created this (e.g. "update_milestone")
- * @property {string}      entitySet    - CRM entity set path
- * @property {string}      method       - HTTP method ("POST" | "PATCH")
- * @property {object}      payload      - Request body to send to CRM
- * @property {object|null} beforeState  - Snapshot of current record (for diff)
- * @property {string}      description  - Human-readable summary of the change
- * @property {string}      stagedAt     - ISO timestamp
- * @property {number}      expiresAt    - Unix ms when this op expires
- * @property {'pending'|'approved'|'rejected'|'executed'|'expired'} status
- */
+export type OperationStatus = 'pending' | 'approved' | 'rejected' | 'executed' | 'expired';
+
+export interface StagedOperation {
+  id: string;
+  type: string;
+  entitySet: string;
+  method: 'POST' | 'PATCH';
+  payload: Record<string, unknown>;
+  beforeState: Record<string, unknown> | null;
+  description: string;
+  stagedAt: string;
+  expiresAt: number;
+  status: OperationStatus;
+  // Attached by specific tools after staging
+  identity?: Record<string, unknown>;
+  fallbackEntitySet?: string;
+  fallbackPayload?: Record<string, unknown>;
+}
+
+export interface StageInput {
+  type: string;
+  entitySet: string;
+  method: 'POST' | 'PATCH';
+  payload: Record<string, unknown>;
+  beforeState?: Record<string, unknown> | null;
+  description: string;
+}
+
+export interface ApprovalQueueOptions {
+  ttlMs?: number;
+}
 
 /**
  * Events emitted:
@@ -32,12 +50,11 @@ let counter = 0;
  *   'op:error' (op, error)    – execution failed
  */
 export class ApprovalQueue extends EventEmitter {
-  /** @type {Map<string, StagedOperation>} */
-  #ops = new Map();
-  #ttlMs;
-  #sweepTimer;
+  #ops = new Map<string, StagedOperation>();
+  #ttlMs: number;
+  #sweepTimer: ReturnType<typeof setInterval>;
 
-  constructor({ ttlMs = DEFAULT_TTL_MS } = {}) {
+  constructor({ ttlMs = DEFAULT_TTL_MS }: ApprovalQueueOptions = {}) {
     super();
     this.#ttlMs = ttlMs;
     // Periodic sweep for expired ops (every 60s)
@@ -46,12 +63,11 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Stage a new write operation. Returns the operation with its assigned ID. */
-  stage({ type, entitySet, method, payload, beforeState = null, description }) {
+  stage({ type, entitySet, method, payload, beforeState = null, description }: StageInput): StagedOperation {
     counter += 1;
     const id = `OP-${counter}`;
     const now = Date.now();
-    /** @type {StagedOperation} */
-    const op = {
+    const op: StagedOperation = {
       id,
       type,
       entitySet,
@@ -69,7 +85,7 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Approve a pending operation. Returns the approved op or null. */
-  approve(id) {
+  approve(id: string): StagedOperation | null {
     const op = this.#ops.get(id);
     if (!op || op.status !== 'pending') return null;
     if (Date.now() > op.expiresAt) {
@@ -84,7 +100,7 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Reject / cancel a pending operation. Returns the rejected op or null. */
-  reject(id) {
+  reject(id: string): StagedOperation | null {
     const op = this.#ops.get(id);
     if (!op || op.status !== 'pending') return null;
     op.status = 'rejected';
@@ -94,7 +110,7 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Mark an approved operation as executed. Stores result and cleans up. */
-  markExecuted(id, result) {
+  markExecuted(id: string, result: unknown): StagedOperation | null {
     const op = this.#ops.get(id);
     if (!op) return null;
     op.status = 'executed';
@@ -104,7 +120,7 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Mark an approved operation as failed. */
-  markFailed(id, err) {
+  markFailed(id: string, err: unknown): StagedOperation | null {
     const op = this.#ops.get(id);
     if (!op) return null;
     this.emit('op:error', op, err);
@@ -114,7 +130,7 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Get a single operation by ID. */
-  get(id) {
+  get(id: string): StagedOperation | null {
     const op = this.#ops.get(id);
     if (op && Date.now() > op.expiresAt && op.status === 'pending') {
       op.status = 'expired';
@@ -126,13 +142,13 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** List all pending operations. */
-  listPending() {
+  listPending(): StagedOperation[] {
     this.#sweep();
     return [...this.#ops.values()].filter(op => op.status === 'pending');
   }
 
   /** List all operations regardless of status (still in map). */
-  listAll() {
+  listAll(): StagedOperation[] {
     this.#sweep();
     return [...this.#ops.values()];
   }
@@ -143,8 +159,8 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Approve all pending operations. Returns approved ops. */
-  approveAll() {
-    const approved = [];
+  approveAll(): StagedOperation[] {
+    const approved: StagedOperation[] = [];
     for (const op of this.#ops.values()) {
       if (op.status === 'pending') {
         const result = this.approve(op.id);
@@ -155,8 +171,8 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Reject all pending operations. Returns rejected ops. */
-  rejectAll() {
-    const rejected = [];
+  rejectAll(): StagedOperation[] {
+    const rejected: StagedOperation[] = [];
     for (const [, op] of [...this.#ops.entries()]) {
       if (op.status === 'pending') {
         const result = this.reject(op.id);
@@ -167,17 +183,17 @@ export class ApprovalQueue extends EventEmitter {
   }
 
   /** Clear the entire queue (for testing / shutdown). */
-  clear() {
+  clear(): void {
     this.#ops.clear();
   }
 
   /** Stop the sweep timer (for clean shutdown). */
-  dispose() {
+  dispose(): void {
     clearInterval(this.#sweepTimer);
   }
 
   // Expire stale operations
-  #sweep() {
+  #sweep(): void {
     const now = Date.now();
     for (const [id, op] of this.#ops) {
       if (op.status === 'pending' && now > op.expiresAt) {
@@ -190,9 +206,9 @@ export class ApprovalQueue extends EventEmitter {
 }
 
 /** Singleton instance — shared across MCP tools and external consumers. */
-let _instance = null;
+let _instance: ApprovalQueue | null = null;
 
-export function getApprovalQueue(opts) {
+export function getApprovalQueue(opts?: ApprovalQueueOptions): ApprovalQueue {
   if (!_instance) {
     _instance = new ApprovalQueue(opts);
   }
@@ -200,7 +216,7 @@ export function getApprovalQueue(opts) {
 }
 
 /** Reset singleton (for testing). */
-export function resetApprovalQueue() {
+export function resetApprovalQueue(): void {
   if (_instance) {
     _instance.dispose();
     _instance = null;

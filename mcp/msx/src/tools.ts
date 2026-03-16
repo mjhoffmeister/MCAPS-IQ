@@ -4,8 +4,35 @@
 import { z } from 'zod';
 import { isValidGuid, normalizeGuid, isValidTpid, sanitizeODataString } from './validation.js';
 import { getApprovalQueue } from './approval-queue.js';
+import type { StagedOperation } from './approval-queue.js';
 import { auditLog } from './audit.js';
 import { detectInjection, formatDetectionWarning, formatWriteWarning } from './prompt-guard.js';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { CrmClient, CrmResponse, CrmData } from './crm.js';
+
+// ── Internal types ───────────────────────────────────────────
+interface PicklistOption {
+  label: string;
+  value: number;
+}
+
+interface ToolContent {
+  [key: string]: unknown;
+  content: Array<{ type: 'text'; text: string }>;
+  isError?: boolean;
+}
+
+interface DealTeamMember {
+  userId: string | null;
+  name: string;
+}
+
+interface DealTeamInfo {
+  dealTeamByOpportunity: Record<string, DealTeamMember[]>;
+  available: boolean;
+  error?: string;
+  skipped?: boolean;
+}
 
 // ── Entity allowlist ─────────────────────────────────────────
 // Only these Dynamics 365 entity sets may be queried via crm_query
@@ -33,7 +60,7 @@ export const ALLOWED_ENTITY_SETS = new Set([
 ]);
 
 /** Check whether an entity set (or entity-set-with-key) is on the allowlist. */
-export function isEntityAllowed(entitySet) {
+export function isEntityAllowed(entitySet: string): boolean {
   if (!entitySet || typeof entitySet !== 'string') return false;
   // Strip key suffix: "accounts(guid)" → "accounts"
   const base = entitySet.split('(')[0].split('/')[0];
@@ -67,7 +94,7 @@ const OPP_SELECT = [
   'msp_activesalesstage', 'estimatedvalue'
 ].join(',');
 
-const TASK_CATEGORIES = [
+const TASK_CATEGORIES: PicklistOption[] = [
   { label: 'Technical Close/Win Plan', value: 606820005 },
   { label: 'Architecture Design Session', value: 861980004 },
   { label: 'Blocker Escalation', value: 861980006 },
@@ -83,21 +110,21 @@ const TASK_CATEGORIES = [
 // a metadata round-trip.  get_milestone_field_options still queries
 // live metadata for the full list (especially Azure regions/capacity).
 
-const WORKLOAD_TYPES = [
+const WORKLOAD_TYPES: PicklistOption[] = [
   { label: 'Azure', value: 861980000 },
   { label: 'Dynamics 365', value: 861980001 },
   { label: 'Security', value: 861980002 },
   { label: 'Modern Work', value: 861980003 }
 ];
 
-const DELIVERED_BY = [
+const DELIVERED_BY: PicklistOption[] = [
   { label: 'Customer', value: 606820000 },
   { label: 'Partner', value: 606820001 },
   { label: 'ISD', value: 606820002 },
   { label: 'Microsoft Support', value: 606820003 }
 ];
 
-const MILESTONE_STATUSES = [
+const MILESTONE_STATUSES: PicklistOption[] = [
   { label: 'On Track', value: 861980000 },
   { label: 'At Risk', value: 861980001 },
   { label: 'Blocked', value: 861980002 },
@@ -107,21 +134,21 @@ const MILESTONE_STATUSES = [
   { label: 'Closed as Incomplete', value: 861980007 }
 ];
 
-const COMMITMENT_RECOMMENDATIONS = [
+const COMMITMENT_RECOMMENDATIONS: PicklistOption[] = [
   { label: 'Uncommitted', value: 861980000 },
   { label: 'Committed', value: 861980001 },
   { label: 'Best Case', value: 861980002 },
   { label: 'Pipeline', value: 861980003 }
 ];
 
-const MILESTONE_CATEGORIES = [
+const MILESTONE_CATEGORIES: PicklistOption[] = [
   { label: 'POC/Pilot', value: 861980000 },
   { label: 'Pre-Production', value: 861980001 },
   { label: 'Production', value: 861980002 }
 ];
 
 // Common regions — full list (75 options) available via get_milestone_field_options
-const PREFERRED_AZURE_REGIONS_COMMON = [
+const PREFERRED_AZURE_REGIONS_COMMON: PicklistOption[] = [
   { label: 'East US - Blue Ridge', value: 861980005 },
   { label: 'East US 2 - Boydton', value: 861980006 },
   { label: 'Central US - Des Moines', value: 861980018 },
@@ -135,7 +162,7 @@ const PREFERRED_AZURE_REGIONS_COMMON = [
 
 // Common capacity types — full list (65 options) available via get_milestone_field_options
 // NOTE: This is a MultiSelectPicklist — values are comma-separated strings (e.g. "861980081,861980065")
-const AZURE_CAPACITY_TYPES_COMMON = [
+const AZURE_CAPACITY_TYPES_COMMON: PicklistOption[] = [
   { label: 'None', value: 861980000 },
   { label: 'Av2/Dv2/Dv3/Ev3/Dsv3/Esv3 (Intel) (Cores)', value: 861980037 },
   { label: 'Azure SQL Database (Cores or DTUs)', value: 861980065 },
@@ -146,7 +173,7 @@ const AZURE_CAPACITY_TYPES_COMMON = [
 
 /** Resolve a picklist numeric value to "Label (value)" for human-readable output.
  *  For multi-select (comma-separated codes), resolves each code individually. */
-function resolvePicklistLabel(options, value) {
+function resolvePicklistLabel(options: PicklistOption[], value: unknown): string | null {
   if (value === undefined || value === null) return null;
   // Multi-select: comma-separated string of codes
   if (typeof value === 'string' && value.includes(',')) {
@@ -165,7 +192,7 @@ function resolvePicklistLabel(options, value) {
  * Resolve a picklist input that may be a numeric code or a human-readable label.
  * Returns the numeric code, or undefined if unresolvable.
  */
-function resolveOptionValue(options, input) {
+function resolveOptionValue(options: PicklistOption[], input: unknown): number | undefined {
   if (input === undefined || input === null) return undefined;
   // Already a number — validate it exists
   if (typeof input === 'number') {
@@ -180,7 +207,7 @@ function resolveOptionValue(options, input) {
 }
 
 /** Map of CRM payload keys to their picklist arrays for resolution. */
-const PICKLIST_MAP = {
+const PICKLIST_MAP: Record<string, PicklistOption[]> = {
   msp_milestoneworkload: WORKLOAD_TYPES,
   msp_deliveryspecifiedfield: DELIVERED_BY,
   msp_milestonepreferredazureregion: PREFERRED_AZURE_REGIONS_COMMON,
@@ -192,8 +219,8 @@ const PICKLIST_MAP = {
 
 /** Resolve all picklist fields in a payload to human-readable labels.
  *  Non-picklist and lookup fields are passed through as-is. */
-function resolvePayloadLabels(payload) {
-  const resolved = {};
+function resolvePayloadLabels(payload: Record<string, unknown>): Record<string, unknown> {
+  const resolved: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(payload)) {
     const picklist = PICKLIST_MAP[key];
     if (picklist && value !== undefined && value !== null) {
@@ -212,23 +239,23 @@ const EXECUTE_ALL_CONFIRM_TOKEN = 'EXECUTE_ALL';
 const UNSAFE_QUERY_CHARS = /[;\r\n]/;
 const SELECT_PATTERN = /^[a-zA-Z0-9_,.$ ]+$/;
 const ORDERBY_PATTERN = /^[a-zA-Z0-9_,.$ ]+$/;
-const EXPAND_PATTERN = /^[a-zA-Z0-9_,.$()=;\- ]+$/;
+const EXPAND_PATTERN = /^[a-zA-Z0-9_,.$()=\- ]+$/;
 
-function validateODataFragment(name, value, pattern) {
+function validateODataFragment(name: string, value: string | undefined | null, pattern: RegExp): string | null {
   if (value === undefined || value === null) return null;
   if (UNSAFE_QUERY_CHARS.test(value)) return `${name} contains unsafe control characters`;
   if (!pattern.test(value)) return `${name} contains unsupported characters`;
   return null;
 }
 
-const text = (content) => ({ content: [{ type: 'text', text: typeof content === 'string' ? content : JSON.stringify(content, null, 2) }] });
-const error = (msg) => ({ content: [{ type: 'text', text: msg }], isError: true });
+const text = (content: unknown): ToolContent => ({ content: [{ type: 'text', text: typeof content === 'string' ? content : JSON.stringify(content, null, 2) }] });
+const error = (msg: string): ToolContent => ({ content: [{ type: 'text', text: msg }], isError: true });
 
 /**
  * Build a staged-write tool response. Scans the payload and beforeState
  * for prompt injection indicators and surfaces warnings in the response.
  */
-function stagedResponse(responseObj) {
+function stagedResponse(responseObj: Record<string, unknown>): ToolContent {
   const scanTargets = [responseObj.payload, responseObj.before, responseObj.beforeState].filter(Boolean);
   const detections = scanTargets.flatMap(t => detectInjection(t, `staged_write:${responseObj.operationId}`));
   const highSeverity = detections.filter(d => d.severity === 'high');
@@ -237,7 +264,7 @@ function stagedResponse(responseObj) {
     // Remove staged operation when high-severity prompt injection indicators are detected.
     if (responseObj.operationId) {
       const queue = getApprovalQueue();
-      queue.reject(responseObj.operationId);
+      queue.reject(responseObj.operationId as string);
     }
     const details = highSeverity
       .slice(0, 5)
@@ -258,7 +285,7 @@ function stagedResponse(responseObj) {
 const AI_ATTRIBUTION = '[AI-assisted via MCAPS-IQ]';
 
 /** Append AI attribution to a string field if not already present. */
-function withAttribution(value) {
+function withAttribution(value: string): string {
   // Preserve non-string values and empty strings without injecting attribution.
   if (typeof value !== 'string') return value;
   if (value === '') return value;
@@ -268,7 +295,7 @@ function withAttribution(value) {
 
 /** Format a numeric value as USD currency. Returns null/empty if value is null/undefined/zero.
  *  Used for msp_consumptionconsumedrecurring and monthly use fields. */
-function formatCurrency(value) {
+function formatCurrency(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const num = Number(value);
   if (Number.isNaN(num) || num === 0) return null;
@@ -276,81 +303,81 @@ function formatCurrency(value) {
 }
 
 /** Build a Dynamics 365 deep-link URL to open a record in the browser. */
-function buildRecordUrl(crmBaseUrl, entityLogicalName, guid) {
+function buildRecordUrl(crmBaseUrl: string | null, entityLogicalName: string, guid: string): string | undefined {
   if (!crmBaseUrl || !entityLogicalName || !guid) return undefined;
   return `${crmBaseUrl}/main.aspx?etn=${entityLogicalName}&id=${guid}&pagetype=entityrecord`;
 }
 
-function monthKey(dateValue) {
+function monthKey(dateValue: unknown): string | null {
   if (!dateValue) return null;
-  const date = new Date(dateValue);
+  const date = new Date(dateValue as string | number);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString().slice(0, 7);
 }
 
-function toIsoDate(value) {
+function toIsoDate(value: unknown): string | null {
   if (!value) return null;
-  const date = new Date(value);
+  const date = new Date(value as string | number);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString().slice(0, 10);
 }
 
-function deriveOpportunityHealth(opportunity) {
+function deriveOpportunityHealth(opportunity: Record<string, unknown> | null): string {
   const completion = toIsoDate(opportunity?.msp_estcompletiondate);
   if (!completion) return 'Unknown';
-  const today = toIsoDate(new Date().toISOString());
+  const today = toIsoDate(new Date().toISOString())!;
   if (completion < today) return 'At Risk';
 
   const d1 = new Date(completion);
   const d2 = new Date(today);
-  const diffDays = Math.floor((d1 - d2) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor((d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24));
   if (diffDays <= 14) return 'Watch';
   return 'On Track';
 }
 
-function chunkArray(items, chunkSize = 25) {
-  const chunks = [];
+function chunkArray<T>(items: T[], chunkSize = 25): T[][] {
+  const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += chunkSize) chunks.push(items.slice(i, i + chunkSize));
   return chunks;
 }
 
-function deriveOpportunityStage(opportunity, stageNameById) {
+function deriveOpportunityStage(opportunity: Record<string, unknown> | null, stageNameById?: Record<string, string>): string | null {
   // Prefer msp_activesalesstage (human-readable, pre-resolved by CRM)
-  if (opportunity?.msp_activesalesstage) return opportunity.msp_activesalesstage;
+  if (opportunity?.msp_activesalesstage) return opportunity.msp_activesalesstage as string;
   const formatted = fv(opportunity, '_activestageid_value');
   if (formatted) return formatted;
-  const stageId = opportunity?._activestageid_value;
+  const stageId = opportunity?._activestageid_value as string | undefined;
   if (!stageId) return null;
   return stageNameById?.[stageId] || stageId;
 }
 
-async function resolveStageNames(crmClient, opportunities) {
+async function resolveStageNames(crmClient: CrmClient, opportunities: Record<string, unknown>[]): Promise<Record<string, string>> {
   const stageIds = [...new Set(
     opportunities
-      .map(o => o._activestageid_value)
+      .map(o => o._activestageid_value as string | undefined)
       .filter(Boolean)
-  )];
+  )] as string[];
   if (!stageIds.length) return {};
 
-  const stageNameById = {};
+  const stageNameById: Record<string, string> = {};
   for (const chunk of chunkArray(stageIds, 25)) {
     const filter = chunk.map(id => `processstageid eq '${sanitizeODataString(id)}'`).join(' or ');
     const result = await crmClient.requestAllPages('processstages', {
       query: { $filter: filter, $select: 'processstageid,stagename' }
     });
     if (!result.ok) continue;
-    for (const stage of result.data?.value || []) {
+    for (const stage of (result.data?.value as Record<string, unknown>[]) || []) {
       if (stage.processstageid && stage.stagename) {
-        stageNameById[stage.processstageid] = stage.stagename;
+        stageNameById[stage.processstageid as string] = stage.stagename as string;
       }
     }
   }
   return stageNameById;
 }
 
-async function resolveDealTeamMembers(crmClient, opportunities) {
-  const opportunityIds = [...new Set(opportunities.map(o => o.opportunityid).filter(Boolean))];
-  const dealTeamByOpportunity = {};
+async function resolveDealTeamMembers(crmClient: CrmClient, opportunities: Record<string, unknown>[]): Promise<DealTeamInfo> {
+  const opportunityIds = [...new Set(opportunities.map(o => o.opportunityid as string).filter(Boolean))];
+  const dealTeamByOpportunity: Record<string, DealTeamMember[]> = {};
   if (!opportunityIds.length) return { dealTeamByOpportunity, available: true };
 
   for (const chunk of chunkArray(opportunityIds, 25)) {
@@ -370,10 +397,10 @@ async function resolveDealTeamMembers(crmClient, opportunities) {
       };
     }
 
-    for (const row of result.data?.value || []) {
-      const oppId = row._msp_parentopportunityid_value;
+    for (const row of (result.data?.value as Record<string, unknown>[]) || []) {
+      const oppId = row._msp_parentopportunityid_value as string;
       if (!oppId) continue;
-      const memberId = row._msp_dealteamuserid_value || null;
+      const memberId = (row._msp_dealteamuserid_value as string | null) || null;
       const memberName = fv(row, '_msp_dealteamuserid_value') || memberId || 'Unknown';
       if (!dealTeamByOpportunity[oppId]) dealTeamByOpportunity[oppId] = [];
       const exists = dealTeamByOpportunity[oppId].some(member => member.userId === memberId && member.name === memberName);
@@ -387,18 +414,19 @@ async function resolveDealTeamMembers(crmClient, opportunities) {
 }
 
 /** Map task statusCode to the required statecode for Dynamics 365 state transitions. */
-function taskStateForStatus(statusCode) {
+function taskStateForStatus(statusCode: number): number {
   if ([5].includes(statusCode)) return 1;       // Completed
   if ([6].includes(statusCode)) return 2;       // Cancelled
   return 0;                                      // Open
 }
 
-function fv(record, field) {
-  return record[`${field}@OData.Community.Display.V1.FormattedValue`] ?? null;
+function fv(record: Record<string, unknown> | null, field: string): string | null {
+  if (!record) return null;
+  return (record[`${field}@OData.Community.Display.V1.FormattedValue`] as string) ?? null;
 }
 
 /** Returns ISO date string for (today - days). */
-function daysAgo(days) {
+function daysAgo(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
   return d.toISOString().split('T')[0];
@@ -407,14 +435,14 @@ function daysAgo(days) {
 const ACTIVE_STATUSES = new Set(['Not Started', 'On Track', 'In Progress', 'Blocked', 'At Risk']);
 
 /** Derive human-readable commitment label from a milestone record. */
-function commitmentLabel(m) {
+function commitmentLabel(m: Record<string, unknown>): string {
   return m.msp_commitmentrecommendation === 861980001 ? 'Committed' : 'Uncommitted';
 }
 
-function buildMilestoneSummary(milestones, crmBaseUrl) {
-  const byStatus = {};
-  const byOpportunity = {};
-  const byCommitment = { Committed: 0, Uncommitted: 0 };
+function buildMilestoneSummary(milestones: Record<string, unknown>[], crmBaseUrl: string | null) {
+  const byStatus: Record<string, number> = {};
+  const byOpportunity: Record<string, number> = {};
+  const byCommitment: Record<string, number> = { Committed: 0, Uncommitted: 0 };
   for (const m of milestones) {
     const status = fv(m, 'msp_milestonestatus') || 'Unknown';
     byStatus[status] = (byStatus[status] || 0) + 1;
@@ -433,7 +461,7 @@ function buildMilestoneSummary(milestones, crmBaseUrl) {
       commitment: commitmentLabel(m),
       monthlyUse: formatCurrency(m.msp_monthlyuse),
       opportunity: fv(m, '_msp_opportunityid_value'),
-      recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
+      recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid as string)
     }))
   };
 }
@@ -442,23 +470,23 @@ function buildMilestoneSummary(milestones, crmBaseUrl) {
  * Triage format: classifies milestones into urgency buckets and strips
  * verbose OData annotations for a compact, action-oriented response.
  */
-function buildMilestoneTriage(milestones, crmBaseUrl) {
+function buildMilestoneTriage(milestones: Record<string, unknown>[], crmBaseUrl: string | null) {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const soon = new Date(now);
   soon.setDate(soon.getDate() + 14);
   const soonStr = soon.toISOString().split('T')[0];
 
-  const buckets = { overdue: [], due_soon: [], blocked: [], on_track: [] };
-  const summary = { total: milestones.length, overdue: 0, due_soon: 0, blocked: 0, on_track: 0, byCommitment: { Committed: 0, Uncommitted: 0 } };
+  const buckets: Record<string, Record<string, unknown>[]> = { overdue: [], due_soon: [], blocked: [], on_track: [] };
+  const summary: Record<string, unknown> = { total: milestones.length, overdue: 0, due_soon: 0, blocked: 0, on_track: 0, byCommitment: { Committed: 0, Uncommitted: 0 } as Record<string, number> };
 
   for (const m of milestones) {
     const status = fv(m, 'msp_milestonestatus') || 'Unknown';
-    const date = m.msp_milestonedate || null;
+    const date = (m.msp_milestonedate as string) || null;
     const commitment = commitmentLabel(m);
-    summary.byCommitment[commitment] += 1;
+    (summary.byCommitment as Record<string, number>)[commitment] += 1;
 
-    const compact = {
+    const compact: Record<string, unknown> = {
       id: m.msp_engagementmilestoneid,
       number: m.msp_milestonenumber,
       name: m.msp_name,
@@ -468,95 +496,95 @@ function buildMilestoneTriage(milestones, crmBaseUrl) {
       monthlyUse: formatCurrency(m.msp_monthlyuse),
       opportunity: fv(m, '_msp_opportunityid_value'),
       workload: fv(m, '_msp_workloadlkid_value'),
-      recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
+      recordUrl: buildRecordUrl(crmBaseUrl, 'msp_engagementmilestone', m.msp_engagementmilestoneid as string)
     };
     if (m.tasks) compact.tasks = m.tasks;
 
     if (status === 'Blocked' || status === 'At Risk') {
       buckets.blocked.push(compact);
-      summary.blocked++;
+      (summary as Record<string, number>).blocked++;
     } else if (date && date < todayStr) {
       buckets.overdue.push(compact);
-      summary.overdue++;
+      (summary as Record<string, number>).overdue++;
     } else if (date && date <= soonStr) {
       buckets.due_soon.push(compact);
-      summary.due_soon++;
+      (summary as Record<string, number>).due_soon++;
     } else {
       buckets.on_track.push(compact);
-      summary.on_track++;
+      (summary as Record<string, number>).on_track++;
     }
   }
 
   // Sort each bucket by date ascending
   for (const list of Object.values(buckets)) {
-    list.sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+    list.sort((a, b) => ((a.date as string) || '9999').localeCompare((b.date as string) || '9999'));
   }
 
   return { summary, ...buckets };
 }
 
-async function applyTaskFilter(crmClient, milestones, mode) {
+async function applyTaskFilter(crmClient: CrmClient, milestones: Record<string, unknown>[], mode: string): Promise<Record<string, unknown>[]> {
   if (!milestones.length) return milestones;
-  const msIds = milestones.map(m => m.msp_engagementmilestoneid).filter(Boolean);
-  const chunks = [];
+  const msIds = (milestones.map(m => m.msp_engagementmilestoneid).filter(Boolean)) as string[];
+  const chunks: string[][] = [];
   for (let i = 0; i < msIds.length; i += 25) chunks.push(msIds.slice(i, i + 25));
-  const taskMatches = new Set();
+  const taskMatches = new Set<string>();
   for (const chunk of chunks) {
     const tf = chunk.map(id => `_regardingobjectid_value eq '${id}'`).join(' or ');
     const taskResult = await crmClient.requestAllPages('tasks', {
       query: { $filter: tf, $select: '_regardingobjectid_value' }
     });
     if (taskResult.ok && taskResult.data?.value) {
-      for (const t of taskResult.data.value) taskMatches.add(t._regardingobjectid_value);
+      for (const t of taskResult.data.value as Record<string, unknown>[]) taskMatches.add(t._regardingobjectid_value as string);
     }
   }
   if (mode === 'without-tasks') {
-    return milestones.filter(m => !taskMatches.has(m.msp_engagementmilestoneid));
+    return milestones.filter(m => !taskMatches.has(m.msp_engagementmilestoneid as string));
   }
-  return milestones.filter(m => taskMatches.has(m.msp_engagementmilestoneid));
+  return milestones.filter(m => taskMatches.has(m.msp_engagementmilestoneid as string));
 }
 
 const INLINE_TASK_SELECT = 'activityid,subject,scheduledend,statuscode,statecode,_ownerid_value,description,msp_taskcategory,_regardingobjectid_value';
 
 /** Fetch tasks for a list of milestone IDs and return them as a flat array. */
-async function fetchTasksForMilestones(crmClient, msIds) {
+async function fetchTasksForMilestones(crmClient: CrmClient, msIds: string[]): Promise<Record<string, unknown>[]> {
   if (!msIds.length) return [];
-  const chunks = [];
+  const chunks: string[][] = [];
   for (let i = 0; i < msIds.length; i += 25) chunks.push(msIds.slice(i, i + 25));
-  const allTasks = [];
+  const allTasks: Record<string, unknown>[] = [];
   for (const chunk of chunks) {
     const tf = chunk.map(id => `_regardingobjectid_value eq '${id}'`).join(' or ');
     const taskResult = await crmClient.requestAllPages('tasks', {
       query: { $filter: tf, $select: INLINE_TASK_SELECT, $orderby: 'createdon desc' }
     });
-    if (taskResult.ok && taskResult.data?.value) allTasks.push(...taskResult.data.value);
+    if (taskResult.ok && taskResult.data?.value) allTasks.push(...(taskResult.data.value as Record<string, unknown>[]));
   }
   return allTasks;
 }
 
 /** Batch-fetch tasks and embed them as a `tasks` array on each milestone record. */
-async function embedTasksOnMilestones(crmClient, milestones) {
+async function embedTasksOnMilestones(crmClient: CrmClient, milestones: Record<string, unknown>[]): Promise<Record<string, unknown>[]> {
   if (!milestones.length) return milestones;
-  const msIds = milestones.map(m => m.msp_engagementmilestoneid).filter(Boolean);
+  const msIds = (milestones.map(m => m.msp_engagementmilestoneid).filter(Boolean)) as string[];
   const allTasks = await fetchTasksForMilestones(crmClient, msIds);
-  const byMilestone = {};
+  const byMilestone: Record<string, Record<string, unknown>[]> = {};
   for (const t of allTasks) {
-    const msId = t._regardingobjectid_value;
+    const msId = t._regardingobjectid_value as string;
     if (!byMilestone[msId]) byMilestone[msId] = [];
     byMilestone[msId].push(t);
   }
   return milestones.map(m => ({
     ...m,
-    tasks: byMilestone[m.msp_engagementmilestoneid] || []
+    tasks: byMilestone[m.msp_engagementmilestoneid as string] || []
   }));
 }
 
 /**
  * Register all CRM tools on an McpServer instance.
  */
-export function registerTools(server, crmClient) {
+export function registerTools(server: McpServer, crmClient: CrmClient): void {
   /** Lazily get the CRM base URL for deep-link generation. */
-  const getCrmBase = () => crmClient.getCrmUrl?.() || null;
+  const getCrmBase = (): string | null => crmClient.getCrmUrl?.() || null;
 
   // ── crm_whoami ──────────────────────────────────────────────
   server.tool(
@@ -604,7 +632,7 @@ export function registerTools(server, crmClient) {
         return error('top must be a positive integer');
       }
 
-      const query = {};
+      const query: Record<string, string> = {};
       if (filter) query.$filter = filter;
       if (select) query.$select = select;
       if (orderby) query.$orderby = orderby;
@@ -619,7 +647,7 @@ export function registerTools(server, crmClient) {
       const piDetections = detectInjection(records, `crm_query:${entitySet}`);
       const warning = formatDetectionWarning(piDetections);
       const body = JSON.stringify({ count: records.length, value: records }, null, 2);
-      const content = [];
+      const content: Array<{ type: 'text'; text: string }> = [];
       if (warning) content.push({ type: 'text', text: warning });
       content.push({ type: 'text', text: body });
       return { content };
@@ -649,7 +677,7 @@ export function registerTools(server, crmClient) {
 
       const normalized = normalizeGuid(id);
       if (!isValidGuid(normalized)) return error('Invalid GUID');
-      const query = {};
+      const query: Record<string, string> = {};
       if (select) query.$select = select;
       const result = await crmClient.request(`${entitySet}(${normalized})`, { query });
       if (!result.ok) return error(`Get record failed (${result.status}): ${result.data?.message}`);
@@ -657,7 +685,7 @@ export function registerTools(server, crmClient) {
       const piDetections = detectInjection(result.data, `crm_get_record:${entitySet}`);
       const warning = formatDetectionWarning(piDetections);
       const body = JSON.stringify(result.data, null, 2);
-      const content = [];
+      const content: Array<{ type: 'text'; text: string }> = [];
       if (warning) content.push({ type: 'text', text: warning });
       content.push({ type: 'text', text: body });
       return { content };
@@ -679,7 +707,7 @@ export function registerTools(server, crmClient) {
     },
     async ({ opportunityIds, opportunityKeyword, accountIds, customerKeyword, includeCompleted, includeDealTeam, format }) => {
       // Direct opportunity ID lookup path
-      let allOpps = [];
+      let allOpps: Record<string, unknown>[] = [];
       let lookupAttempted = false;
       if (opportunityIds?.length) {
         lookupAttempted = true;
@@ -715,7 +743,7 @@ export function registerTools(server, crmClient) {
       }
 
       // Account/customer scoped lookup path (fallback)
-      let resolvedIds = accountIds ? accountIds.map(normalizeGuid).filter(isValidGuid) : [];
+      let resolvedIds: string[] = accountIds ? accountIds.map(normalizeGuid).filter(isValidGuid) : [];
 
       // Resolve customerKeyword → account GUIDs
       if (!allOpps.length && !resolvedIds.length && customerKeyword) {
@@ -740,7 +768,7 @@ export function registerTools(server, crmClient) {
             return text({ count: 0, opportunities: [], matchedAccounts: [], message: `No accounts or active opportunities found matching '${customerKeyword}'` });
           }
         } else {
-          resolvedIds = matchedAccounts.map(a => a.accountid);
+          resolvedIds = matchedAccounts.map(a => a.accountid as string);
         }
       }
 
@@ -776,7 +804,7 @@ export function registerTools(server, crmClient) {
         const stage = deriveOpportunityStage(o, stageNameById);
         const estimatedCloseDate = o.estimatedclosedate || o.msp_estcompletiondate || null;
         const dealTeam = includeDealTeam !== false
-          ? (dealTeamInfo.dealTeamByOpportunity[o.opportunityid] || [])
+          ? (dealTeamInfo.dealTeamByOpportunity[o.opportunityid as string] || [])
           : [];
         return {
           id: o.opportunityid,
@@ -793,7 +821,7 @@ export function registerTools(server, crmClient) {
           dealTeamSource: dealTeamInfo.skipped
             ? 'skipped'
             : (dealTeamInfo.available ? 'msp_dealteams' : 'unavailable'),
-          recordUrl: buildRecordUrl(base, 'opportunity', o.opportunityid)
+          recordUrl: buildRecordUrl(base, 'opportunity', o.opportunityid as string)
         };
       });
       const normalizedById = Object.fromEntries(normalized.map(n => [n.id, n]));
@@ -801,7 +829,7 @@ export function registerTools(server, crmClient) {
       const opportunities = format === 'compact'
         ? normalized
         : allOpps.map(o => {
-          const enriched = normalizedById[o.opportunityid];
+          const enriched = normalizedById[o.opportunityid as string];
           return {
             ...o,
             stage: enriched?.stage ?? null,
@@ -811,11 +839,11 @@ export function registerTools(server, crmClient) {
             dealTeam: enriched?.dealTeam || [],
             dealTeamCount: enriched?.dealTeamCount ?? 0,
             dealTeamSource: enriched?.dealTeamSource || 'unavailable',
-            recordUrl: enriched?.recordUrl || buildRecordUrl(base, 'opportunity', o.opportunityid)
+            recordUrl: enriched?.recordUrl || buildRecordUrl(base, 'opportunity', o.opportunityid as string)
           };
         });
 
-      const response = { count: opportunities.length, opportunities, format: format || 'full', includeDealTeam: includeDealTeam !== false };
+      const response: Record<string, unknown> = { count: opportunities.length, opportunities, format: format || 'full', includeDealTeam: includeDealTeam !== false };
       if (!dealTeamInfo.available) {
         response.dealTeamWarning = 'Deal team details unavailable from msp_dealteams in this environment.';
       }
@@ -856,7 +884,8 @@ export function registerTools(server, crmClient) {
           query: { $select: MILESTONE_SELECT }
         });
         if (!result.ok) return error(`Milestone lookup failed (${result.status}): ${result.data?.message}`);
-        const milestone = { ...result.data, commitment: commitmentLabel(result.data), monthlyUse: formatCurrency(result.data.msp_monthlyuse), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', nid) };
+        const data = result.data as Record<string, unknown>;
+        const milestone: Record<string, unknown> = { ...data, commitment: commitmentLabel(data), monthlyUse: formatCurrency(data.msp_monthlyuse), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', nid) };
         if (includeTasks) {
           milestone.tasks = await fetchTasksForMilestones(crmClient, [nid]);
         }
@@ -864,7 +893,7 @@ export function registerTools(server, crmClient) {
       }
 
       // Resolve customerKeyword → opportunity GUIDs
-      let resolvedOppIds = null;
+      let resolvedOppIds: string[] | null = null;
       if (customerKeyword) {
         const sanitized = sanitizeODataString(customerKeyword.trim());
         const acctResult = await crmClient.requestAllPages('accounts', {
@@ -874,11 +903,11 @@ export function registerTools(server, crmClient) {
         if (!accounts.length) {
           return text({ count: 0, milestones: [], message: `No accounts found matching '${customerKeyword}'` });
         }
-        const acctIds = accounts.map(a => a.accountid);
+        const acctIds = accounts.map(a => a.accountid as string);
         const cutoff = daysAgo(30);
-        const acctChunks = [];
+        const acctChunks: string[][] = [];
         for (let i = 0; i < acctIds.length; i += 25) acctChunks.push(acctIds.slice(i, i + 25));
-        const allOpps = [];
+        const allOpps: Record<string, unknown>[] = [];
         for (const chunk of acctChunks) {
           const acctFilter = `(${chunk.map(id => `_parentaccountid_value eq '${id}'`).join(' or ')}) and statecode eq 0 and (msp_estcompletiondate ge ${cutoff} or msp_estcompletiondate eq null)`;
           const oppResult = await crmClient.requestAllPages('opportunities', {
@@ -889,7 +918,7 @@ export function registerTools(server, crmClient) {
         if (!allOpps.length) {
           return text({ count: 0, milestones: [], message: `No active opportunities found for customer '${customerKeyword}'` });
         }
-        resolvedOppIds = allOpps.map(o => o.opportunityid);
+        resolvedOppIds = allOpps.map(o => o.opportunityid as string);
       }
 
       // Resolve opportunityKeyword → opportunity GUIDs
@@ -908,12 +937,12 @@ export function registerTools(server, crmClient) {
         if (!opps.length) {
           return text({ count: 0, milestones: [], message: `No active opportunities found matching '${opportunityKeyword}'` });
         }
-        resolvedOppIds = opps.map(o => o.opportunityid);
+        resolvedOppIds = opps.map(o => o.opportunityid as string);
       }
 
       // If keyword resolution produced opportunity IDs, merge with explicit opportunityIds
       if (resolvedOppIds) {
-        const merged = resolvedOppIds;
+        const merged: string[] = resolvedOppIds;
         if (opportunityIds?.length) merged.push(...opportunityIds);
         if (opportunityId) merged.push(opportunityId);
         opportunityIds = merged;
@@ -927,9 +956,9 @@ export function registerTools(server, crmClient) {
       } else if (opportunityIds?.length) {
         const validIds = opportunityIds.map(normalizeGuid).filter(isValidGuid);
         if (!validIds.length) return error('No valid opportunity GUIDs in opportunityIds');
-        const chunks = [];
+        const chunks: string[][] = [];
         for (let i = 0; i < validIds.length; i += 25) chunks.push(validIds.slice(i, i + 25));
-        const allMilestones = [];
+        const allMilestones: Record<string, unknown>[] = [];
         for (const chunk of chunks) {
           const chunkFilter = chunk.map(id => `_msp_opportunityid_value eq '${id}'`).join(' or ');
           const chunkResult = await crmClient.requestAllPages('msp_engagementmilestones', {
@@ -939,12 +968,12 @@ export function registerTools(server, crmClient) {
         }
         let milestones = allMilestones;
         if (statusFilter === 'active') {
-          milestones = milestones.filter(m => ACTIVE_STATUSES.has(fv(m, 'msp_milestonestatus')));
+          milestones = milestones.filter(m => ACTIVE_STATUSES.has(fv(m, 'msp_milestonestatus') ?? ''));
         }
         if (keyword) {
           const kw = keyword.toLowerCase();
           milestones = milestones.filter(m =>
-            (m.msp_name || '').toLowerCase().includes(kw) ||
+            ((m.msp_name as string) || '').toLowerCase().includes(kw) ||
             (fv(m, '_msp_opportunityid_value') || '').toLowerCase().includes(kw) ||
             (fv(m, '_msp_workloadlkid_value') || '').toLowerCase().includes(kw)
           );
@@ -957,7 +986,7 @@ export function registerTools(server, crmClient) {
         }
         if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
         if (format === 'triage') return text(buildMilestoneTriage(milestones, getCrmBase()));
-        return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
+        return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid as string) })) });
       } else if (opportunityId) {
         const nid = normalizeGuid(opportunityId);
         if (!isValidGuid(nid)) return error('Invalid opportunityId GUID');
@@ -985,12 +1014,12 @@ export function registerTools(server, crmClient) {
 
       // Post-query filters
       if (statusFilter === 'active') {
-        milestones = milestones.filter(m => ACTIVE_STATUSES.has(fv(m, 'msp_milestonestatus')));
+        milestones = milestones.filter(m => ACTIVE_STATUSES.has(fv(m, 'msp_milestonestatus') ?? ''));
       }
       if (keyword) {
         const kw = keyword.toLowerCase();
         milestones = milestones.filter(m =>
-          (m.msp_name || '').toLowerCase().includes(kw) ||
+          ((m.msp_name as string) || '').toLowerCase().includes(kw) ||
           (fv(m, '_msp_opportunityid_value') || '').toLowerCase().includes(kw) ||
           (fv(m, '_msp_workloadlkid_value') || '').toLowerCase().includes(kw)
         );
@@ -1003,7 +1032,7 @@ export function registerTools(server, crmClient) {
       }
       if (format === 'summary') return text(buildMilestoneSummary(milestones, getCrmBase()));
       if (format === 'triage') return text(buildMilestoneTriage(milestones, getCrmBase()));
-      return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), monthlyUse: formatCurrency(m.msp_monthlyuse), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid) })) });
+      return text({ count: milestones.length, milestones: milestones.map(m => ({ ...m, commitment: commitmentLabel(m), monthlyUse: formatCurrency(m.msp_monthlyuse), recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid as string) })) });
     }
   );
 
@@ -1026,7 +1055,7 @@ export function registerTools(server, crmClient) {
       const base = getCrmBase();
 
       // 1. Deal-team-first: discover all opportunities where user is on the deal team
-      let dealTeamAllOppIds = [];
+      let dealTeamAllOppIds: string[] = [];
       let dealTeamAvailable = true;
       const dealTeamResult = await crmClient.requestAllPages('msp_dealteams', {
         query: {
@@ -1037,7 +1066,7 @@ export function registerTools(server, crmClient) {
 
       if (dealTeamResult.ok && dealTeamResult.data?.value) {
         for (const row of dealTeamResult.data.value) {
-          const oppId = row._msp_parentopportunityid_value;
+          const oppId = row._msp_parentopportunityid_value as string;
           if (oppId && !dealTeamAllOppIds.includes(oppId)) dealTeamAllOppIds.push(oppId);
         }
       } else {
@@ -1048,7 +1077,7 @@ export function registerTools(server, crmClient) {
         });
         if (msResult.ok && msResult.data?.value) {
           for (const m of msResult.data.value) {
-            const oppId = m._msp_opportunityid_value;
+            const oppId = m._msp_opportunityid_value as string;
             if (oppId && !dealTeamAllOppIds.includes(oppId)) dealTeamAllOppIds.push(oppId);
           }
         }
@@ -1132,7 +1161,7 @@ export function registerTools(server, crmClient) {
         opportunities = opportunities.slice(0, maxResults);
       }
 
-      const response = { count: opportunities.length, totalCount, opportunities, maxResults: maxResults || null };
+      const response: Record<string, unknown> = { count: opportunities.length, totalCount, opportunities, maxResults: maxResults || null };
       if (!dealTeamAvailable) {
         response.dealTeamDiscoveryNote = 'msp_dealteams was unavailable; deal-team discovery fell back to milestone-ownership heuristic.';
       }
@@ -1186,7 +1215,7 @@ export function registerTools(server, crmClient) {
       if (!name) return error('name is required');
 
       // Validate required fields — must be explicitly provided
-      const missingViewFields = [];
+      const missingViewFields: string[] = [];
       if (!milestoneDate) missingViewFields.push('milestoneDate');
       if (monthlyUse === undefined) missingViewFields.push('monthlyUse');
       if (milestoneCategory === undefined) missingViewFields.push('milestoneCategory');
@@ -1222,7 +1251,7 @@ export function registerTools(server, crmClient) {
       }
       const opportunityName = oppLookup.data?.name || null;
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         msp_name: name,
         'msp_OpportunityId@odata.bind': `/opportunities(${oppNid})`
       };
@@ -1264,7 +1293,7 @@ export function registerTools(server, crmClient) {
 
       // AI attribution (RH-2) — only tag if the user provided forecast comments
       if (payload.msp_forecastcomments !== undefined) {
-        payload.msp_forecastcomments = withAttribution(payload.msp_forecastcomments);
+        payload.msp_forecastcomments = withAttribution(payload.msp_forecastcomments as string);
       }
 
       const queue = getApprovalQueue();
@@ -1310,7 +1339,7 @@ export function registerTools(server, crmClient) {
       if (!isValidGuid(nid)) return error('Invalid milestoneId GUID');
       if (!subject) return error('subject is required');
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         subject,
         'regardingobjectid_msp_engagementmilestone@odata.bind': `/msp_engagementmilestones(${nid})`
       };
@@ -1325,7 +1354,7 @@ export function registerTools(server, crmClient) {
 
       // AI attribution (RH-2) — only tag if the user provided a description
       if (payload.description !== undefined) {
-        payload.description = withAttribution(payload.description);
+        payload.description = withAttribution(payload.description as string);
       }
 
       const queue = getApprovalQueue();
@@ -1362,7 +1391,7 @@ export function registerTools(server, crmClient) {
     async ({ taskId, subject, dueDate, description, statusCode }) => {
       const nid = normalizeGuid(taskId);
       if (!isValidGuid(nid)) return error('Invalid taskId GUID');
-      const payload = {};
+      const payload: Record<string, unknown> = {};
       if (subject !== undefined) payload.subject = subject;
       if (dueDate !== undefined) payload.scheduledend = dueDate;
       if (description !== undefined) payload.description = description;
@@ -1378,7 +1407,7 @@ export function registerTools(server, crmClient) {
       });
 
       // AI attribution (RH-2)
-      if (payload.description !== undefined) payload.description = withAttribution(payload.description);
+      if (payload.description !== undefined) payload.description = withAttribution(payload.description as string);
 
       const queue = getApprovalQueue();
       const op = queue.stage({
@@ -1482,7 +1511,7 @@ export function registerTools(server, crmClient) {
       // Guard: name must not be blanked
       if (name !== undefined && !name.trim()) return error('name cannot be empty — omit the field to keep the existing name');
 
-      const payload = {};
+      const payload: Record<string, unknown> = {};
       if (name !== undefined) payload.msp_name = name;
       if (milestoneDate !== undefined) payload.msp_milestonedate = milestoneDate;
       if (monthlyUse !== undefined) payload.msp_monthlyuse = monthlyUse;
@@ -1531,18 +1560,18 @@ export function registerTools(server, crmClient) {
         return error(`Milestone ${nid} not found or inaccessible (${fullRecord.status}): ${fullRecord.data?.message || 'lookup failed'}`);
       }
 
-      const record = fullRecord.data;
-      const milestoneNumber = record.msp_milestonenumber || null;
-      const milestoneName = record.msp_name || null;
-      const milestoneOppId = record._msp_opportunityid_value || null;
-      const milestoneOwnerId = record._ownerid_value || null;
+      const record = fullRecord.data as Record<string, unknown>;
+      const milestoneNumber = (record.msp_milestonenumber as string) || null;
+      const milestoneName = (record.msp_name as string) || null;
+      const milestoneOppId = (record._msp_opportunityid_value as string) || null;
+      const milestoneOwnerId = (record._ownerid_value as string) || null;
       const opportunityName = fv(record, '_msp_opportunityid_value') || null;
 
       // Ownership verification: ensure current user owns milestone or is on deal team
       const whoAmI = await crmClient.request('WhoAmI');
       if (whoAmI.ok && whoAmI.data?.UserId) {
         const currentUserId = normalizeGuid(whoAmI.data.UserId);
-        const isOwner = milestoneOwnerId && normalizeGuid(milestoneOwnerId) === currentUserId;
+        const isOwner = milestoneOwnerId && normalizeGuid(milestoneOwnerId as string) === currentUserId;
 
         if (!isOwner && milestoneOppId) {
           // Check if user owns the opportunity or any milestones under it
@@ -1560,7 +1589,7 @@ export function registerTools(server, crmClient) {
                 $top: '1'
               }
             });
-            const isOnDealTeam = teamCheck.ok && teamCheck.data?.value?.length > 0;
+            const isOnDealTeam = teamCheck.ok && (teamCheck.data?.value?.length ?? 0) > 0;
             if (!isOnDealTeam) {
               return error(
                 `Ownership check failed: milestone ${milestoneNumber || nid} ("${milestoneName || 'unknown'}") ` +
@@ -1578,7 +1607,7 @@ export function registerTools(server, crmClient) {
       }
 
       // Build before-state limited to fields being changed
-      const before = {};
+      const before: Record<string, unknown> = {};
       for (const key of Object.keys(payload)) {
         before[key] = record[key] ?? null;
       }
@@ -1663,17 +1692,23 @@ export function registerTools(server, crmClient) {
         azureCapacityType: 'msp_milestoneazurecapacitytype'
       };
       const logicalName = fieldMap[field];
+      // azureCapacityType is a MultiSelectPicklist; the rest are standard Picklists
+      const metadataType = field === 'azureCapacityType'
+        ? 'MultiSelectPicklistAttributeMetadata'
+        : 'PicklistAttributeMetadata';
       const result = await crmClient.request(
-        `EntityDefinitions(LogicalName='msp_engagementmilestone')/Attributes(LogicalName='${logicalName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata`,
-        { query: { $select: 'LogicalName', $expand: 'OptionSet($select=Options)' } }
+        `EntityDefinitions(LogicalName='msp_engagementmilestone')/Attributes(LogicalName='${logicalName}')/Microsoft.Dynamics.CRM.${metadataType}`,
+        { query: { $select: 'LogicalName', $expand: field === 'azureCapacityType' ? 'GlobalOptionSet($select=Options)' : 'OptionSet($select=Options)' } }
       );
       if (!result.ok) return error(`Metadata query failed (${result.status}): ${result.data?.message}`);
 
-      const options = result.data?.OptionSet?.Options || [];
+      // MultiSelectPicklist exposes options via GlobalOptionSet; standard Picklist via OptionSet
+      const optionSet = (result.data?.OptionSet ?? result.data?.GlobalOptionSet) as Record<string, unknown> | undefined;
+      const options = optionSet?.Options as Record<string, unknown>[] || [];
       const parsed = options
-        .map(o => ({
+        .map((o: Record<string, unknown>) => ({
           value: o?.Value,
-          label: o?.Label?.UserLocalizedLabel?.Label || o?.Label?.LocalizedLabels?.[0]?.Label || ''
+          label: ((o?.Label as Record<string, unknown>)?.UserLocalizedLabel as Record<string, unknown>)?.Label || ((o?.Label as Record<string, unknown>)?.LocalizedLabels as Record<string, unknown>[])?.[0]?.Label || ''
         }))
         .filter(o => Number.isInteger(o.value) && o.label);
       return text({ field, logicalName, options: parsed });
@@ -1692,11 +1727,11 @@ export function registerTools(server, crmClient) {
       );
       if (!result.ok) return error(`Metadata query failed (${result.status}): ${result.data?.message}`);
 
-      const options = result.data?.OptionSet?.Options || [];
+      const options = (result.data?.OptionSet as Record<string, unknown>)?.Options as Record<string, unknown>[] || [];
       const parsed = options
-        .map(o => ({
+        .map((o: Record<string, unknown>) => ({
           value: o?.Value,
-          label: o?.Label?.UserLocalizedLabel?.Label || o?.Label?.LocalizedLabels?.[0]?.Label || '',
+          label: ((o?.Label as Record<string, unknown>)?.UserLocalizedLabel as Record<string, unknown>)?.Label || ((o?.Label as Record<string, unknown>)?.LocalizedLabels as Record<string, unknown>[])?.[0]?.Label || '',
           stateCode: o?.State
         }))
         .filter(o => Number.isInteger(o.value) && o.label);
@@ -1717,9 +1752,9 @@ export function registerTools(server, crmClient) {
       if (milestoneIds?.length) {
         const validIds = milestoneIds.map(normalizeGuid).filter(isValidGuid);
         if (!validIds.length) return error('No valid milestone GUIDs in milestoneIds');
-        const chunks = [];
+        const chunks: string[][] = [];
         for (let i = 0; i < validIds.length; i += 25) chunks.push(validIds.slice(i, i + 25));
-        const allTasks = [];
+        const allTasks: Record<string, unknown>[] = [];
         for (const chunk of chunks) {
           const batchFilter = chunk.map(id => `_regardingobjectid_value eq '${id}'`).join(' or ');
           const batchResult = await crmClient.requestAllPages('tasks', {
@@ -1733,11 +1768,11 @@ export function registerTools(server, crmClient) {
         }
         // Group by milestone and add recordUrls
         const base = getCrmBase();
-        const byMilestone = {};
+        const byMilestone: Record<string, Record<string, unknown>[]> = {};
         for (const t of allTasks) {
-          const msId = t._regardingobjectid_value;
+          const msId = t._regardingobjectid_value as string;
           if (!byMilestone[msId]) byMilestone[msId] = [];
-          byMilestone[msId].push({ ...t, recordUrl: buildRecordUrl(base, 'task', t.activityid) });
+          byMilestone[msId].push({ ...t, recordUrl: buildRecordUrl(base, 'task', t.activityid as string) });
         }
         return text({ count: allTasks.length, byMilestone });
       }
@@ -1756,7 +1791,7 @@ export function registerTools(server, crmClient) {
         }
       });
       if (!result.ok) return error(`Get activities failed (${result.status}): ${result.data?.message}`);
-      const tasks = (result.data?.value || []).map(t => ({ ...t, recordUrl: buildRecordUrl(getCrmBase(), 'task', t.activityid) }));
+      const tasks = (result.data?.value || []).map(t => ({ ...t, recordUrl: buildRecordUrl(getCrmBase(), 'task', t.activityid as string) }));
       return text({ count: tasks.length, tasks });
     }
   );
@@ -1772,7 +1807,7 @@ export function registerTools(server, crmClient) {
     async ({ customerKeywords, statusFilter = 'active' }) => {
       if (!customerKeywords?.length) return error('At least one customerKeyword is required');
 
-      const customers = [];
+      const customers: Record<string, unknown>[] = [];
       let totalNeedingTasks = 0;
 
       for (const keyword of customerKeywords) {
@@ -1810,7 +1845,7 @@ export function registerTools(server, crmClient) {
 
         // Apply status filter
         if (statusFilter === 'active') {
-          milestones = milestones.filter(m => ACTIVE_STATUSES.has(fv(m, 'msp_milestonestatus')));
+          milestones = milestones.filter(m => ACTIVE_STATUSES.has(fv(m, 'msp_milestonestatus') ?? ''));
         }
 
         if (!milestones.length) {
@@ -1819,12 +1854,12 @@ export function registerTools(server, crmClient) {
         }
 
         // 4. Batch task check
-        const msIds = milestones.map(m => m.msp_engagementmilestoneid);
+        const msIds = milestones.map(m => m.msp_engagementmilestoneid as string);
         const taskFilter = msIds.map(id => `_regardingobjectid_value eq '${id}'`).join(' or ');
         const taskResult = await crmClient.requestAllPages('tasks', {
           query: { $filter: taskFilter, $select: '_regardingobjectid_value' }
         });
-        const taskMsIds = new Set();
+        const taskMsIds = new Set<unknown>();
         if (taskResult.ok && taskResult.data?.value) {
           for (const t of taskResult.data.value) taskMsIds.add(t._regardingobjectid_value);
         }
@@ -1845,7 +1880,7 @@ export function registerTools(server, crmClient) {
             date: toIsoDate(m.msp_milestonedate),
             opportunity: fv(m, '_msp_opportunityid_value'),
             workload: fv(m, '_msp_workloadlkid_value'),
-            recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid)
+            recordUrl: buildRecordUrl(getCrmBase(), 'msp_engagementmilestone', m.msp_engagementmilestoneid as string)
           }))
         });
       }
@@ -1869,7 +1904,7 @@ export function registerTools(server, crmClient) {
         return error('Provide ownerId or opportunityId');
       }
 
-      const filters = [];
+      const filters: string[] = [];
       if (ownerId) {
         const ownerNid = normalizeGuid(ownerId);
         if (!isValidGuid(ownerNid)) return error('Invalid ownerId GUID');
@@ -1895,8 +1930,8 @@ export function registerTools(server, crmClient) {
       if (!result.ok) return error(`Timeline query failed (${result.status}): ${result.data?.message}`);
 
       const milestones = result.data?.value || [];
-      const oppIds = [...new Set(milestones.map(m => m._msp_opportunityid_value).filter(Boolean))];
-      const opportunityNames = {};
+      const oppIds = [...new Set(milestones.map(m => m._msp_opportunityid_value as string).filter(Boolean))];
+      const opportunityNames: Record<string, unknown> = {};
 
       for (const id of oppIds) {
         const opp = await crmClient.request(`opportunities(${id})`, { query: { $select: 'name' } });
@@ -1913,8 +1948,8 @@ export function registerTools(server, crmClient) {
         commitment: commitmentLabel(m),
         monthlyUse: formatCurrency(m.msp_monthlyuse),
         opportunityId: m._msp_opportunityid_value ?? null,
-        opportunityName: opportunityNames[m._msp_opportunityid_value] ?? null,
-        recordUrl: buildRecordUrl(base, 'msp_engagementmilestone', m.msp_engagementmilestoneid)
+        opportunityName: opportunityNames[m._msp_opportunityid_value as string] ?? null,
+        recordUrl: buildRecordUrl(base, 'msp_engagementmilestone', m.msp_engagementmilestoneid as string)
       }));
 
       return text({
@@ -2087,7 +2122,7 @@ export function registerTools(server, crmClient) {
   // ── Post-write rich result helper ─────────────────────────
   // After a successful CRM write, re-fetch the record and return
   // its final state with a direct MSX deep-link.
-  const REFETCH_MAP = {
+  const REFETCH_MAP: Record<string, { entity: string; set: string; select: string; idField: string }> = {
     create_milestone:  { entity: 'msp_engagementmilestone', set: 'msp_engagementmilestones', select: MILESTONE_SELECT, idField: 'msp_engagementmilestoneid' },
     update_milestone:  { entity: 'msp_engagementmilestone', set: 'msp_engagementmilestones', select: MILESTONE_SELECT, idField: 'msp_engagementmilestoneid' },
     create_task:       { entity: 'task', set: 'tasks', select: INLINE_TASK_SELECT, idField: 'activityid' },
@@ -2095,15 +2130,15 @@ export function registerTools(server, crmClient) {
     close_task:        { entity: 'task', set: 'tasks', select: INLINE_TASK_SELECT, idField: 'activityid' },
   };
 
-  async function buildPostWriteResult(op, writeResult) {
+  async function buildPostWriteResult(op: StagedOperation, writeResult: CrmResponse): Promise<Record<string, unknown> | null> {
     const meta = REFETCH_MAP[op.type];
     if (!meta) return null; // non-milestone/task ops — skip rich result
 
     // Determine record ID
-    let recordId;
+    let recordId: string | undefined;
     if (op.method === 'POST') {
       // Creates: prefer entityId from OData-EntityId header, then response body
-      recordId = writeResult.entityId || writeResult.data?.[meta.idField];
+      recordId = (writeResult.entityId as string | undefined) || (writeResult.data?.[meta.idField] as string | undefined);
     }
     if (!recordId) {
       // Updates / closes: parse GUID from entitySet (e.g. "tasks(guid)")
@@ -2125,8 +2160,8 @@ export function registerTools(server, crmClient) {
         query: { $select: meta.select }
       });
       if (refetch.ok && refetch.data) {
-        const record = refetch.data;
-        const result = { ...record, recordUrl };
+        const record = refetch.data as Record<string, unknown>;
+        const result: Record<string, unknown> = { ...record, recordUrl };
         if (meta.entity === 'msp_engagementmilestone') {
           result.commitment = commitmentLabel(record);
         }
@@ -2189,7 +2224,7 @@ export function registerTools(server, crmClient) {
         if (!result.ok && result.status !== 204) {
           const taskId = op.description.match(/task ([a-f0-9-]+)/)?.[1];
           if (taskId) {
-            const sc = op.fallbackPayload?.Status || 5;
+            const sc = (op.fallbackPayload?.Status as number) || 5;
             result = await crmClient.request(`tasks(${taskId})`, {
               method: 'PATCH',
               body: { statecode: taskStateForStatus(sc), statuscode: sc }
@@ -2239,7 +2274,7 @@ export function registerTools(server, crmClient) {
       if (maxOperations !== undefined) pending = pending.slice(0, maxOperations);
       if (!pending.length) return text({ executed: 0, message: 'No pending operations.' });
 
-      const results = [];
+      const results: Record<string, unknown>[] = [];
       for (const op of pending) {
         try {
           const approved = queue.approve(op.id);
@@ -2276,7 +2311,7 @@ export function registerTools(server, crmClient) {
             if (!result.ok && result.status !== 204) {
               const taskId = op.description.match(/task ([a-f0-9-]+)/)?.[1];
               if (taskId) {
-                const sc = op.fallbackPayload?.Status || 5;
+                const sc = (op.fallbackPayload?.Status as number) || 5;
                 result = await crmClient.request(`tasks(${taskId})`, {
                   method: 'PATCH',
                   body: { statecode: taskStateForStatus(sc), statuscode: sc }
@@ -2381,7 +2416,7 @@ export function registerTools(server, crmClient) {
         }
 
         const team = teams[0];
-        const members = (team.teammembership_association || []).map(m => ({
+        const members = ((team.teammembership_association || []) as Record<string, unknown>[]).map(m => ({
           systemUserId: m.systemuserid,
           fullName: m.fullname,
           title: m.title
@@ -2391,7 +2426,7 @@ export function registerTools(server, crmClient) {
 
       // ── Resolve user for add/remove ──
       let resolvedUserId = systemUserId ? normalizeGuid(systemUserId) : null;
-      let displayName = null;
+      let displayName: unknown = null;
 
       if (!resolvedUserId && email) {
         const sanitizedEmail = sanitizeODataString(email.trim());
@@ -2527,7 +2562,7 @@ export function registerTools(server, crmClient) {
         }
 
         const team = teams[0];
-        const members = (team.teammembership_association || []).map(m => ({
+        const members = ((team.teammembership_association || []) as Record<string, unknown>[]).map(m => ({
           systemUserId: m.systemuserid,
           fullName: m.fullname,
           title: m.title
@@ -2537,7 +2572,7 @@ export function registerTools(server, crmClient) {
 
       // ── Resolve user for add/remove ──
       let resolvedUserId = systemUserId ? normalizeGuid(systemUserId) : null;
-      let displayName = null;
+      let displayName: unknown = null;
 
       if (!resolvedUserId && email) {
         const sanitizedEmail = sanitizeODataString(email.trim());

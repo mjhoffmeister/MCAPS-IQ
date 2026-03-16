@@ -73,3 +73,18 @@ env/
 
 .connect/
 .vscode/
+
+# Captured eval fixtures (may contain PII from live MCP servers)
+# Hand-crafted scenario YAML files are tracked; all captured JSON is ignored.
+evals/fixtures/crm-responses/
+evals/fixtures/oil-responses/
+evals/fixtures/m365-responses/
+evals/fixtures/capture-manifest.json
+
+# Eval results (latest + history are ephemeral; baseline is committed)
+evals/results/latest.json
+evals/results/history/
+evals/results/diff-report.md
+
+# Captured traces (golden traces are committed; raw captures are ephemeral)
+evals/traces/captured/

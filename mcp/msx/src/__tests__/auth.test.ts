@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventEmitter } from 'node:events';
+import type { Mock } from 'vitest';
+import type { AuthService } from '../auth.js';
 
 // Mock child_process.spawn
 vi.mock('node:child_process', () => ({
@@ -12,11 +14,11 @@ vi.mock('node:child_process', () => ({
   })
 }));
 
-const { spawn } = await import('node:child_process');
+const { spawn } = await import('node:child_process') as { spawn: Mock };
 const { createAuthService } = await import('../auth.js');
 
 // Helper: create a fake JWT with a given exp
-function fakeJwt(exp) {
+function fakeJwt(exp: number): string {
   const header = Buffer.from(JSON.stringify({ alg: 'RS256' })).toString('base64url');
   const payload = Buffer.from(JSON.stringify({
     name: 'Test User',
@@ -28,7 +30,7 @@ function fakeJwt(exp) {
 }
 
 describe('createAuthService', () => {
-  let svc;
+  let svc: AuthService;
 
   beforeEach(() => {
     vi.clearAllMocks();

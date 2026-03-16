@@ -55,7 +55,7 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 - `msp_milestoneworkload`
 - `msp_deliveryspecifiedfield`
 - `msp_milestonepreferredazureregion`
-- `msp_milestoneazurecapacitytype`
+- `msp_milestoneazurecapacitytype` — **MultiSelectPicklist** (not a standard Picklist; metadata type is `MultiSelectPicklistAttributeMetadata`, options exposed via `GlobalOptionSet`)
 
 ### `tasks`
 
@@ -125,8 +125,8 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 
 For region/capacity full option sets, call:
 
-- `get_milestone_field_options({ field: "preferredAzureRegion" })`
-- `get_milestone_field_options({ field: "azureCapacityType" })`
+- `get_milestone_field_options({ field: "preferredAzureRegion" })` — standard Picklist
+- `get_milestone_field_options({ field: "azureCapacityType" })` — **MultiSelectPicklist** (metadata uses `MultiSelectPicklistAttributeMetadata` + `GlobalOptionSet`, not `PicklistAttributeMetadata` + `OptionSet`)
 
 ## Query Patterns
 

@@ -16,7 +16,7 @@ const DEFAULT_AUDIT_PATH = resolve(process.cwd(), '.copilot', 'logs', 'audit.ndj
 const AUDIT_FILE = process.env.MCAPS_AUDIT_LOG || DEFAULT_AUDIT_PATH;
 
 let _fileReady = false;
-function ensureAuditDir() {
+function ensureAuditDir(): void {
   if (_fileReady) return;
   try {
     const dir = dirname(AUDIT_FILE);
@@ -27,21 +27,23 @@ function ensureAuditDir() {
   }
 }
 
-/**
- * Emit a structured audit record for a tool invocation.
- * @param {object} entry
- * @param {string} entry.tool       - Tool name (e.g. "crm_query")
- * @param {string} [entry.entitySet]- CRM entity set queried
- * @param {string} [entry.method]   - HTTP method (GET, PATCH, …)
- * @param {number} [entry.recordCount] - Number of records returned
- * @param {boolean} [entry.blocked] - Whether the request was blocked by a guardrail
- * @param {string} [entry.reason]   - Why it was blocked
- * @param {object} [entry.params]   - Sanitized input params (no tokens/secrets)
- * @param {string} [entry.operationId] - Staged operation ID (for write ops)
- * @param {string} [entry.upn]      - User principal name
- * @param {string} [entry.status]   - Result status ("ok", "error", "blocked")
- */
-export function auditLog(entry) {
+export interface AuditEntry {
+  tool: string;
+  entitySet?: string;
+  method?: string;
+  recordCount?: number;
+  blocked?: boolean;
+  reason?: string;
+  params?: Record<string, unknown>;
+  operationId?: string;
+  upn?: string;
+  status?: string;
+  source?: string;
+  detections?: Array<{ id: string; field: string; severity: string; description: string }>;
+  [key: string]: unknown;
+}
+
+export function auditLog(entry: AuditEntry): void {
   const record = {
     ts: new Date().toISOString(),
     ...entry,
@@ -62,6 +64,6 @@ export function auditLog(entry) {
 }
 
 /** Returns the resolved path of the audit log file. */
-export function getAuditLogPath() {
+export function getAuditLogPath(): string {
   return AUDIT_FILE;
 }

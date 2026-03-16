@@ -1,19 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCrmClient } from '../crm.js';
+import type { AuthService } from '../auth.js';
+import type { CrmClient } from '../crm.js';
+import type { Mock } from 'vitest';
 
-function mockAuthService(token = 'test-token') {
+function mockAuthService(token = 'test-token'): AuthService {
   return {
     ensureAuth: vi.fn().mockResolvedValue({ success: true }),
     getToken: vi.fn().mockReturnValue(token),
     getCrmUrl: vi.fn().mockReturnValue('https://test.crm.dynamics.com'),
-    clearToken: vi.fn()
-  };
+    clearToken: vi.fn(),
+    getAuthStatus: vi.fn().mockReturnValue({ isAuthenticated: false }),
+    _state: { token: null, metadata: null, crmUrl: 'https://test.crm.dynamics.com', tenantId: '00000000-0000-0000-0000-000000000000' }
+  } as unknown as AuthService;
 }
 
 describe('createCrmClient', () => {
-  let auth;
-  let client;
-  let fetchMock;
+  let auth: AuthService;
+  let client: CrmClient;
+  let fetchMock: Mock;
 
   beforeEach(() => {
     auth = mockAuthService();
