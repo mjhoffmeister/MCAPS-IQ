@@ -90,7 +90,7 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 - Opportunity close date should prefer `msp_estcompletiondate` (fallback: `estimatedclosedate`).
 - Milestone date is `msp_milestonedate` (not `msp_estimateddate`, not `msp_duedate`, not `msp_targetdate`).
 - Task primary key is `activityid` (not `taskid`).
-- Commitment is `msp_commitmentrecommendation = 861980001`.
+- Commitment (Committed) is `msp_commitmentrecommendation = 861980003` (NOT `861980001` — that value is rejected by the API).
 - `msp_milestonestatus = 861980001` means At Risk (not Committed).
 
 ## Common Codes
@@ -108,7 +108,8 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 ### Commitment (`msp_commitmentrecommendation`)
 
 - Uncommitted: `861980000`
-- Committed: `861980001`
+- Committed: `861980003`
+- ~~`861980001`~~: **invalid / deprecated** — API rejects this value
 
 ### Workload type (`msp_milestoneworkload`)
 

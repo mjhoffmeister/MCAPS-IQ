@@ -240,8 +240,8 @@ Stage identification is driven by **Verifiable Outcomes** — specific CRM entit
 | **2 → 3** | Business value reviewed | BVA completed and linked | BVA entity `status = Complete` |
 | **2 → 3** | Customer Success Plan created | CSP linked to opportunity | `msp_successplan` exists + linked |
 | **3 → 4** | Customer agreement in place | Post-commitment stage | `opportunity.activestageid` + `statecode` |
-| **3 → 4** | Resources aligned to delivery | Milestones Committed with dates | `msp_commitmentrecommendation = 861980001` + `msp_milestonedate` |
-| **3 → 4** | Outcomes committed / baseline | At least one milestone Committed | `msp_commitmentrecommendation = 861980001` |
+| **3 → 4** | Resources aligned to delivery | Milestones Committed with dates | `msp_commitmentrecommendation = 861980003` + `msp_milestonedate` |
+| **3 → 4** | Outcomes committed / baseline | At least one milestone Committed | `msp_commitmentrecommendation = 861980003` |
 | **4 → 5** | Solution delivered | Milestone(s) Completed | `msp_milestonestatus = 861980003` |
 | **4 → 5** | Customer health metrics agreed | CSP health fields populated | CSP entity health fields |
 | **4 → 5** | Business value tracking in place | Consumption data recording | ACR/Usage data |
