@@ -9,8 +9,8 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Opportunity** | Customer engagement container aligned to MCEM stages                                                                                                                     |
 | **Milestone**   | Execution unit (`msp_engagementmilestones`) for commitment, delivery, and usage/consumption outcomes                                                                   |
-| **Uncommitted** | Still shaping; not fully resourced for delivery (`msp_commitmentrecommendation ≠ 861980001`)                                                                          |
-| **Committed**   | Customer agreement + internal readiness for execution (`msp_commitmentrecommendation = 861980001`)                                                                     |
+| **Uncommitted** | Still shaping; not fully resourced for delivery (`msp_commitmentrecommendation = 861980000`)                                                                          |
+| **Committed**   | Customer agreement + internal readiness for execution (`msp_commitmentrecommendation = 861980003`)                                                                     |
 | **Stage 1–5**  | MCEM stages: Listen & Consult → Inspire & Design → Empower & Achieve → Realize Value → Manage & Optimize                                                             |
 | **EDE**         | Enhanced Designated Engineer — a dedicated technical resource aligned to a Unified Support package and customer TPID. Tracked in vault `## Unified Coverage`, not CRM |
 | **Swarming**    | Cross-role collaboration on adjacent pipeline within the same account — working opportunities outside your direct assignment to bring full account value                |

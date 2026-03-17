@@ -38,7 +38,7 @@ description: "MCEM process spine: maps Stages 1-5 with ATU/STU/CSU accountabilit
 ## Critical Field Corrections
 
 - `msp_milestonestatus = 861980001` means At Risk, not Committed.
-- Commitment is `msp_commitmentrecommendation = 861980001`.
+- Commitment (Committed) is `msp_commitmentrecommendation = 861980003` (NOT `861980001`).
 - Sales play field is `msp_salesplay`.
 - Use `msp_milestonedate` for milestone date.
 

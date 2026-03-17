@@ -55,6 +55,8 @@ export const ALLOWED_ENTITY_SETS = new Set([
   'processstages',
   // Access team queries (manage_deal_team / manage_milestone_team)
   'teams',
+  // Personal views (layoutxml / fetchxml management)
+  'userqueries',
   // Metadata endpoints (used by get_task_status_options pattern)
   'EntityDefinitions',
 ]);
@@ -436,7 +438,7 @@ const ACTIVE_STATUSES = new Set(['Not Started', 'On Track', 'In Progress', 'Bloc
 
 /** Derive human-readable commitment label from a milestone record. */
 function commitmentLabel(m: Record<string, unknown>): string {
-  return m.msp_commitmentrecommendation === 861980001 ? 'Committed' : 'Uncommitted';
+  return m.msp_commitmentrecommendation === 861980003 ? 'Committed' : 'Uncommitted';
 }
 
 function buildMilestoneSummary(milestones: Record<string, unknown>[], crmBaseUrl: string | null) {
