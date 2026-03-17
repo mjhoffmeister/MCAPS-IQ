@@ -55,6 +55,8 @@ export const ALLOWED_ENTITY_SETS = new Set([
   'processstages',
   // Access team queries (manage_deal_team / manage_milestone_team)
   'teams',
+  // Personal views (layoutxml / fetchxml management)
+  'userqueries',
   // Metadata endpoints (used by get_task_status_options pattern)
   'EntityDefinitions',
 ]);
