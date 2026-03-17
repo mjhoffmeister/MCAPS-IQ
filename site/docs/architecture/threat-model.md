@@ -400,7 +400,7 @@ Mail: `SearchMessages`, `GetMessage`, `SendEmailWithAttachments`, `ReplyToMessag
 - [x] Pin `@microsoft/workiq` version in mcp.json — **Done 2026-03-14**: pinned to `@microsoft/workiq@0.4.0` (RH-4)
 - [x] Implement persistent audit log (file-based NDJSON) — **Done 2026-03-14**: `audit.js` now writes to `.copilot/logs/audit.ndjson` (configurable via `MCAPS_AUDIT_LOG` env var) (RC-1)
 - [x] Add AI-attribution metadata to CRM write payloads — **Done 2026-03-14**: `[AI-assisted via MCAPS-IQ]` suffix on description/comments fields (RH-2)
-- [x] Document required endpoint security posture (disk encryption, screen lock, VPN) — **Done 2026-03-14**: added to `docs/write-safety.md` (RH-1)
+- [x] Document required endpoint security posture (disk encryption, screen lock, VPN) — **Done 2026-03-14**: added to `site/docs/architecture/safety.md` (RH-1)
 - [x] Test entity allowlist against case-variation and encoding bypass attempts — **Done 2026-03-14**: 23 tests covering case-variation, URL-encoding, Unicode homoglyphs, structural/path tricks, whitespace, and null inputs. All bypass attempts correctly rejected by case-sensitive `Set.has()` check.
 - [x] Test and harden `securePath()` against symlink traversal — **Done 2026-03-15**: real-path boundary enforcement implemented in `vault.ts`; targeted symlink traversal regressions pass.
 - [x] Add and verify pagination failure semantics in `requestAllPages()` — **Done 2026-03-15**: next-link failures now return `ok: false` with partial context and retry/timeout consistency; targeted regressions pass.

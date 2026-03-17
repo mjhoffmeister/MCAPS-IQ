@@ -79,7 +79,7 @@ Use short-lived branches off `main`. Delete branches after merging.
 | ---------------- | ------------------------------- | ------------------------------- |
 | New feature      | `feature/<short-description>` | `feature/morning-brief-skill` |
 | Bug fix          | `fix/<short-description>`     | `fix/crm-auth-retry`          |
-| Documentation    | `docs/<short-description>`    | `docs/obsidian-setup`         |
+| Documentation    | `site/docs/<short-description>`    | `site/docs/obsidian-setup`         |
 | Refactor / chore | `chore/<short-description>`   | `chore/update-dependencies`   |
 
 **Rules:**

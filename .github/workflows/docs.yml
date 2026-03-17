@@ -5,13 +5,9 @@ on:
     branches: [main]
     paths:
       - 'site/**'
-      - 'mkdocs.yml'
-      - 'docs/**'
   pull_request:
     paths:
       - 'site/**'
-      - 'mkdocs.yml'
-      - 'docs/**'
   workflow_dispatch:
 
 permissions:
@@ -45,7 +41,7 @@ jobs:
         run: pip install -r site/requirements.txt
 
       - name: Build site
-        run: mkdocs build --strict
+        run: mkdocs build --strict -f site/mkdocs.yml
         env:
           CI: true
 

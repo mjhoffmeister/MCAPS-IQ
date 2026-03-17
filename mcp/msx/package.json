@@ -1,22 +1,39 @@
 {
-  "name": "@msx-helper/mcp-server",
+  "name": "@jinlee794/msx-mcp-server",
   "version": "0.1.0",
   "description": "MCP server for Dynamics 365 / MSX CRM operations",
   "type": "module",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JinLee794/MCAPS-IQ.git",
+    "directory": "mcp/msx"
+  },
   "main": "dist/index.js",
   "bin": {
     "msx-mcp": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
+    "prepublishOnly": "tsc",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "keywords": ["mcp", "dynamics365", "crm", "msx"],
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "zod": "^3.23.0"

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 // Load .env vars to pass to test workers via Vitest env option
 const envVars: Record<string, string> = {};
 try {
-  const envPath = resolve(import.meta.dirname, ".env");
+  const envPath = resolve(import.meta.dirname, "..", ".env");
   const envContent = readFileSync(envPath, "utf-8");
   for (const line of envContent.split("\n")) {
     const trimmed = line.trim();
