@@ -70,6 +70,20 @@ Who am I in MSX?
 
 ---
 
+## Alternative: Copilot CLI (Terminal)
+
+Prefer the terminal? Install as a Copilot CLI plugin:
+
+```bash
+copilot plugin install microsoft/MCAPS-IQ
+```
+
+**Prerequisites:** Node.js 20+, [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli), `az login` on VPN.
+
+This gives you the MSX CRM MCP server (27 tools) and Power BI analytics. Skills and agents from the repo are included, though some workflows (e.g., `morning-brief`) depend on additional MCP servers (WorkIQ, Calendar, Mail) that are only available in VS Code.
+
+---
+
 ## Your First 3 Prompts
 
 | Prompt                                            | What happens                              |
