@@ -70,6 +70,21 @@ cd mcaps-iq
 !!! tip "What to expect"
     The install takes about 30 seconds. You'll see npm output for each sub-package. If anything fails, the setup script tells you exactly what went wrong.
 
+!!! success "Global `mcaps` command"
+    The installer automatically registers a **global `mcaps` command** on your system via `npm link`. After install, you can type `mcaps` from **any directory** in **any terminal window** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full MCAPS IQ toolkit — MCP servers, agents, and skills are auto-loaded regardless of where you are.
+
+    ```bash
+    # Works from anywhere — no need to cd into the repo
+    mcaps
+    ```
+
+    If the global link fails (permissions, PATH issues), the installer prints manual steps. You can always re-run it:
+
+    ```bash
+    cd mcaps-iq
+    npm link --ignore-scripts
+    ```
+
 ---
 
 ## Step 3: Sign In to Azure

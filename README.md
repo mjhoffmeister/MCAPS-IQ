@@ -37,6 +37,8 @@ npm install
 
 > **Prefer a GUI?** Open the repo in VS Code and run **"Setup: Install Everything"** from the Command Palette (`Cmd+Shift+P` → `Tasks: Run Task`).
 
+> **`mcaps` command installed automatically.** The install registers a global `mcaps` command on your system. After install, you can type `mcaps` from **any directory** in any terminal to launch a Copilot CLI session with the full MCAPS IQ toolkit (MCP servers, agents, skills) — no need to `cd` into the repo first. See [Copilot CLI integration](site/docs/integrations/copilot-cli.md) for details.
+
 ### Step 2: Sign in to Azure
 
 ```bash
@@ -67,6 +69,19 @@ Who am I in MSX?
 **That's it — you're up and running.**
 
 > **Something not working?** Run `Cmd+Shift+P` → `Tasks: Run Task` → `Setup: Check Environment` to diagnose.
+
+### Use from any terminal: the `mcaps` command
+
+Prefer working in the terminal? After install, the `mcaps` command is available globally:
+
+```bash
+# From your home directory, a project folder, anywhere:
+mcaps
+```
+
+This launches [GitHub Copilot CLI](https://github.com/features/copilot/cli/) with the repo's MCP servers, agents, and skills auto-loaded — no need to `cd` into the repo. It works the same as opening VS Code in the repo, but entirely in your terminal.
+
+> **Requires Copilot CLI.** Install with `brew install copilot-cli` (macOS) or `npm install -g @github/copilot`. If Copilot CLI isn't installed, `mcaps` falls back to opening VS Code.
 
 ---
 
@@ -155,7 +170,7 @@ See [Write Operations &amp; Safety](site/docs/architecture/safety.md) for full d
 | Topic                               | Link                                              |
 | ----------------------------------- | ------------------------------------------------- |
 | All scenario prompts by role        | [site/docs/prompts/scenario-prompts.md](site/docs/prompts/scenario-prompts.md) |
-| Use from the terminal (Copilot CLI) | [site/docs/integrations/copilot-cli.md](site/docs/integrations/copilot-cli.md)           |
+| `mcaps` command & Copilot CLI       | [site/docs/integrations/copilot-cli.md](site/docs/integrations/copilot-cli.md)           |
 | Obsidian vault integration          | [site/docs/integrations/obsidian.md](site/docs/integrations/obsidian.md)     |
 | Power BI analytics                  | [site/docs/integrations/powerbi.md](site/docs/integrations/powerbi.md)       |
 | Customization guide                 | [site/docs/customization/index.md](site/docs/customization/index.md)       |

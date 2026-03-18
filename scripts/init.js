@@ -388,8 +388,29 @@ if (checkMode) {
   const serversOk = initServers();
   if (serversOk) {
     await configureEnv();
-    registerAlias();
+    const aliasOk = registerAlias();
     heading("All done ✔");
+
+    // Prominent mcaps alias banner
+    if (aliasOk) {
+      console.log(`
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │   ★  The 'mcaps' command is now available globally.         │
+  │                                                             │
+  │   Open any terminal, from any directory, and type:          │
+  │                                                             │
+  │       mcaps                                                 │
+  │                                                             │
+  │   This launches Copilot CLI with all MCAPS IQ servers,      │
+  │   agents, and skills loaded — no need to cd into the repo.  │
+  │                                                             │
+  │   Requires: Copilot CLI (brew install copilot-cli)          │
+  │   Fallback: opens VS Code if Copilot CLI isn't installed.   │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+`);
+    }
 
     // Check if already signed in to provide the right next step
     const account = tryRun("az account show --query user.name -o tsv");
@@ -401,9 +422,7 @@ if (checkMode) {
     1. Open this repo in VS Code:  code .
     2. MCP servers auto-start via .vscode/mcp.json
     3. Open Copilot chat (Cmd+Shift+I) and try: "Who am I in MSX?"
-
-  Or from anywhere:  mcaps
-  (launches Copilot CLI in this repo)
+    4. Or just run 'mcaps' from any terminal!
 `);
     } else {
       console.log(`
@@ -413,9 +432,7 @@ if (checkMode) {
     3. Open this repo in VS Code:  code .
     4. MCP servers auto-start via .vscode/mcp.json
     5. Open Copilot chat (Cmd+Shift+I) and try: "Who am I in MSX?"
-
-  Or from anywhere:  mcaps
-  (launches Copilot CLI in this repo)
+    6. Or just run 'mcaps' from any terminal!
 `);
     }
   } else {

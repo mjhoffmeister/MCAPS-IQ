@@ -32,6 +32,27 @@ Copilot CLI automatically picks up the project's configuration when you run it f
 
 ## Run It
 
+### The `mcaps` command (recommended)
+
+After running `npm install` in the repo, a global `mcaps` command is registered on your system. You can use it from **any directory** — no need to `cd` into the repo:
+
+```bash
+# From anywhere — home dir, another project, etc.
+mcaps
+```
+
+This launches Copilot CLI with `--allow-all-tools --add-dir <repo-root>`, so all MCP servers, agents, and skills are auto-detected regardless of where you started your terminal.
+
+If you set the `OBSIDIAN_VAULT` environment variable, your vault is also added as a context directory automatically.
+
+> **Copilot CLI not installed?** `mcaps` falls back to opening VS Code. Install Copilot CLI with `brew install copilot-cli` (macOS) or `npm install -g @github/copilot`.
+
+> **`mcaps` not found?** Re-register with `npm link --ignore-scripts` from the repo root, or check that your npm global bin directory is in your PATH.
+
+### Manual alternative
+
+If you prefer to run Copilot CLI directly:
+
 ```bash
 cd mcaps-iq
 # Start Copilot CLI — it will detect the MCP servers and agent config
