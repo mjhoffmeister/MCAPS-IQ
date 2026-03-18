@@ -2234,11 +2234,47 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
           }
         }
       } else if (op.type.endsWith('_deal_team_member') || op.type.endsWith('_milestone_team_member')) {
-        // Record team operations: try bound action first, fallback to unbound
+        // Record team operations: try bound action first
         result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
+
+        // Fallback: direct team membership $ref association/disassociation
         if (!result.ok && result.status !== 204) {
-          const actionName = op.type.startsWith('add_') ? 'AddUserToRecordTeam' : 'RemoveUserFromRecordTeam';
-          result = await crmClient.request(actionName, { method: 'POST', body: op.payload });
+          const userIdMatch = op.entitySet.match(/systemusers\(([0-9a-f-]+)\)/i);
+          const userId = userIdMatch?.[1];
+          const recordPayload = op.payload as {
+            Record: Record<string, unknown>;
+            TeamTemplate: { teamtemplateid: string };
+          };
+          const recordId = (recordPayload.Record.opportunityid ||
+            recordPayload.Record.msp_engagementmilestoneid) as string | undefined;
+          const templateId = recordPayload.TeamTemplate?.teamtemplateid;
+
+          if (userId && recordId && templateId) {
+            const teamLookup = await crmClient.requestAllPages('teams', {
+              query: {
+                $filter: `_regardingobjectid_value eq '${recordId}' and _teamtemplateid_value eq '${templateId}'`,
+                $select: 'teamid',
+                $top: '1'
+              }
+            });
+
+            if (teamLookup.ok && (teamLookup.data?.value as unknown[])?.length) {
+              const teamId = (teamLookup.data!.value as { teamid: string }[])[0].teamid;
+
+              if (op.type.startsWith('add_')) {
+                const crmBase = crmClient.getCrmUrl();
+                result = await crmClient.request(
+                  `teams(${teamId})/teammembership_association/$ref`,
+                  { method: 'POST', body: { '@odata.id': `${crmBase}/api/data/v9.2/systemusers(${userId})` } }
+                );
+              } else {
+                result = await crmClient.request(
+                  `teams(${teamId})/teammembership_association(${userId})/$ref`,
+                  { method: 'DELETE' }
+                );
+              }
+            }
+          }
         }
       } else {
         result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
@@ -2321,11 +2357,56 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
               }
             }
           } else if (op.type.endsWith('_deal_team_member') || op.type.endsWith('_milestone_team_member')) {
-            // Record team operations: try bound action first, fallback to unbound
+            // Record team operations: try bound action first, then team-based fallbacks
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
             if (!result.ok && result.status !== 204) {
-              const actionName = op.type.startsWith('add_') ? 'AddUserToRecordTeam' : 'RemoveUserFromRecordTeam';
-              result = await crmClient.request(actionName, { method: 'POST', body: op.payload });
+              // Fallback: look up the access team, then use AddMembersTeam / RemoveMembersTeam
+              const userId = op.entitySet.match(/systemusers\(([^)]+)\)/)?.[1];
+              const recordId = (op.payload?.Record as Record<string, unknown>)?.opportunityid
+                || (op.payload?.Record as Record<string, unknown>)?.msp_engagementmilestoneid;
+              const templateId = (op.payload?.TeamTemplate as Record<string, unknown>)?.teamtemplateid;
+
+              if (userId && recordId && templateId) {
+                const teamLookup = await crmClient.requestAllPages('teams', {
+                  query: {
+                    $filter: `_regardingobjectid_value eq '${recordId}' and _teamtemplateid_value eq '${templateId}'`,
+                    $select: 'teamid',
+                    $top: '1'
+                  }
+                });
+
+                if (teamLookup.ok && teamLookup.data?.value?.length) {
+                  const teamId = (teamLookup.data.value[0] as Record<string, unknown>).teamid as string;
+                  const isAdd = op.type.startsWith('add_');
+                  const memberAction = isAdd ? 'AddMembersTeam' : 'RemoveMembersTeam';
+
+                  result = await crmClient.request(
+                    `teams(${teamId})/Microsoft.Dynamics.CRM.${memberAction}`,
+                    {
+                      method: 'POST',
+                      body: {
+                        Members: [{ '@odata.type': 'Microsoft.Dynamics.CRM.systemuser', systemuserid: userId }]
+                      }
+                    }
+                  );
+
+                  // Second fallback: OData $ref association / disassociation
+                  if (!result.ok && result.status !== 204) {
+                    const base = getCrmBase();
+                    if (isAdd && base) {
+                      result = await crmClient.request(
+                        `teams(${teamId})/teammembership_association/$ref`,
+                        { method: 'POST', body: { '@odata.id': `${base}/api/data/v9.2/systemusers(${userId})` } }
+                      );
+                    } else if (!isAdd) {
+                      result = await crmClient.request(
+                        `teams(${teamId})/teammembership_association(${userId})/$ref`,
+                        { method: 'DELETE' }
+                      );
+                    }
+                  }
+                }
+              }
             }
           } else {
             result = await crmClient.request(op.entitySet, { method: op.method, body: op.payload });
