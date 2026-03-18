@@ -236,17 +236,31 @@ function registerAlias() {
     } catch { /* best-effort */ }
   }
 
+  // Check if mcaps is already linked and working
+  const whichCmd = isWindows ? "where mcaps" : "which mcaps";
+  const existing = tryRun(whichCmd);
+
   try {
     // --ignore-scripts prevents recursive postinstall
-    run("npm link --ignore-scripts", ROOT);
+    // --force overwrites if already linked (avoids EEXIST on re-install)
+    // Use pipe stdio to suppress noisy npm force/warn output
+    execSync("npm link --ignore-scripts --force", {
+      cwd: ROOT,
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: isWindows ? true : "/bin/sh",
+    });
   } catch {
+    // If link failed but mcaps already exists and works, that's fine
+    if (existing) {
+      ok("'mcaps' is already registered globally — no changes needed.");
+      return true;
+    }
     warn("Could not register global alias automatically.");
     printAliasFallback();
     return false;
   }
 
   // Verify the command is actually reachable after linking
-  const whichCmd = isWindows ? "where mcaps" : "which mcaps";
   const found = tryRun(whichCmd);
 
   if (found) {
