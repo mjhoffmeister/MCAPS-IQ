@@ -33,7 +33,8 @@ Use `ask_work_iq` to surface recent activity not captured in vault notes:
 ### Step 3 — CRM Validation
 
 If the project's customer is in the vault roster:
-- `list_opportunities({ customerKeyword: "<customer>" })` → current opportunity status.
+- `list_opportunities({ customerKeyword: "<customer>", format: "full", includeDealTeam: true })` → current opportunity status with stage/estimated close/deal-team.
+- If customer-keyword lookup returns no opportunities but milestone/opportunity IDs are known, call `list_opportunities({ opportunityIds: [...] })`.
 - Check milestone state for any opportunities tied to this project — use `crm_query` with appropriate filters.
 - Surface any discrepancies between vault notes and CRM state (e.g., project note says "on track" but CRM milestone is overdue).
 

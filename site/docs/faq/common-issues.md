@@ -89,6 +89,65 @@ Use the MSX CRM tools to show me my active opportunities.
 
 **Fix:** Edit `.github/copilot-instructions.md` and adjust the response style section.
 
+### Responses Get Slower or Less Accurate Over Time
+
+**Cause:** The context window is filling up. Every tool call, CRM response, and Copilot reply accumulates in the session context. As it grows, Copilot has less room for reasoning and may start dropping important details, repeating itself, or ignoring instructions.
+
+**How to manage it:**
+
+#### 1. Export before you clear
+
+Before resetting, ask Copilot to produce a durable artifact from the session:
+
+```
+Summarize everything we've discussed into a brief status report.
+```
+
+```
+Export the pipeline triage results as a markdown table I can save.
+```
+
+```
+Write a handoff note capturing the key decisions and next actions from this session.
+```
+
+Save the output to a file, paste it into your vault, or copy it to a doc — whatever fits your workflow.
+
+#### 2. Use `/clear` to reset
+
+Once you've exported what you need, type:
+
+```
+/clear
+```
+
+This resets the conversation context to zero. Your MCP servers stay running, your instruction files reload automatically, and you're back to a fresh, fast session.
+
+#### 3. Know the warning signs
+
+Watch for these signals that the context is getting heavy:
+
+| Signal | What It Means |
+|--------|--------------|
+| Copilot stops calling MCP tools it was using earlier | Context crowding out tool-selection reasoning |
+| Responses repeat information you already have | Model is losing track of what's been covered |
+| Skill chains that worked earlier now produce partial results | Insufficient room for multi-step orchestration |
+| Latency increases noticeably | Larger context = slower inference |
+
+#### 4. Structure sessions around natural breakpoints
+
+Rather than one marathon session, break your work into focused rounds:
+
+| Round | Purpose | Then |
+|-------|---------|------|
+| Morning brief | Pipeline state + today's priorities | `/clear` |
+| Deal deep-dive | Full triage on a specific opportunity | Export findings, `/clear` |
+| Governance prep | Milestone review + evidence pack | Export report, `/clear` |
+| End-of-day | Update vault notes + CRM task hygiene | Done |
+
+!!! tip "Rule of thumb"
+    If you've made more than ~15–20 tool calls in a session, or the conversation is 30+ messages deep, it's a good time to export and `/clear`.
+
 ---
 
 ## Environment

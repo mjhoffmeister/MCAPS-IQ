@@ -8,7 +8,7 @@ Welcome to the docs for the MSX MCP server. This server gives AI agents (like Gi
 
 | Document | What It Covers | Who It's For |
 |---|---|---|
-| [Architecture Guide](ARCHITECTURE.md) | How the server works: authentication, CRM requests, tools, safety guardrails, and known limitations | Everyone — start here |
+| [Architecture Guide](ARCHITECTURE.md) | How the server works: authentication, CRM requests, tools, prompt injection detection, safety guardrails, and known limitations | Everyone — start here |
 | [Staged Operations](STAGED_OPERATIONS.md) | The human-in-the-loop write flow: how CRM writes are staged, previewed, and approved before execution | Anyone creating or updating CRM records |
 | [Milestone Lookup Optimization](MILESTONE_LOOKUP_OPTIMIZATION.md) | How `get_milestones` consolidates multi-step CRM lookups into a single tool call | Anyone querying milestones or building on top of the server |
 

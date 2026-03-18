@@ -37,7 +37,7 @@ Checks whether an opportunity meets the formal MCEM exit criteria for its curren
 | 2→3 | Business value reviewed | BVA entity `status = Complete` |
 | 2→3 | CSP created | `msp_successplan` linked |
 | 3→4 | Customer agreement | `opportunity.activestageid` post-commitment |
-| 3→4 | Resources aligned | `msp_commitmentrecommendation = 861980001` + `msp_milestonedate` set |
+| 3→4 | Resources aligned | `msp_commitmentrecommendation = 861980003` + `msp_milestonedate` set |
 | 4→5 | Solution delivered | `msp_milestonestatus = 861980003` |
 | 4→5 | Health metrics agreed | CSP health fields populated |
 

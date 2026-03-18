@@ -268,7 +268,7 @@ Non-linear: If proof gaps emerge, loop back to Stage 2 (`proof-plan-orchestratio
 
 Exit criteria → Stage 4:
 - [ ] Customer agreement in place (`opportunity.activestageid` post-commitment)
-- [ ] Resources aligned to delivery plan (`msp_engagementmilestone.msp_commitmentrecommendation = 861980001`)
+- [ ] Resources aligned to delivery plan (`msp_engagementmilestone.msp_commitmentrecommendation = 861980003`)
 - [ ] Outcomes committed and baseline metrics defined (milestones Committed + `msp_milestonedate` set)
 
 ## Stage 4: Realize Value
@@ -524,15 +524,15 @@ Skills are organized by category: Stage-Bound (activated at specific MCEM stages
 | **2 → 3** | Business value reviewed | BVA (Business Value Assessment) completed and linked | BVA entity `status = Complete` (verify via linked records) |
 | **2 → 3** | Customer Success Plan created | CSP record linked to opportunity | `msp_successplan` exists + linked |
 | **3 → 4** | Customer agreement in place | Opportunity committed — `activestageid` shows post-commitment stage, or deal is marked won | `opportunity.activestageid` + `opportunity.statecode` |
-| **3 → 4** | Resources aligned to delivery plan | Milestones with commitment recommendation = Committed and target dates set | `msp_engagementmilestone.msp_commitmentrecommendation = 861980001` + `msp_milestonedate` populated |
-| **3 → 4** | Outcomes committed / baseline defined | At least one milestone Committed with measurable target | `msp_engagementmilestone.msp_commitmentrecommendation = 861980001` |
+| **3 → 4** | Resources aligned to delivery plan | Milestones with commitment recommendation = Committed and target dates set | `msp_engagementmilestone.msp_commitmentrecommendation = 861980003` + `msp_milestonedate` populated |
+| **3 → 4** | Outcomes committed / baseline defined | At least one milestone Committed with measurable target | `msp_engagementmilestone.msp_commitmentrecommendation = 861980003` |
 | **4 → 5** | Solution delivered | Milestone(s) marked Completed | `msp_engagementmilestone.msp_milestonestatus = 861980003` |
 | **4 → 5** | Customer health metrics agreed | Success plan health signals populated | CSP entity health fields |
 | **4 → 5** | Business value tracking in place | Consumption data being recorded | Consumption metrics in ACR/Usage data |
 | **5 (exit)** | Outcomes met and sustained | Consumption/usage targets met over sustained period | ACR trending data + milestone completion rate |
 
 **Key corrections from CRM schema validation** (P8 first cycle):
-- ⚠️ `msp_milestonestatus = 861980001` = **At Risk** (NOT Committed). Commitment lives in `msp_commitmentrecommendation = 861980001`.
+- ⚠️ `msp_milestonestatus = 861980001` = **At Risk** (NOT Committed). Commitment lives in `msp_commitmentrecommendation = 861980003`.
 - ⚠️ The opportunity Solution Play field is `msp_salesplay` (per CRM schema), not `msp_solutionplay`.
 - ✅ `opportunity.activestageid` tracks D365 Business Process Flow stage transitions — use as a secondary signal alongside entity-level VOs.
 - ✅ Partner Center referral creation can evidence Stage 1 qualification in partner-led motions.
@@ -689,7 +689,7 @@ Note: The 5 process navigation skills are net-new capabilities that don't exist 
 
 | # | Issue | Severity | Fix Applied |
 |---|---|---|---|
-| 1 | VO table mapped "Outcomes committed" to `msp_milestonestatus = 861980001` (**At Risk**). Commitment lives in `msp_commitmentrecommendation = 861980001`. | **Critical** | VO table rewritten with correct field: `msp_commitmentrecommendation` |
+| 1 | VO table mapped "Outcomes committed" to `msp_milestonestatus = 861980001` (**At Risk**). Commitment lives in `msp_commitmentrecommendation = 861980003`. | **Critical** | VO table rewritten with correct field: `msp_commitmentrecommendation` |
 | 2 | VO table referenced `msp_solutionplay` but CRM schema shows `msp_salesplay`. | **Medium** | Corrected to `msp_salesplay` throughout |
 | 3 | No `activestageid` (D365 BPF stage transition) in VO model. | **Medium** | Added as Step 1 in VO algorithm + included in Stage 1 and Stage 3 gate criteria |
 

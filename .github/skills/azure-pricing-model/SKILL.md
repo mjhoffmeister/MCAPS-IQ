@@ -258,7 +258,7 @@ Invoke the `processing-spreadsheets` skill to generate the actual `.xlsx` file:
    - Percentage columns: `0.0%` format.
    - Conditional formatting: highlight cells where RI savings > 30% in green.
    - Auto-filter on all header rows.
-3. Save to the user's workspace or specified path.
+3. Save to `.copilot/docs/` (see `shared-patterns.instructions.md` § Artifact Output Directory), or the user's specified path.
 
 ## Decision Logic
 

@@ -51,6 +51,7 @@ The builder:
 |--------|----------|
 | `pbi-azure-portfolio-review` | ACR vs. budget, gap ranking, priority opportunities |
 | `pbi-ghcp-new-logo-incentive` | GHCP incentive eligibility tracking |
+| `pbi-ghcp-seats-analysis` | GHCP seat composition, attach rates, whitespace, MoM trends |
 
 ---
 

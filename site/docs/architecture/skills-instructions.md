@@ -105,22 +105,26 @@ Role cards define each MCAPS role's identity, accountability, and boundaries:
 
 Skills can chain together. Each skill's documentation specifies which other skills it chains with:
 
-```mermaid
-graph TB
-    subgraph "Weekly Pipeline Review"
-        A[pipeline-hygiene-triage] --> B[handoff-readiness-validation]
-        B --> C[risk-surfacing]
-    end
-    
-    subgraph "Pre-Governance Prep"
-        D[mcem-stage-identification] --> E[milestone-health-review]
-        E --> F[customer-evidence-pack]
-    end
-    
-    subgraph "Commit Decision"
-        G[commit-gate-enforcement] --> H[non-linear-progression]
-        H --> I[delivery-accountability-mapping]
-    end
-```
+<div class="grid cards" markdown>
+
+-   :material-chart-timeline:{ .lg .middle } **Weekly Pipeline Review**
+
+    ---
+
+    `pipeline-hygiene-triage` :octicons-arrow-right-16: `handoff-readiness-validation` :octicons-arrow-right-16: `risk-surfacing`
+
+-   :material-shield-check:{ .lg .middle } **Pre-Governance Prep**
+
+    ---
+
+    `mcem-stage-identification` :octicons-arrow-right-16: `milestone-health-review` :octicons-arrow-right-16: `customer-evidence-pack`
+
+-   :material-gate:{ .lg .middle } **Commit Decision**
+
+    ---
+
+    `commit-gate-enforcement` :octicons-arrow-right-16: `non-linear-progression` :octicons-arrow-right-16: `delivery-accountability-mapping`
+
+</div>
 
 You don't need to specify chains — just describe the outcome you want and Copilot orchestrates the right sequence.

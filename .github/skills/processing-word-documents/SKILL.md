@@ -8,6 +8,8 @@ argument-hint: 'Provide file path and operation: read, create, or modify'
 
 Read, create, and modify `.docx` files via Node.js scripts executed in the terminal.
 
+**Output directory**: Save generated `.docx` files to `.copilot/docs/` (see `shared-patterns.instructions.md` § Artifact Output Directory). Create the directory with `mkdirSync` before writing.
+
 ## Packages
 
 | Package | Purpose | Install |

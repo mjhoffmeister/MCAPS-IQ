@@ -39,6 +39,16 @@ Or use: `/pbi-ghcp-new-logo-incentive`
 
 Evaluates accounts against incentive eligibility criteria.
 
+### GHCP Seats Analysis
+
+```
+Show me GHCP seat data and whitespace for my tracked accounts
+```
+
+Or use: `/pbi-ghcp-seats-analysis`
+
+Pulls seat composition, attach rates, remaining whitespace, and MoM trends. Classifies accounts into growth cohorts and surfaces expansion targets.
+
 ---
 
 ## Building Your Own PBI Prompt

@@ -1,6 +1,6 @@
 ---
 name: non-linear-progression
-description: 'Non-linear progression advisor: guides when and how to regress a deal to an earlier MCEM phase after proof failures, scope pivots, or buyer-readiness gaps. Provides re-entry requirements. Chains with commit-gate-enforcement and delivery-accountability-mapping for commit-or-loopback decision. Triggers: loopback, regression, go back, roll back, proof failed rework, scope pivot, re-entry, deal regression, loop back, should we loop back.'
+description: 'Non-linear progression advisor: guides when and how to regress a deal to an earlier MCEM phase after proof failures, scope pivots, or buyer-readiness gaps. Provides re-entry requirements. Chains with commit-gate-enforcement and delivery-accountability-mapping for commit-or-loopback decision. Triggers: loopback, deal regression, stage rollback, go back, roll back, proof failed rework, scope pivot, re-entry, loop back, should we loop back. DO NOT USE FOR: software test regression analysis.'
 argument-hint: 'Provide opportunityId and describe the triggering event (proof failure, scope change, etc.)'
 ---
 

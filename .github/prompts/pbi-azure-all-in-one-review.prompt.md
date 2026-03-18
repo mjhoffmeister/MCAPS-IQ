@@ -157,6 +157,8 @@ ORDER BY [SalesStage] DESC, [Account] ASC
 
 ### Step 5 — Pull Account Attributes (for recommendations)
 
+> **Important**: `AzureCustomerAttributes` does NOT have a `TPAccountName` column. Filter by TPID only. Use the TPID list gathered from earlier steps or from `'DimCustomer'`.
+
 ```dax
 EVALUATE
 CALCULATETABLE(
@@ -174,7 +176,7 @@ CALCULATETABLE(
         "GHCP_200Plus", 'AzureCustomerAttributes'[GHCPFY26200Plus],
         "GHCP_200Less", 'AzureCustomerAttributes'[GHCPFY26200Less]
     ),
-    <ACCOUNT_SCOPE_FILTER>
+    'AzureCustomerAttributes'[TPID] IN {<TPID_LIST>}
 )
 ```
 

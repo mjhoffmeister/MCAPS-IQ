@@ -1,6 +1,6 @@
 ---
 name: account-structure-diagram
-description: 'Excalidraw diagram generator: produces visual maps of account structure — opportunities, milestones, deal-team roles, MCEM stage positions, and role-specific prioritized views. Assembles CRM + vault data into a renderable .excalidraw.md file. Chains with mcem-stage-identification and role-orchestration for enriched stage/role context. Triggers: diagram, visualize account, draw structure, Excalidraw, account map, opportunity map, visual overview, show me the account, structural view, architecture diagram, customer map, portfolio visualization.'
+description: 'Excalidraw diagram generator: produces visual maps of account structure — opportunities, milestones, deal-team roles, MCEM stage positions, and role-specific prioritized views. Assembles CRM + vault data into a renderable .excalidraw.md file. Chains with mcem-stage-identification and role-orchestration for enriched stage/role context. Triggers: diagram, visualize account, draw structure, Excalidraw, account map, opportunity map, visual overview, show me the account, structural view, customer map, portfolio visualization. DO NOT USE FOR: architecture feasibility reviews or technical POC planning — use architecture-feasibility-check.'
 argument-hint: 'Provide customer name, opportunityId(s), or account TPID — optionally specify role for a prioritized lens'
 ---
 
@@ -44,7 +44,7 @@ Generates an Excalidraw diagram that visually represents a customer's account st
 
 5. **Generate Excalidraw diagram** — Produce a valid `.excalidraw.md` code block using the layout and element specs below.
 
-6. **Output** — Return the diagram as a fenced code block (` ```excalidraw `) that can be pasted into an Obsidian note or saved as a `.excalidraw.md` file.
+6. **Output** — Return the diagram as a fenced code block (` ```excalidraw `) that can be pasted into an Obsidian note or saved as a `.excalidraw` file in `.copilot/docs/excalidraw/` (see `shared-patterns.instructions.md` § Artifact Output Directory).
 
 ## Layout Specification
 
@@ -107,7 +107,7 @@ Generate a valid Excalidraw JSON scene wrapped in an Obsidian-compatible code bl
 {
   "type": "excalidraw",
   "version": 2,
-  "source": "mcaps-copilot-tools",
+  "source": "mcaps-iq",
   "elements": [
     {
       "type": "rectangle",

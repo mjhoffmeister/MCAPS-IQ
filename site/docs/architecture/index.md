@@ -5,7 +5,6 @@ tags:
   - architecture
   - how-it-works
 ---
-
 # How It Works
 
 MCAPS IQ is a collection of **MCP servers**, **domain skills**, and **instruction files** that extend GitHub Copilot's capabilities into enterprise sales operations.
@@ -32,10 +31,34 @@ MCAPS IQ is a collection of **MCP servers**, **domain skills**, and **instructio
 
     How Copilot knows what to do — the 4-tier context loading model.
 
+-   :material-layers:{ .lg .middle } __[Skill Architecture](skill-architecture.md)__
+
+    ---
+
+    MCEM process spine, atomic skills, role cards, Verifiable Outcomes, and governing principles.
+
+-   :material-tune:{ .lg .middle } __[Context Optimization](context-optimization.md)__
+
+    ---
+
+    How context budget is managed — instruction trimming, subagent delegation, MCP response shaping.
+
 -   :material-shield-check:{ .lg .middle } __[Safety & Write Operations](safety.md)__
 
     ---
 
     How write operations work and why you're always in control.
+
+-   :material-shield-alert:{ .lg .middle } __[Threat Model](threat-model.md)__
+
+    ---
+
+    STRIDE analysis, trust boundaries, mitigations, and residual risks for the full MCP toolchain.
+
+-   :material-test-tube:{ .lg .middle } __[Evaluation Framework](eval/index.md)__
+
+    ---
+
+    Automated testing for skill routing, tool correctness, anti-patterns, and output quality. Baseline: 92.9%.
 
 </div>

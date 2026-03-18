@@ -6,7 +6,7 @@ argument-hint: 'Provide opportunityId and milestoneId(s) being evaluated for com
 
 ## Purpose
 
-Prevents premature milestone commitment by validating that delivery readiness evidence exists in CRM before recommending `msp_commitmentrecommendation = 861980001` (Committed).
+Prevents premature milestone commitment by validating that delivery readiness evidence exists in CRM before recommending `msp_commitmentrecommendation = 861980003` (Committed).
 
 ## Freedom Level
 

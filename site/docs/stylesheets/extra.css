@@ -60,6 +60,35 @@
   margin: 2rem 0;
 }
 
+/* Material for MkDocs grid cards (community edition polyfill) */
+.md-typeset .grid.cards > ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: .4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.md-typeset .grid.cards > ul > li {
+  border: .05rem solid var(--md-default-fg-color--lightest);
+  border-radius: .1rem;
+  padding: .8rem;
+  transition: border-color .25s, box-shadow .25s;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 .2rem 1rem rgba(0,0,0,.1);
+}
+
+.md-typeset .grid.cards > ul > li > hr {
+  margin: .5rem 0;
+}
+
+.md-typeset .grid.cards > ul > li > p:last-child {
+  margin-bottom: 0;
+}
+
 .md-typeset .grid-cards .card {
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: 0.5rem;

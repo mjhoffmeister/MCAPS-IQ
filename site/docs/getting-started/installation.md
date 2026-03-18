@@ -21,6 +21,8 @@ Three commands and you're done.
 
 ## Step 1: Clone the Repo
 
+Open VS Code, then open a terminal inside it (**Terminal** → **New Terminal Window**) and run:
+
 ```bash
 git clone https://github.com/microsoft/mcaps-iq.git
 cd mcaps-iq
@@ -86,16 +88,6 @@ This opens your browser for Azure authentication. Use your **Microsoft corp acco
     az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
     ```
     This is the Microsoft tenant ID. The MCP server uses this by default.
-
----
-
-## Step 4: Open in VS Code
-
-```bash
-code .
-```
-
-That's it! Your workspace is ready. The next step is to start the MCP servers and have your first chat.
 
 ---
 

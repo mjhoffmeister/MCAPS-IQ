@@ -16,7 +16,7 @@ set -euo pipefail
 # ── Configuration ─────────────────────────────────────────────────
 # Each entry: "prefix:remote:branch"
 SUBTREES=(
-  "mcp/msx:msx-mcp:main"
+  "mcp/msx:msx-copilot-mcp:main"
   "mcp/oil:oil:main"
 )
 

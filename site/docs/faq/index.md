@@ -27,6 +27,9 @@ tags:
 ??? question "How do I write a good skill or instruction file?"
     See [Writing Skills](../customization/skills.md) for a full guide. Short version: keep the `description` keyword-rich, structure as step-by-step workflow, don't exceed ~150 lines.
 
+??? question "Copilot is getting slow or forgetting things mid-session"
+    The context window fills up as you work. Export what you need (ask Copilot for a summary, report, or handoff note), then type `/clear` to reset. Your MCP servers stay running and instructions reload automatically. See [Context Window Management](common-issues.md#responses-get-slower-or-less-accurate-over-time) for details.
+
 ---
 
 ## Troubleshooting

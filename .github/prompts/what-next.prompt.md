@@ -8,7 +8,7 @@ I have a few minutes — what's the most valuable thing I can do right now?
 
 ## Steps
 
-1. **Identify role** — use `crm_whoami` to determine my role. Skip if already known.
+1. **Identify role** — first read `Reference/MyRoleDescriptions.md` from the Obsidian vault (`oil:search_vault` for "My Role"). If found, use that. If vault is unavailable, fall back to `crm_whoami`. Skip if already known.
 2. **Quick scan** — based on role, run a lightweight check:
 
 ### Specialist

@@ -32,7 +32,7 @@ Surfaces the full pipeline landscape across the user's accounts — not just the
    - `my_account_ids` — set of unique `_parentaccountid_value` from those opportunities
 
 3. **Full account pipeline** — For each account in `my_account_ids`:
-   - `msx-crm:list_opportunities({ accountIds: [<account_ids>] })` — returns ALL active opportunities on those accounts regardless of ownership.
+   - `msx-crm:list_opportunities({ accountIds: [<account_ids>], format: 'compact' })` — returns active opportunities on those accounts in a compact shape for faster diff/scoring.
    - Tag each returned opportunity: `mine: true` if `opportunityid ∈ my_opportunity_ids`, else `mine: false`.
 
 4. **Produce the diff**:

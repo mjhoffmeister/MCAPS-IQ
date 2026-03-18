@@ -1,6 +1,6 @@
 ---
 name: task-hygiene-flow
-description: 'Task hygiene flow for SE: reads each CRM task row for correct owner, due date, status, and blocker notes. Patches stale or orphaned entries via dry-run at individual task-row level. Chains with execution-monitoring and unified-constraint-check for SE morning prep. Triggers: task record inspector, SE daily check, stale tasks, orphaned tasks, task owner, task due date, CRM task row, task hygiene, morning prep.'
+description: 'Task hygiene flow for SE: reads each CRM task row for correct owner, due date, status, and blocker notes. Patches stale or orphaned entries via dry-run at individual task-row level. Chains with execution-monitoring and unified-constraint-check for SE morning prep. Triggers: task record inspector, SE daily check, stale tasks, orphaned tasks, task owner, task due date, CRM task row, task hygiene. DO NOT USE FOR: full morning briefing — use morning-brief. Not for CSAM milestone reviews — use milestone-health-review.'
 argument-hint: 'Scope by opportunityId(s) or sweep all SE-owned active task records'
 ---
 
@@ -21,7 +21,7 @@ Keeps milestone tasks current and actionable by detecting missing owners, stale 
 ## Flow
 
 1. Call `msx-crm:get_my_active_opportunities` — single call for all active opportunities.
-2. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, and `includeTasks: true` — one call returns milestones with inline tasks for SE-scoped milestones. If scoped to a single customer, use `customerKeyword` instead.
+2. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, `format: 'triage'`, and `includeTasks: true` — one call returns milestones pre-classified by urgency with inline tasks for SE-scoped milestones. If scoped to a single customer, use `customerKeyword` instead.
 3. Apply task completeness checks (see below).
 4. Generate dry-run corrections:
    - `msx-crm:create_task` for missing tasks

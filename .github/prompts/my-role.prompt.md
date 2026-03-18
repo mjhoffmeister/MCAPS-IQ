@@ -8,7 +8,7 @@ Figure out who I am in MCAPS and show me what's available for my role. If I alre
 
 ## Steps
 
-1. **Identify me** — use `crm_whoami` to find my CRM identity. Infer my likely role (Specialist, SE, CSA, CSAM) from the result.
+1. **Identify me** — first read `Reference/MyRoleDescriptions.md` from the Obsidian vault (`oil:search_vault` for "My Role"). If found, use it directly — it contains my role, mission, and success metrics. If vault is unavailable, fall back to `crm_whoami` to infer role (Specialist, SE, CSA, CSAM).
 2. **Confirm** — present the inferred role and ask me to confirm or correct. If I tell you my role directly, skip the lookup.
 3. **Show my role card** — based on confirmed role, give me a brief (5-line max) summary of:
    - What I'm responsible for in MCEM

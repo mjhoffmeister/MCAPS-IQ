@@ -68,9 +68,10 @@ Every PBI prompt has a **Configuration** table at the top with the semantic mode
 
 ## Included Prompts
 
-Two PBI prompts ship out of the box:
+Three PBI prompts ship out of the box:
 
 | Prompt | What it does |
 |---|---|
 | `/pbi-azure-portfolio-review` | ACR actuals vs. budget, pipeline conversion ranking, and recommended next actions across your Azure accounts |
 | `/pbi-ghcp-new-logo-incentive` | Evaluates tracked accounts against GHCP New Logo Growth Incentive eligibility and qualifying thresholds |
+| `/pbi-ghcp-seats-analysis` | GHCP seat composition, attach rates, whitespace, and MoM trends across tracked accounts |

@@ -63,7 +63,8 @@ Here's what ships out of the box and what each piece does:
 │   ├── create-person.prompt.md      ← Create a People note from meeting context
 │   ├── sync-project-from-github.prompt.md ← Pull GitHub activity into vault
 │   ├── pbi-azure-portfolio-review.prompt.md ← Azure ACR vs budget + pipeline ranking
-│   └── pbi-ghcp-new-logo-incentive.prompt.md ← GHCP incentive eligibility tracker
+│   ├── pbi-ghcp-new-logo-incentive.prompt.md ← GHCP incentive eligibility tracker
+│   └── pbi-ghcp-seats-analysis.prompt.md ← GHCP seat opportunity + adoption review
 └── documents/                       ← Reference docs (never auto-loaded, read on demand)
 ```
 

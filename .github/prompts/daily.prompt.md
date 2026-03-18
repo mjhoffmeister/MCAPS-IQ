@@ -8,7 +8,7 @@ Run my morning routine based on my MCAPS role. Check what needs attention, flag 
 
 ## Steps
 
-1. **Identify role** — use `crm_whoami` to determine my role. If you've already identified me this session, skip this.
+1. **Identify role** — first read `Reference/MyRoleDescriptions.md` from the Obsidian vault (`oil:search_vault` for "My Role"). If found, use that. If vault is unavailable, fall back to `crm_whoami`. Skip if already known this session.
 2. **Run role-specific checks** (execute the appropriate chain below):
 
 ### Specialist daily

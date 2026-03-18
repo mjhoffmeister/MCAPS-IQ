@@ -35,6 +35,26 @@ You must be connected to the Microsoft corporate network (VPN) to access MSX CRM
 
 ---
 
+### :material-github: GitHub Account + Microsoft EMU
+
+You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) to get unlimited Copilot access.
+
+=== "Check"
+
+    Go to [https://aka.ms/copilot](https://aka.ms/copilot) — if it shows your Copilot license is active, you're all set.
+
+=== "Set up"
+
+    1. **Create a free GitHub account** — if you don't have a personal GitHub account, register [here](https://github.com/signup)
+    2. **Link it to Microsoft EMU**: Go to [https://aka.ms/copilot](https://aka.ms/copilot) and sign in with your `@microsoft.com` account. Follow the prompts to associate your GitHub account with Microsoft's enterprise organization.
+
+    Once linked, you'll have unlimited GitHub Copilot tokens through Microsoft's enterprise license — no personal subscription needed.
+
+!!! tip "Why do I need this?"
+    MCAPS IQ runs on GitHub Copilot. The EMU link gives you the enterprise license so Copilot works without token limits or personal billing.
+
+---
+
 ### :material-microsoft-visual-studio-code: VS Code + GitHub Copilot Extension
 
 === "Check"
@@ -47,9 +67,52 @@ You must be connected to the Microsoft corporate network (VPN) to access MSX CRM
 
 === "Install"
 
-    1. Download [VS Code](https://code.visualstudio.com/)
-    2. Install the [GitHub Copilot extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
-    3. Sign in with your GitHub account that has a Copilot license
+    1. Install VS Code and GitHub CLI:
+
+        ??? example "Step-by-step: Install VS Code and GitHub CLI via PowerShell"
+
+            **Open PowerShell:**
+
+            1. Click the **Windows Start menu** (or press the ++win++ key)
+            2. Type **`powershell`** in the search bar
+            3. Click **Windows PowerShell** to open it (no need to run as administrator)
+
+            **Run these commands** one at a time:
+
+            ```powershell
+            # Install VS Code
+            winget install Microsoft.VisualStudioCode --silent --accept-package-agreements --accept-source-agreements
+
+            # Install GitHub CLI
+            winget install GitHub.cli --silent --accept-package-agreements --accept-source-agreements
+            ```
+
+            If Windows asks for permission to make changes, click **Yes**. After both finish, close PowerShell.
+
+    2. Install the GitHub Copilot extension:
+
+        ??? example "Step-by-step: Install Copilot via the terminal"
+
+            **Open VS Code as Administrator:**
+
+            1. Click the **Windows Start menu** (or press the ++win++ key)
+            2. Type **`vsc`** in the search bar
+            3. When **Visual Studio Code** appears, right-click it and choose **Run as administrator**
+
+            **Open a terminal window inside VS Code:**
+
+            1. In VS Code, click **Terminal** in the top menu bar
+            2. Click **New Terminal Window**
+
+            **Run this command** in the terminal to install the Copilot extension:
+
+            ```powershell
+            code --install-extension GitHub.copilot-chat
+            ```
+
+            You should see a message confirming the extension was installed. If VS Code asks you to reload the window, click **Reload**.
+
+    3. Sign in with your GitHub account that has a Copilot license.
 
 !!! info "Copilot license"
     You need a GitHub Copilot subscription (Free, Pro, Pro+, Business, or Enterprise). If you don't have one, ask your manager — Microsoft provides Copilot Business for internal use.
@@ -71,10 +134,13 @@ You must be connected to the Microsoft corporate network (VPN) to access MSX CRM
     # macOS (Homebrew)
     brew install node
     
-    # Windows (Chocolatey)
-    choco install nodejs
+    # Windows (run in VS Code terminal — see "Step-by-step" above for how to open it)
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+    winget install OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
     
-    # Or download from https://nodejs.org/
+    # After install, close and reopen your terminal, then verify:
+    node --version
+    # Should print v18.x.x or higher
     ```
 
 ---
@@ -93,11 +159,17 @@ You must be connected to the Microsoft corporate network (VPN) to access MSX CRM
     ```bash
     # macOS
     brew install azure-cli
-    
-    # Windows
-    winget install Microsoft.AzureCLI
-    
-    # Or see https://learn.microsoft.com/cli/azure/install-azure-cli
+    ```
+
+    ```powershell
+    # Windows (run in VS Code terminal — see "Step-by-step" above for how to open it)
+    winget install Microsoft.AzureCLI --silent --accept-package-agreements --accept-source-agreements
+
+    # Refresh the PATH in your current terminal so "az" works immediately:
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+    # Verify it works:
+    az --version
     ```
 
 ---
@@ -105,6 +177,14 @@ You must be connected to the Microsoft corporate network (VPN) to access MSX CRM
 ### :material-account: Microsoft Corp Account
 
 You'll sign in with your `@microsoft.com` alias (e.g., `yourname@microsoft.com`). This is the same account you use for MSX.
+
+After installing Azure CLI, sign in to the Microsoft corporate tenant by running this in your terminal:
+
+```powershell
+az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
+```
+
+A browser window will open — sign in with your `@microsoft.com` account. After authentication, the terminal will show "Select a subscription and tenant." **Just press Enter** — it doesn't matter which subscription is selected. The app only uses the login session to talk to CRM, not to manage Azure resources.
 
 ---
 

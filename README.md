@@ -91,7 +91,7 @@ The system tailors its behavior based on your MCAPS role. Type `/my-role` in Cop
 | **Cloud Solution Architect** | Execution readiness, architecture handoff, delivery ownership        |
 | **CSAM**                     | Milestone health, adoption tracking, commit gates, value realization |
 
-See [all scenario prompts by role →](docs/scenario-prompts.md)
+See [all scenario prompts by role →](site/docs/prompts/scenario-prompts.md)
 
 ---
 
@@ -132,7 +132,7 @@ All CRM write operations use a **Stage → Review → Execute** pattern:
 
 You can cancel at any time. Staged operations expire after 10 minutes.
 
-See [Write Operations &amp; Safety](docs/write-safety.md) for full details.
+See [Write Operations &amp; Safety](site/docs/architecture/safety.md) for full details.
 
 ---
 
@@ -140,13 +140,13 @@ See [Write Operations &amp; Safety](docs/write-safety.md) for full details.
 
 | Topic                               | Link                                              |
 | ----------------------------------- | ------------------------------------------------- |
-| All scenario prompts by role        | [docs/scenario-prompts.md](docs/scenario-prompts.md) |
-| Use from the terminal (Copilot CLI) | [docs/copilot-cli.md](docs/copilot-cli.md)           |
-| Obsidian vault integration          | [docs/obsidian-setup.md](docs/obsidian-setup.md)     |
-| Power BI analytics                  | [docs/powerbi-setup.md](docs/powerbi-setup.md)       |
-| Customization guide                 | [docs/customization.md](docs/customization.md)       |
-| Architecture, tools & internals     | [docs/architecture.md](docs/architecture.md)         |
-| FAQ                                 | [docs/faq.md](docs/faq.md)                           |
+| All scenario prompts by role        | [site/docs/prompts/scenario-prompts.md](site/docs/prompts/scenario-prompts.md) |
+| Use from the terminal (Copilot CLI) | [site/docs/integrations/copilot-cli.md](site/docs/integrations/copilot-cli.md)           |
+| Obsidian vault integration          | [site/docs/integrations/obsidian.md](site/docs/integrations/obsidian.md)     |
+| Power BI analytics                  | [site/docs/integrations/powerbi.md](site/docs/integrations/powerbi.md)       |
+| Customization guide                 | [site/docs/customization/index.md](site/docs/customization/index.md)       |
+| Architecture, tools & internals     | [site/docs/architecture/index.md](site/docs/architecture/index.md)         |
+| FAQ                                 | [site/docs/faq/index.md](site/docs/faq/index.md)                           |
 
 ---
 

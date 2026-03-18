@@ -1,10 +1,11 @@
 {
 	"servers": {
+		
 		"workiq": {
 			"command": "npx",
 			"args": [
 				"-y",
-				"@microsoft/workiq",
+				"@microsoft/workiq@0.4.0",
 				"mcp"
 			],
 			"type": "stdio"
@@ -14,11 +15,26 @@
 			"command": "node",
 			"args": ["scripts/msx-start.js"]
 		},
-        "powerbi-remote": {
+
+		"powerbi-remote": {
             "type": "http",
             "url": "https://api.fabric.microsoft.com/v1/mcp/powerbi"
         },
-		
+		"ado": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@azure-devops/mcp",
+				"${input:ado_org}",
+				"-d",	
+				"core",
+				"work",
+				"work-items",
+				"repositories",
+				"pipelines"
+			]
+		},	
 		// Obsidian Intelligence Layer (OIL) — knowledge layer MCP server
 		// Subtree: mcp/oil (https://github.com/JinLee794/Obsidian-Intelligence-Layer)
 		// Setup: npm install
@@ -28,6 +44,48 @@
 			"type": "stdio",
 			"command": "node",
 			"args": ["scripts/oil-start.js"]
+		},
+
+		// Excalidraw MCP — create, manage, and render Excalidraw diagrams as SVG
+		"excalidraw": {
+			"type": "stdio",
+			"command": "node",
+			"args": ["mcp/excalidraw/src/index.js"],
+			"env": {
+				"REPO_ROOT": "${workspaceFolder}"
+			}
+		},
+
+		// Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
+		// Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
+		"github": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/"
+		},
+		"calendar": {
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_CalendarTools",
+			"headers": {},
+		},
+		"teams": {
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_TeamsServer",
+			"headers": {},
+		},
+		"mail":{
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_MailTools",
+			"headers": {},
+		},
+		"sharepoint": {
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_ODSPRemoteServer",
+			"headers": {},
+		},
+		"word": {
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_WordServer",
+			"headers": {},
 		}
 
 	}

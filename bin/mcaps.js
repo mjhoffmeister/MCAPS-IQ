@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * mcaps — launch a GitHub Copilot CLI session in the mcaps-copilot-tools repo.
+ * mcaps — launch a GitHub Copilot CLI session in the mcaps-iq repo.
  *
  * Installed globally via `npm link` so it works from any directory.
  * Runs `copilot` with the working directory set to the repo root,

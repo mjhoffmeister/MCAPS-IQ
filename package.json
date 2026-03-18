@@ -1,5 +1,5 @@
 {
-  "name": "mcaps-copilot-tools",
+  "name": "mcaps-iq",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,14 +12,40 @@
     "check": "node scripts/init.js --check",
     "postinstall": "node scripts/init.js",
     "docs:install": "pip install -r site/requirements.txt",
-    "docs:serve": "mkdocs serve",
-    "docs:build": "mkdocs build",
-    "docs:deploy": "mkdocs gh-deploy --force",
+    "docs:serve": "mkdocs serve -f site/mkdocs.yml",
+    "docs:build": "mkdocs build -f site/mkdocs.yml",
+    "docs:deploy": "mkdocs gh-deploy --force -f site/mkdocs.yml",
     "subtree:sync": "bash scripts/subtree-sync.sh",
     "subtree:sync:dry": "bash scripts/subtree-sync.sh --dry-run",
-    "subtree:sync:all": "bash scripts/subtree-sync.sh --all"
+    "subtree:sync:all": "bash scripts/subtree-sync.sh --all",
+    "eval": "vitest run --config vitest.config.ts",
+    "eval:watch": "vitest --config vitest.config.ts",
+    "eval:live": "vitest run --config evals/vitest.live.config.ts",
+    "eval:live:watch": "vitest --config evals/vitest.live.config.ts",
+    "eval:all": "vitest run --config vitest.config.ts && vitest run --config evals/vitest.live.config.ts",
+    "eval:baseline": "vitest run --config vitest.config.ts && node scripts/eval-persist.js --baseline --update",
+    "eval:diff": "node scripts/eval-persist.js --diff",
+    "eval:history": "node scripts/eval-persist.js --history",
+    "eval:trace": "npx tsx evals/traces/trace-harness.ts",
+    "fixtures:capture": "node scripts/capture-fixtures.js",
+    "fixtures:capture:dry": "node scripts/capture-fixtures.js --dry-run",
+    "fixtures:capture:redact": "node scripts/capture-fixtures.js --redact"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.13.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "mermaid": "^11.13.0",
+    "openai": "^6.29.0",
+    "pptxgenjs": "^4.0.1",
+    "unzipper": "^0.12.3",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.18",
+    "yaml": "^2.8.2"
   }
 }

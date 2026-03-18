@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-REPO_DIR="${MCAPS_REPO:-$HOME/Repos/_InternalTools/mcaps-copilot-tools}"
+REPO_DIR="${MCAPS_REPO:-$HOME/Repos/_InternalTools/mcaps-iq}"
 VAULT_DIR="${OBSIDIAN_VAULT_PATH:-$HOME/Documents/Obsidian/Jin @ Microsoft}"
 TODAY=$(date +%Y-%m-%d)
 DAY_OF_WEEK=$(date +%u) # 1=Mon … 7=Sun
