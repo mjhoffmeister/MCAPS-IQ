@@ -39,9 +39,37 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 - Query scoping → `crm-query-strategy.instructions.md`. Write-intent → `msx-role-and-write-gate.instructions.md`.
 - Stage: `msp_activesalesstage`. Close date: `msp_estcompletiondate` (fallback `estimatedclosedate`). Deal team: `msp_dealteams`.
 
-**WorkIQ**: Narrow scope before retrieval; resolve role first. **M365 Native**: Use Teams/Mail/Calendar MCP for targeted single-source ops; WorkIQ for broad discovery. See `shared-patterns.instructions.md` § M365 Communication Layer.
+**M365 Delegation (mandatory)**:
+- Delegate **all** targeted single-source M365 operations to the `m365-actions` subagent — email search, Teams lookup, calendar queries, reading threads, checking headers, attachments, reply/forward/send.
+- The parent agent does **not** call M365 MCP tools directly. It delegates via `runSubagent(agentName: "m365-actions")` and consumes the result.
+- **WorkIQ is only for broad multi-source discovery** (meetings + chats + email + files in a single sweep). If you can name the source type (email, Teams, calendar), delegate to `m365-actions` instead.
+- If `m365-actions` returns incomplete or errors, retry with adjusted parameters — do **not** fall back to WorkIQ for targeted ops.
+- See `shared-patterns.instructions.md` § M365 Communication Layer for query patterns and fallback discipline.
 
-**Vault (OIL)**: Customer context and durable memory. Operate statelessly if unavailable. **Connect Hooks**: `connect-hooks.instructions.md`. **Power BI**: Use `@pbi-analyst` subagent for medium/heavy DAX; see `powerbi-mcp.instructions.md`.
+**Vault (OIL)**: Customer context and durable memory. Operate statelessly if unavailable. **Connect Hooks**: `connect-hooks.instructions.md`.
+
+**Account Review routing (GHCP + multi-signal)**:
+- `account review`, `account health`, `health card`, `full account view`, `GHCP`, `GHCP seats`, `seat analysis`, `seat composition`, `attach rate`, `multi-signal review` → run `account-review.prompt.md` (parent agent orchestrates vault + PBI + M365 + CRM). Section 2 (Seat Analysis) delegates to `pbi-analyst` with `pbi-ghcp-seats-analysis` — runs MSXI + OctoDash combined in a single call.
+
+**Activity Impact routing (GHCP growth causality)**:
+- `activity impact`, `engagement impact`, `did it work`, `growth correlation`, `meeting impact`, `VBD impact`, `cause and effect`, `before after`, `impact scoring` → run `ghcp-activity-impact.prompt.md`. Correlates vault engagement history + PBI seat deltas to prove which activities drove GHCP growth.
+
+**Portfolio Prioritization routing (GHCP sales focus)**:
+- `prioritize accounts`, `rank accounts`, `where to focus`, `whitespace ranking`, `account prioritization`, `opportunity ranking`, `best accounts`, `highest potential`, `account tiers`, `portfolio ranking` → run `portfolio-prioritization.prompt.md`. 5-tier classification (Greenfield/Stagnant/Whitespace/High Performers/Low Utilization) with composite priority scoring.
+
+**PBI Delegation (mandatory)**:
+- Delegate **all** Power BI prompt workflows to the `pbi-analyst` subagent. The parent agent (`@mcaps`) does **not** run DAX queries or call `powerbi-remote` tools directly.
+- PBI prompts live in `.github/prompts/pbi-*.prompt.md`. Each prompt's `description` field contains trigger keywords. When a user's request matches any trigger, delegate immediately — do not attempt CRM, WorkIQ, or vault lookups first.
+- **Trigger keyword → prompt routing**:
+  - `cxobserve`, `CXP`, `support experience`, `support health`, `customer health`, `account support` → `pbi-cxobserve-account-review`
+  - `customer incident`, `outage review`, `escalation review`, `CritSit review` → `pbi-customer-incident-review`
+  - `azure portfolio`, `azure review`, `gap to target`, `ACR attainment`, `budget attainment` → `pbi-azure-all-in-one-review`
+  - `service deep dive`, `SL5`, `service-level consumption` → `pbi-azure-service-deep-dive-sl5-aio`
+  - `GHCP new logo`, `new logo incentive` → `pbi-ghcp-new-logo-incentive`
+- **Subagent-only prompts** (not top-level triggers — invoked by parent prompts via delegation):
+  - `pbi-ghcp-seats-analysis` — used by `account-review.prompt.md` Section 2 (Seat Analysis) when delegating to `pbi-analyst`
+- **Delegation pattern**: Resolve the TPID / customer scope (via CRM or user input), then delegate to `pbi-analyst` with the prompt name, semantic model ID, and scope filters. Consume the returned report for downstream CRM correlation, vault persistence, or risk surfacing.
+- See `pbi-context-bridge.instructions.md` for subagent delegation protocol and `powerbi-mcp.instructions.md` for DAX conventions.
 
 ## Response Expectations
 

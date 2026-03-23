@@ -8,9 +8,12 @@ You are running the user's automated morning prep routine. Today is **{{TODAY}}*
 
 Your job: populate today's daily note and create pre-filled meeting prep notes for each meeting on today's calendar. Use all available MCP tools.
 
-## Step 1: Get today's meetings from WorkIQ
+## Step 1: Get today's meetings via m365-actions
 
-Use the WorkIQ MCP tools to retrieve today's calendar events (meetings, calls). For each event, extract:
+Delegate to the `m365-actions` subagent to retrieve today's calendar events:
+> "Use ListCalendarView to get today's meetings and calls. For each event, return: meeting title, start time, attendees (names and emails), and any meeting body/description text."
+
+For each event, extract:
 - Meeting title
 - Start time
 - Attendees (names and emails)

@@ -89,7 +89,7 @@ Prefer primary-source artifacts over summaries. Preserve source links and timest
 #### Lane C — Vault (if available)
 
 Search vault for impact signals and previously captured hooks:
-- `oil:query_notes({ query: "impact OR improved OR saved OR built OR automated OR onboarded OR resolved OR unblocked", limit: 30, sort: "modified" })` — scoped to quarter dates.
+- `oil:search_vault({ query: "impact improved saved built automated onboarded resolved unblocked", limit: 30 })` — surfaces notes with impact keywords.
 - `oil:search_vault({ query: "connect hook" })` — find any previously captured hooks.
 - For each active customer: `oil:get_customer_context({ customer })` → scan `## Connect Hooks` and `## Agent Insights` sections.
 

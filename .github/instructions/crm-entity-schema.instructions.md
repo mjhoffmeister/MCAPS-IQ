@@ -108,8 +108,11 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 ### Commitment (`msp_commitmentrecommendation`)
 
 - Uncommitted: `861980000`
+- ~~Best Case: `861980001`~~: **deprecated** — exists in historical records but API rejects writes with this value
+- Pipeline: `861980002`
 - Committed: `861980003`
-- ~~`861980001`~~: **invalid / deprecated** — API rejects this value
+
+> `msp_monthlyuse` = estimated **change** in monthly revenue (delta), not total/absolute. Commitment should only be set when there is confidence the delta will be attained. Contact: Cory.Kincaid@microsoft.com
 
 ### Workload type (`msp_milestoneworkload`)
 

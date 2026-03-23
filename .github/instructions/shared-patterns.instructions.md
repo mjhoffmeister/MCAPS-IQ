@@ -58,7 +58,32 @@ Collect scope in minimal calls before per-milestone workflows:
 | **Targeted email** (KQL search, thread nav, send/reply) | `mail:*` | `mail-query-scoping` |
 | **Calendar** (schedule, availability, room booking) | `calendar:*` | `calendar-query-scoping` |
 
-**Decision rule**: WorkIQ for multi-source discovery; native MCP tools for targeted single-source operations.
+**Hard rule — no exceptions**:
+- **WorkIQ** (`workiq:ask_work_iq`): ONLY for broad multi-source discovery that spans meetings + chats + email + files in one sweep.
+- **m365-actions subagent** (or native `mail:*` / `teams:*` / `calendar:*` MCP): ALL targeted single-source operations — search, read, headers, thread nav, attachments, compose, send.
+
+**NEVER use WorkIQ when the request targets a single M365 source** (e.g., "find email from X", "search inbox for subject Y", "read Teams thread"). WorkIQ lacks header fidelity — it may omit Cc/Bcc fields, attachment metadata, and thread structure. If you can name the source type, use the dedicated tool.
+
+### Multi-Account Teams Sweep (Vault-Augmented)
+
+When asked for today's Teams activity across all accounts (or a broad account set), a single WorkIQ sweep is **insufficient**. WorkIQ is user-centric — it returns activity where the user was mentioned or directly participated. It **misses silent activity**: messages posted by others in group chats where the user was not mentioned.
+
+**Three-phase pattern:**
+
+1. **Phase 1 — WorkIQ broad sweep** (`workiq:ask_work_iq`): Fast user-centric discovery across all Teams chats/channels. Catches mentions and direct activity. This is the quick first pass.
+2. **Phase 2 — Vault-thread poll** (`teams:ListChatMessages` per vault thread ID): Query vault for all `teams-catalog` notes (`oil:query_notes({ where: { tags: "teams" }, folder: "Customers" })`). Extract cached thread IDs from each catalog. Poll each thread via Teams MCP for messages since midnight. This catches **all** activity in known account threads regardless of user involvement.
+3. **Phase 3 — Merge and diff**: Combine results. Anything in Phase 2 not surfaced in Phase 1 is **silent activity** — flag it explicitly. Report accounts with vault-cataloged threads that had no activity, and accounts missing `teams-catalog` notes entirely.
+
+**When to use each phase:**
+
+| Scenario | Phase 1 Only | Phase 1 + 2 |
+|---|---|---|
+| "What did I miss?" / mentions check | Sufficient | Not needed |
+| "What's happening across all accounts today?" | Insufficient | **Required** |
+| "Any activity in [specific account] thread?" | Skip | Phase 2 only (targeted) |
+| Morning brief / daily sweep | Start here | Add Phase 2 for completeness |
+
+**Scaling note**: Phase 2 makes one `ListChatMessages` call per vault thread. For 33+ accounts with multiple threads each, batch by priority — active accounts and accounts with recent CRM activity first. Cap at `top: 5` per thread for sweep; increase only for threads with confirmed activity.
 
 ### WorkIQ MCP Companion
 
@@ -85,6 +110,37 @@ After completing a CRM workflow, persist validated findings to the vault:
 - Use `oil:promote_findings()` or `oil:patch_note()` with `heading: "Agent Insights"`.
 - If new opportunity GUIDs were discovered, use `oil:update_customer_file()` to add them.
 - Skipped automatically if OIL is unavailable.
+
+## CSU Role Resolution (CSA / CSAM Lookup)
+
+When any workflow needs to identify the CSA or CSAM for an account or opportunity, follow this resolution chain in order. Stop at the first source that returns a confirmed result.
+
+### Resolution chain
+
+1. **Vault contacts note** (vault-first, most reliable) — `oil:query_notes({ where: { customer: "<name>", tags: "contacts" } })` → `oil:read_note`. Check:
+   - `## Microsoft Team` table → rows with Role = "CSAM" or "CSA"
+   - `## V-Team Roles (from CRM)` → `### CSAM` and `### CSA` subsections (alias lists by solution area)
+   - The vault contacts note reflects email-confirmed and V-Team-confirmed assignments. Do NOT override vault-confirmed roles with CRM deal team inferences. A person marked "SSP" in the vault is an SSP regardless of how many CRM opportunities they appear on.
+2. **Vault handoff tracker** — check `Reference/Committed-Milestone-Handoff-Tracker.md` for known CSA/CSAM assignments previously confirmed by the user. This covers accounts where the CSAM was provided out-of-band.
+3. **CRM deal team** (supplementary, not primary) — `msx-crm:manage_deal_team({ action: "list", opportunityId })` → resolve member titles via `msx-crm:crm_query` on `systemusers` (select `fullname,title,internalemailaddress`). Match titles containing "Cloud Solution Architect" or "CSA" for CSA; "Customer Success" or "CSAM" for CSAM. If the specific opportunity's deal team has no match, check **other opportunities on the same account** — CSAs/CSAMs are often on sibling opps. **Critical**: CRM deal team membership alone is not sufficient to infer role — deal teams include SSPs, Specialists, SEs, and other roles.
+4. **PBI fallback** — delegate to `pbi-analyst` subagent with the **WhoIsTheCSAM** report:
+   - Report ID: `8be168b9-0ba6-415a-bba8-8cbfa2a9e381`
+   - Dataset: `SSDMSelfServeOpenAccess`
+   - Workspace: `PSDIDeliveryMgmtProdWS01`
+   - Filter by TPID. Returns TAM (primary CSAM), ACSAM (backup), SPM, BAM per active Unified package.
+
+### Priority for milestone ownership on commit
+
+- **CSA** — if actively working with the customer on the aligned project
+- **CSAM** — fallback when no CSA is actively engaged on the specific project
+- See vault `Reference/Milestone-Commitment-Rule.md` for the full commitment rule
+
+### When to invoke
+
+- Commit-gate enforcement (who to assign the milestone to)
+- Milestone health review (who to flag for reassignment)
+- Account health card (team composition gap detection)
+- Any workflow producing a handoff recommendation
 
 ## Skill Composition Contract
 

@@ -107,6 +107,8 @@ ARPU        = GHCP ACR ($) / GHCP Seats
 | Metric | Definition |
 |---|---|
 | **ADO Seats** | Total ADO seats (Repos/Boards Basic + Test Plans) |
+| **ADO Seats Basic** | Seats associated with Azure Repos and Boards (Basic) |
+| **ADO Seats Test** | Seats associated with Azure Test Plans |
 
 ## GitHub Advanced Security (GHAS)
 
@@ -116,6 +118,16 @@ ARPU        = GHCP ACR ($) / GHCP Seats
 | **GHAzDO Seats (metered)** | GHAS via Azure DevOps |
 | **GHAS Seats (license)** | Paid GHAS license seats |
 | **GHAS Total** | GHAS metered + GHAS license seats |
+
+## Other Seat Metrics
+
+| Metric | Definition |
+|---|---|
+| **Visual Studio Seats** | Licensed Visual Studio entitlements purchased by the customer. License-based, not usage or ACR-based. |
+| **Number of Developers** | Developer count from MSX Account section ("Number of Professional Developers"). Blank if not entered in MSX. |
+| **Total GH** | Total GitHub-related ACR for an account/period. Sum of GHCP ACR + PRU ($) + GHE Metered ACR + GHAS Metered ACR. |
+
+---
 
 ## Premium Request Units (PRU)
 
@@ -190,6 +202,7 @@ The `Action` column in the PBI model maps to cohorts:
 | **% Acc. Penetrated** | Penetrated accounts / total accounts |
 | **# Acc with QP** | Accounts with ≥1 qualified pipeline milestone |
 | **# Acc with CP** | Accounts with ≥1 committed pipeline milestone |
+| **% Unified Support** | Percentage of total accounts that have Unified Support |
 
 ### Pipeline Segmentation (Mutually Exclusive)
 
@@ -243,6 +256,7 @@ Aggregate per category: **Count (#)**, **ACR ($)**, **Seats**.
 
 | Metric | Definition |
 |---|---|
+| **MDC ACR ($)** | Total ACR from Microsoft Defender for Cloud across all service levels |
 | **SRE Agent ACR ($)** | Azure AI Agent usage |
 | **AI Foundry ACR ($)** | Azure AI workloads (MaaS, OpenAI, AI services). Min: $1K SME&C, $5K Enterprise |
 | **AKS ACR ($)** | Azure Kubernetes Service |
@@ -258,9 +272,57 @@ Aggregate per category: **Count (#)**, **ACR ($)**, **Seats**.
 |---|---|
 | **Baseline** | Last closed month ACR → daily run rate → projected forward |
 | **PBO** | ACR actuals + Baseline + Committed Pipeline excl. Blocked |
+| **PBO VTB** | PBO − ACR Budget (variance to budget) |
+| **PBO VTF** | PBO − ACR Forecast (variance to forecast) |
 | **NNR (Budget)** | ACR Budget − (ACR Actual + Baseline) |
 | **CP to NNR** | Committed Pipeline excl. Blocked / \|NNR\| |
 | **ACR Outlook** | Actuals + Baseline + weighted pipeline (committed × w₁ + uncommitted × w₂ + NQP × w₃) |
+| **Seat Outlook** | Cumulative GHCP seats + committed/uncommitted/NQP seat pipeline, each weighted by configurable conversion parameters. Enables what-if analysis for seat growth projections. |
+
+---
+
+## GHCP New Logo Growth Incentive
+
+**Program**: [GitHub Copilot New Logo Growth Incentive](https://msxinsights.microsoft.com/User/report/1e2a0d7a-1c19-4a7a-b8db-15b39197ac22?reportTab=98f312cee23547be9ec6)
+
+### Eligibility
+
+GHC New Customer Adds = customers reaching meaningful GHCP adoption:
+- **Enterprise**: >50 seats or >$800/mo ACR
+- **SME&C-C**: >20 seats or >$320/mo ACR
+
+Eligibility is determined using **November closed month ACR**. TPIDs below threshold at that point are eligible.
+
+> All calculations use ACR (not seats). ACR values **exclude PRU revenue**.
+
+### Key Metrics
+
+| Metric | Definition |
+|---|---|
+| **Baseline** | November ACR for eligible customers (below threshold at Nov close) |
+| **Threshold** | Baseline (Nov ACR) + $800 (Enterprise) or + $320 (SME&C-C) |
+| **Needed ACR** | Threshold − LCM ACR (uplift required) |
+| **Enough Pipe** | Whether pipeline exceeds Needed ACR or Threshold has been surpassed in LCM |
+
+### Win Criteria
+
+A win is recorded when an account **exceeds the applicable threshold for 3 consecutive months** — sustained adoption, not a one-time spike.
+
+### Example (Enterprise)
+
+| # | Baseline (Nov) | Dec | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Eligible? | Reason |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | $0 | $800 | $800 | $800 | $800 | $800 | $800 | $800 | $800 | $800 | Yes | Met Threshold and 3 Consecutive Months |
+| 2 | $0 | $800 | $800 | $800 | $0 | $0 | $0 | $0 | $0 | $0 | Yes | Met Threshold and 3 Consecutive Months |
+| 3 | $0 | $0 | $800 | $700 | $700 | $700 | $700 | $800 | $800 | $700 | No | 3 Consecutive Months not Achieved |
+| 4 | $0 | $0 | $800 | $700 | $700 | $800 | $800 | $800 | $0 | $800 | Yes | Met Threshold and 3 Consecutive Months |
+| 5 | $1,000 | $1,800 | $1,800 | $1,800 | $1,800 | $1,800 | $1,800 | $1,800 | $1,800 | $1,800 | No | TPID ineligible — already a Customer Add |
+| 6 | $500 | $0 | $0 | $1,300 | $1,300 | $1,300 | $1,300 | $1,300 | $1,300 | $1,300 | Yes | Met Threshold and 3 Consecutive Months |
+| 7 | $500 | $0 | $0 | $0 | $900 | $900 | $900 | $900 | $900 | $900 | No | Did not meet $800 incremental (Baseline was $500) |
+| 8 | $100 | $0 | $0 | $0 | $0 | $0 | $900 | $900 | $900 | $900 | Yes | Met Threshold and 3 Consecutive Months |
+| 9 | $100 | $0 | $0 | $0 | $0 | $0 | $900 | $900 | $800 | $900 | No | Did not meet 3 Consecutive Months |
+
+> **Questions?** Reach out to devdashboardsupport@microsoft.com
 
 ---
 

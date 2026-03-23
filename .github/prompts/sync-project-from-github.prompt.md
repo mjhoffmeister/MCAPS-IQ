@@ -24,9 +24,9 @@ Use MCP GitHub tools to retrieve:
 ### Step 3 — Update Vault
 
 Use `patch_note` to append or update the `## GitHub Activity` section on the project note:
-- `patch_note({ path: "Projects/<Name>.md", operation: "append", heading: "GitHub Activity", content: "..." })`
-- If the section already exists with a previous sync, replace it by reading the note, removing the old section, and writing back with `write_note`.
-- Update `last_synced` in frontmatter via `update_frontmatter`.
+- `oil:patch_note({ path: "Projects/<Name>.md", operation: "append", heading: "GitHub Activity", content: "..." })`
+- If the section already exists with a previous sync, replace it by reading the note with `oil:read_note`, removing the old section, and writing back with `oil:write_note`.
+- If `last_synced` in frontmatter needs updating, use `oil:write_note` to write the full updated note (read first, merge frontmatter, then write).
 
 ## Output Format
 

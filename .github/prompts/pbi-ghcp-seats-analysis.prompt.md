@@ -142,6 +142,26 @@ Read the file specified in **Account Roster** (Configuration table) to get the f
 
 Read `.github/documents/ghcp-metric-formulas.md` to load cohort classification rules, penetration thresholds, NPSA categories, and common pitfalls. This is required for accurate analysis in Steps 4–6.
 
+### Step 1.75 — Vault Context Prefetch (Account-Scoped Runs)
+
+When the user scopes the analysis to **specific account(s)** (not a full portfolio run), read the Obsidian vault before executing any DAX queries:
+
+1. For each scoped account, call `get_customer_context({ customer: "<AccountName>" })` via OIL MCP. **If only a TPID was provided**, resolve to the vault customer name first: `query_notes({ where: { tpid: "<TPID>" } })` → use the customer folder name from the path (e.g., `Customers\Nielsen Consumer\Nielsen Consumer.md` → `Nielsen Consumer`). **If an abbreviation was provided** (e.g., NIQ, WBD), resolve via AccountReference.md parenthesized aliases — do NOT use `search_vault` for 2-3 char inputs (fuzzy matches produce false positives like "NIQ" → "Equinix"). Never use CRM sub-account names — vault folders use the full name (e.g., "Windstream Communications" not "Windstream").
+2. Read the account's main note (`Customers/<Name>/<Name>.md`) — look for the **Agent Insights** section and any `insights.md` sub-note.
+3. Extract **reporting overrides** — any context that changes how seat data should be interpreted:
+   - Account/org migrations (EMU consolidation, slug renames, BU mergers)
+   - Known seat movements that are NOT churn (decommissioning old orgs → new consolidated org)
+   - Slug-level annotations (eval accounts, sandbox orgs, subsidiary billing)
+   - Reframe rules ("do not flag decline on X", "true health = Y")
+   - CRM-to-actual ACR variance notes
+4. If vault is unavailable or the account has no overrides, proceed normally — this step is additive.
+
+**Why this matters**: PBI data shows raw numbers. Without vault context, a 936-seat drop looks like churn. With vault context, the agent knows it's an EMU consolidation — the seats moved, they didn't disappear.
+
+**Delegation pattern**: When delegating to `@pbi-analyst`, include a `## Vault Context` section in the delegation prompt with extracted overrides. The subagent applies them during analysis (Step 4) and report generation (Step 5). If running inline (no subagent), carry the overrides forward yourself.
+
+> **Skip condition**: Full portfolio runs (all TPIDs) skip this step — vault reads for 20+ accounts would be too slow. Only prefetch for ≤5 explicitly named accounts.
+
 ### Step 2 — Choose Analysis Workflow
 
 Based on the user's request, select one or more workflows:
@@ -436,8 +456,8 @@ When the workflow includes OctoDash data, add these sections to the report:
 
 **Section A: Per-Organization Breakdown** (source: OctoDash — Week of YYYY-MM-DD)
 
-| Enterprise Slug | SF Account Name | Licensed Seats | Azure Subscription ID | Product Type | Active% | Engaged% | vs Industry Benchmark |
-|---|---|---|---|---|---|---|---|
+| Enterprise Slug | SF Account Name | Licensed Seats | Product Type | Active% | Engaged% | vs Industry Benchmark |
+|---|---|---|---|---|---|---|
 
 Include a **TOTAL** row summing licensed seats. Note the number of unique Azure Subscription IDs.
 
@@ -471,6 +491,8 @@ Include a **TOTAL** row summing licensed seats. Note the number of unique Azure 
 | Azure Subscription ID | Enterprise Slug(s) | Seat Count | Product Type |
 |---|---|---|---|
 
+> **Formatting rule — Azure Subscription IDs**: Always display the **full 36-character GUID** (e.g., `e3912a3c-dee1-4339-ada8-737ef38ddd66`). Never truncate, abbreviate, or ellipsis-shorten subscription IDs (no `e3912a3c-...`). These are lookup keys — stakeholders copy-paste them for license triage. This applies everywhere a subscription ID appears: Section A callouts, Section D table, Key Callouts, and any inline references.
+
 This is the section stakeholders need for license triage — which Azure subscriptions to investigate.
 
 #### Source Comparison (when both MSXI and OctoDash data is present)
@@ -482,6 +504,24 @@ This is the section stakeholders need for license triage — which Azure subscri
 | **Delta** | ±XXX | Different pipelines and refresh cadences — do not reconcile |
 
 > These totals will rarely match exactly. MSXI and OctoDash use different data pipelines and refresh cadences. Present both and note the discrepancy — do not attempt to reconcile or explain the difference.
+
+### Step 5.5 — Apply Vault Overrides (Account-Scoped Runs)
+
+If Step 1.75 produced reporting overrides, apply them to the report **before** presenting to the user:
+
+1. **Reframe seat movements**: If vault says an org migration occurred, annotate any seat decline on the old org with the migration context. Do not classify migrated seats as "Decrease" or "Loss" in NPSA — reclassify as "Migration (neutral)" and note the destination org.
+2. **Annotate OctoDash slugs**: If vault identifies decommissioning slugs vs. active slugs, add a `Status` column to the Per-Organization Breakdown table: `Active`, `Decommissioning`, `Eval/Sandbox`.
+3. **Adjust Key Callouts**: Replace generic "significant seat drop" language with the vault-sourced explanation (e.g., "EMU consolidation — seats migrated to [new org], not churned").
+4. **Flag unresolved gaps**: If the vault mentions a known issue (e.g., CRM ACR mismatch) that the PBI data confirms, call it out explicitly with both the vault note and the PBI evidence.
+5. **Add Vault Context section**: At the end of the report, add:
+
+```markdown
+### Vault Context Applied
+- [List each override that was applied and how it affected the report]
+- Source: Obsidian vault — Customers/<Name>/insights.md (last updated: YYYY-MM-DD)
+```
+
+If no overrides were found in Step 1.75, skip this step entirely.
 
 ### Step 6 — Summary & Recommendations
 

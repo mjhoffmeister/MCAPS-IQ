@@ -16,6 +16,38 @@ These are realistic "day in the life" prompts that chain **multiple skills** in 
 
 ---
 
+## Multi-Signal Account Review (Any Role)
+
+```
+Run a full account review for Contoso — seats, engagement, and pipeline.
+```
+
+**Uses:** `/account-review` prompt — orchestrates vault + PBI `pbi-analyst` + M365 `m365-actions` + CRM in parallel lanes. Pick individual sections (Health Card, Seat Analysis, Engagement, Pipeline) or run the full review.
+
+---
+
+## Portfolio Prioritization (Specialist/SE)
+
+```
+Where should I focus my GHCP sales effort? Rank my accounts by growth 
+potential and tell me the top 5 actions.
+```
+
+**Uses:** `/portfolio-prioritization` prompt — PBI seat metrics + CRM pipeline + vault engagement → 5-tier classification (Greenfield, Stagnant, Whitespace, High Performers, Low Utilization) with composite priority scoring.
+
+---
+
+## Activity Impact Scoring (SE)
+
+```
+Did my engagement with Contoso actually drive GHCP growth? Show me 
+before/after seat data correlated with my VBDs and meetings.
+```
+
+**Uses:** `/ghcp-activity-impact` prompt — vault activity discovery → M365 validation → PBI before/after measurement → 7-level impact scoring per activity.
+
+---
+
 ## Full Weekly Review (Specialist)
 
 ```

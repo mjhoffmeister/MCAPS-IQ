@@ -14,9 +14,16 @@ Convert broad WorkIQ asks into focused retrieval plans that minimize noise and a
 - **Seed context before retrieval**: resolve customer/people via `msx-crm:get_my_active_opportunities` and vault People notes (`oil:resolve_people_to_customers`) to build a people→customer lookup.
 
 ## When to Activate
-- Broad M365 retrieval (meetings + chats + files + emails).
+- Broad M365 retrieval (meetings + chats + files + emails) **spanning multiple source types in one sweep**.
 - Request lacks boundaries (time, entities, customer, output type).
 - "Everything" / "all notes" / cross-workstream summaries.
+
+## When NOT to Activate (delegate to `m365-actions` instead)
+- **Targeted email ops**: search inbox, find specific email, read headers (From/To/Cc/Bcc), thread nav, attachments, reply, send.
+- **Targeted Teams ops**: search messages, read a specific thread, list chats, post.
+- **Targeted Calendar ops**: list events, check availability, create/update events.
+- **Any request where you can name the single M365 source type** — that means a dedicated MCP tool exists and will return higher-fidelity data.
+- **Why**: WorkIQ returns user-centric summaries that may omit Cc/Bcc recipients, attachment metadata, and full thread structure. The native MCP tools preserve these fields.
 
 ## Fact Map (build before retrieval)
 | Field | Notes |
@@ -50,6 +57,25 @@ If OIL available, cross-reference Pass 1 candidates with vault notes for the sam
 ### Pass 2 — Deep Retrieval
 - Fetch full detail only for Pass 1 matches; exclude the rest.
 - **Group output by customer** — not a flat list.
+
+## Known Blind Spot: Silent Group Chat Activity
+
+WorkIQ scopes retrieval to the **authenticated user's perspective** — messages where the user was sender, recipient, mentioned, or actively participated. This creates a systematic blind spot:
+
+- **Missed**: Messages posted by others in group chats where the user is a member but was NOT mentioned
+- **Example**: A colleague posts an SLA credit update in a shared account chat — WorkIQ won't surface it unless the user was @-mentioned
+- **Impact**: Multi-account sweeps ("what happened today across all my accounts?") will undercount activity
+
+**Mitigation — Vault-Thread Complement**:
+
+When completeness matters (account sweeps, morning briefs, daily digests), supplement WorkIQ with direct Teams MCP polling of vault-cached thread IDs:
+
+1. `oil:query_notes({ where: { tags: "teams" }, folder: "Customers" })` → get all `teams-catalog` notes
+2. Extract thread IDs from each catalog's Thread Index
+3. `teams:ListChatMessages({ chatId: "<thread-id>", top: 5 })` per thread, filtered to today
+4. Merge with WorkIQ results — anything new is "silent activity"
+
+See `shared-patterns.instructions.md` § Multi-Account Teams Sweep for the full three-phase pattern.
 
 ## Narrowing Heuristics
 - Too many results → tighten time window, then entities, then keywords.

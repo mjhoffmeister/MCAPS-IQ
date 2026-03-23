@@ -69,6 +69,24 @@ When delegating, instruct the subagent:
 
 > Delegate to `@pbi-analyst` and execute the PBI workflow from [prompt name]. Run all DAX queries against model [ID] with scope filters: [filters]. Complete the full analysis. Return the FINAL REPORT with all tables, rankings, and recommendations rendered — not raw DAX results.
 
+### Vault Context Injection (Account-Scoped Runs)
+
+When the parent agent (@mcaps) has vault context for scoped accounts (from a prompt's vault-prefetch step), include it in the delegation prompt as a structured section:
+
+```
+## Vault Context
+
+The following reporting overrides were extracted from the Obsidian vault. Apply them during analysis and report generation:
+
+### [Account Name]
+- [Override 1: e.g., "Org migration: slug-A → slug-B. Do not flag seat decline on slug-A as churn."]
+- [Override 2: e.g., "CRM ACR shows $X but actual billed ACR is $Y — known variance."]
+```
+
+The subagent applies these overrides during its analysis steps and includes a "Vault Context Applied" section in the final report. The parent agent does NOT need to re-apply overrides after receiving the report — they are baked in.
+
+If no vault context exists for the scoped accounts, omit this section from the delegation prompt.
+
 ## Prompt Template Convention
 
 PBI prompts that support downstream correlation should include:

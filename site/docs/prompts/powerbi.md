@@ -18,16 +18,46 @@ The **Power BI Remote MCP** connects Copilot to your Power BI semantic models. P
 
 ## Included Prompts
 
-### Azure Portfolio Review
+### Azure All-in-One Review
 
 ```
 Run my Azure portfolio review — what's my gap to target and which 
 opportunities should I focus on?
 ```
 
-Or use the slash command: `/pbi-azure-portfolio-review`
+Or use the slash command: `/pbi-azure-all-in-one-review`
 
-Pulls ACR vs. budget data, ranks opportunities by gap contribution, and highlights ones needing attention.
+Pulls ACR vs. budget data, pipeline conversion, ACR actuals, and budget attainment. Highlights opportunities needing attention.
+
+### Azure Service Deep Dive (SL5)
+
+```
+Show me service-level consumption breakdown for my Azure accounts
+```
+
+Or use: `/pbi-azure-service-deep-dive-sl5-aio`
+
+Cross-report analysis correlating portfolio performance with SL5-level consumption. Shows which Azure services are growing or declining.
+
+### CXObserve Account Review
+
+```
+What's the support health for my account?
+```
+
+Or use: `/pbi-cxobserve-account-review`
+
+Account support experience review — active incidents, escalations, satisfaction trends, and outage impact.
+
+### Customer Incident Review
+
+```
+Show me current incidents and outages for my account
+```
+
+Or use: `/pbi-customer-incident-review`
+
+Customer incident and outage review — current incidents, CritSits, outage trends, and reactive support health.
 
 ### GHCP New Logo Incentive Tracker
 
@@ -37,7 +67,7 @@ Which of my accounts qualify for the GHCP New Logo incentive?
 
 Or use: `/pbi-ghcp-new-logo-incentive`
 
-Evaluates accounts against incentive eligibility criteria.
+Evaluates accounts against the FY26 GHCP New Logo Growth Incentive eligibility criteria.
 
 ### GHCP Seats Analysis
 
@@ -47,7 +77,7 @@ Show me GHCP seat data and whitespace for my tracked accounts
 
 Or use: `/pbi-ghcp-seats-analysis`
 
-Pulls seat composition, attach rates, remaining whitespace, and MoM trends. Classifies accounts into growth cohorts and surfaces expansion targets.
+Pulls seat composition, attach rates, remaining whitespace, and MoM trends. Classifies accounts into growth cohorts and surfaces expansion targets. Also used internally by `/account-review` Section 2.
 
 ---
 

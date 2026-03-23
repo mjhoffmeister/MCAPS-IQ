@@ -1329,7 +1329,7 @@ describe('registerTools', () => {
       expect(parsed.after.msp_milestonedate).toBe('2026-04-15');
     });
 
-    it('allows update when user is on the deal team (owns other milestones under same opp)', async () => {
+    it('allows update when user is on the deal team (msp_dealteams entity)', async () => {
       crm.request.mockImplementation(async (path) => {
         if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
         if (path.startsWith('msp_engagementmilestones(')) {
@@ -1341,6 +1341,36 @@ describe('registerTools', () => {
         return { ok: true, status: 200, data: {} };
       });
       crm.requestAllPages.mockImplementation(async (entity) => {
+        if (entity === 'msp_dealteams') {
+          return { ok: true, status: 200, data: { value: [{ msp_dealteamid: 'dt-1' }] } };
+        }
+        return { ok: true, status: 200, data: { value: [] } };
+      });
+
+      const result = await callTool(server, 'update_milestone', {
+        milestoneId: MILESTONE_GUID,
+        monthlyUse: 1000
+      });
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.staged).toBe(true);
+    });
+
+    it('allows update via milestone-ownership fallback when msp_dealteams returns empty', async () => {
+      crm.request.mockImplementation(async (path) => {
+        if (path === 'WhoAmI') return { ok: true, status: 200, data: { UserId: 'abc-123' } };
+        if (path.startsWith('msp_engagementmilestones(')) {
+          return { ok: true, status: 200, data: makeMilestoneRecord({ _ownerid_value: 'other-user-id' }) };
+        }
+        if (path.startsWith('opportunities(')) {
+          return { ok: true, status: 200, data: { _ownerid_value: 'other-user-id' } };
+        }
+        return { ok: true, status: 200, data: {} };
+      });
+      crm.requestAllPages.mockImplementation(async (entity) => {
+        if (entity === 'msp_dealteams') {
+          return { ok: true, status: 200, data: { value: [] } };
+        }
         if (entity === 'msp_engagementmilestones') {
           return { ok: true, status: 200, data: { value: [{ msp_engagementmilestoneid: 'other-ms' }] } };
         }
@@ -1367,7 +1397,8 @@ describe('registerTools', () => {
         }
         return { ok: true, status: 200, data: {} };
       });
-      crm.requestAllPages.mockImplementation(async () => {
+      crm.requestAllPages.mockImplementation(async (entity) => {
+        // Both msp_dealteams and milestone-ownership fallback return empty
         return { ok: true, status: 200, data: { value: [] } };
       });
 

@@ -56,13 +56,15 @@ Here's what ships out of the box and what each piece does:
 │   ├── ... (19 more atomic skills)           ← See directory for full list
 │   └── _legacy/                              ← Archived monolithic role skills (reference only)
 ├── prompts/
-│   ├── prepare-meeting.prompt.md    ← Pre-populate meeting notes from vault + CRM
-│   ├── process-meeting-notes.prompt.md ← Structure raw notes into formatted vault entries
-│   ├── weekly-digest.prompt.md      ← Weekly summary across customers + CRM
+│   ├── meeting.prompt.md            ← Unified: prep before or process after (auto-detects)
+│   ├── weekly.prompt.md             ← Weekly review: Monday governance prep / Friday digest
+│   ├── account-review.prompt.md     ← Multi-signal account health check (GHCP + M365 + CRM)
+│   ├── portfolio-prioritization.prompt.md ← Rank accounts by GHCP growth potential
+│   ├── ghcp-activity-impact.prompt.md ← Correlate engagement with seat growth
 │   ├── project-status.prompt.md     ← Project status from vault + CRM validation
 │   ├── create-person.prompt.md      ← Create a People note from meeting context
 │   ├── sync-project-from-github.prompt.md ← Pull GitHub activity into vault
-│   ├── pbi-azure-portfolio-review.prompt.md ← Azure ACR vs budget + pipeline ranking
+│   ├── pbi-azure-all-in-one-review.prompt.md ← Azure ACR vs budget + pipeline ranking
 │   ├── pbi-ghcp-new-logo-incentive.prompt.md ← GHCP incentive eligibility tracker
 │   └── pbi-ghcp-seats-analysis.prompt.md ← GHCP seat opportunity + adoption review
 └── documents/                       ← Reference docs (never auto-loaded, read on demand)

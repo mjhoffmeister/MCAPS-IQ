@@ -138,9 +138,9 @@ const MILESTONE_STATUSES: PicklistOption[] = [
 
 const COMMITMENT_RECOMMENDATIONS: PicklistOption[] = [
   { label: 'Uncommitted', value: 861980000 },
-  { label: 'Committed', value: 861980001 },
-  { label: 'Best Case', value: 861980002 },
-  { label: 'Pipeline', value: 861980003 }
+  { label: 'Pipeline', value: 861980002 },
+  { label: 'Committed', value: 861980003 }
+  // Note: 861980001 (Best Case) exists in CRM history but is deprecated — API rejects writes.
 ];
 
 const MILESTONE_CATEGORIES: PicklistOption[] = [
@@ -436,21 +436,31 @@ function daysAgo(days: number): string {
 
 const ACTIVE_STATUSES = new Set(['Not Started', 'On Track', 'In Progress', 'Blocked', 'At Risk']);
 
+/** Map of all known commitment recommendation values (including deprecated). */
+const COMMITMENT_LABELS: Record<number, string> = {
+  861980000: 'Uncommitted',
+  861980001: 'Best Case',   // deprecated — API rejects writes, but legacy records may return this
+  861980002: 'Pipeline',
+  861980003: 'Committed'
+};
+
 /** Derive human-readable commitment label from a milestone record. */
 function commitmentLabel(m: Record<string, unknown>): string {
-  return m.msp_commitmentrecommendation === 861980003 ? 'Committed' : 'Uncommitted';
+  const val = m.msp_commitmentrecommendation as number | undefined;
+  return COMMITMENT_LABELS[val as number] ?? 'Uncommitted';
 }
 
 function buildMilestoneSummary(milestones: Record<string, unknown>[], crmBaseUrl: string | null) {
   const byStatus: Record<string, number> = {};
   const byOpportunity: Record<string, number> = {};
-  const byCommitment: Record<string, number> = { Committed: 0, Uncommitted: 0 };
+  const byCommitment: Record<string, number> = {};
   for (const m of milestones) {
     const status = fv(m, 'msp_milestonestatus') || 'Unknown';
     byStatus[status] = (byStatus[status] || 0) + 1;
     const opp = fv(m, '_msp_opportunityid_value') || 'Unknown';
     byOpportunity[opp] = (byOpportunity[opp] || 0) + 1;
-    byCommitment[commitmentLabel(m)] += 1;
+    const cl = commitmentLabel(m);
+    byCommitment[cl] = (byCommitment[cl] || 0) + 1;
   }
   return {
     count: milestones.length,
@@ -480,13 +490,14 @@ function buildMilestoneTriage(milestones: Record<string, unknown>[], crmBaseUrl:
   const soonStr = soon.toISOString().split('T')[0];
 
   const buckets: Record<string, Record<string, unknown>[]> = { overdue: [], due_soon: [], blocked: [], on_track: [] };
-  const summary: Record<string, unknown> = { total: milestones.length, overdue: 0, due_soon: 0, blocked: 0, on_track: 0, byCommitment: { Committed: 0, Uncommitted: 0 } as Record<string, number> };
+  const byCommitmentTriage: Record<string, number> = {};
+  const summary: Record<string, unknown> = { total: milestones.length, overdue: 0, due_soon: 0, blocked: 0, on_track: 0, byCommitment: byCommitmentTriage };
 
   for (const m of milestones) {
     const status = fv(m, 'msp_milestonestatus') || 'Unknown';
     const date = (m.msp_milestonedate as string) || null;
     const commitment = commitmentLabel(m);
-    (summary.byCommitment as Record<string, number>)[commitment] += 1;
+    byCommitmentTriage[commitment] = (byCommitmentTriage[commitment] || 0) + 1;
 
     const compact: Record<string, unknown> = {
       id: m.msp_engagementmilestoneid,
@@ -1584,15 +1595,30 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
           const isOppOwner = oppOwnerId === currentUserId;
 
           if (!isOppOwner) {
-            const teamCheck = await crmClient.requestAllPages('msp_engagementmilestones', {
+            // Check actual msp_dealteams entity for deal team membership
+            const dealTeamCheck = await crmClient.requestAllPages('msp_dealteams', {
               query: {
-                $filter: `_msp_opportunityid_value eq '${normalizeGuid(milestoneOppId)}' and _ownerid_value eq '${currentUserId}'`,
-                $select: 'msp_engagementmilestoneid',
+                $filter: `_msp_parentopportunityid_value eq '${normalizeGuid(milestoneOppId)}' and _msp_dealteamuserid_value eq '${currentUserId}' and statecode eq 0`,
+                $select: 'msp_dealteamid',
                 $top: '1'
               }
             });
-            const isOnDealTeam = teamCheck.ok && (teamCheck.data?.value?.length ?? 0) > 0;
+            const isOnDealTeam = dealTeamCheck.ok && (dealTeamCheck.data?.value?.length ?? 0) > 0;
+
+            // Fallback: check if user owns any milestones under this opportunity
+            let ownsMilestoneUnderOpp = false;
             if (!isOnDealTeam) {
+              const msOwnerCheck = await crmClient.requestAllPages('msp_engagementmilestones', {
+                query: {
+                  $filter: `_msp_opportunityid_value eq '${normalizeGuid(milestoneOppId)}' and _ownerid_value eq '${currentUserId}'`,
+                  $select: 'msp_engagementmilestoneid',
+                  $top: '1'
+                }
+              });
+              ownsMilestoneUnderOpp = msOwnerCheck.ok && (msOwnerCheck.data?.value?.length ?? 0) > 0;
+            }
+
+            if (!isOnDealTeam && !ownsMilestoneUnderOpp) {
               return error(
                 `Ownership check failed: milestone ${milestoneNumber || nid} ("${milestoneName || 'unknown'}") ` +
                 `under opportunity "${opportunityName || milestoneOppId}" is not owned by you and you are not on the deal team. ` +

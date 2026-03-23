@@ -1,12 +1,12 @@
 ---
 name: milestone-health-review
-description: 'Milestone health review for weekly governance: scans committed milestones for date drift, overdue completions, and stalled items. Produces customer-safe status bullets plus internal remediation queue. Chains with mcem-stage-identification and customer-evidence-pack for pre-governance prep. Triggers: weekly status, date drift, overdue milestones, governance cycle, customer status update, how are my milestones, milestone health, governance prep.'
-argument-hint: 'Scope by opportunityId(s) or run across all CSAM-governed committed work'
+description: 'Milestone health review for weekly governance: scans active milestones for date drift, overdue completions, and stalled items. Produces customer-safe status bullets plus internal remediation queue and uncommitted commit-readiness signals. Chains with mcem-stage-identification and customer-evidence-pack for pre-governance prep. Triggers: weekly status, date drift, overdue milestones, governance cycle, customer status update, how are my milestones, milestone health, governance prep.'
+argument-hint: 'Scope by opportunityId(s) or run across all CSAM-governed active milestones'
 ---
 
 ## Purpose
 
-Produces a structured health report for committed milestones within CSAM scope, flagging at-risk or blocked milestones that need recovery plans or escalation.
+Produces a structured health report for active milestones within CSAM scope, flagging at-risk or blocked milestones that need recovery plans or escalation, plus commitment-readiness guidance for uncommitted milestones.
 
 ## Freedom Level
 
@@ -43,10 +43,20 @@ Produces a structured health report for committed milestones within CSAM scope, 
 - Require explicit recovery owner + date before closing risk
 - Separate customer-facing summary from internal action items
 - Route technical blockers to CSA; route delivery/resourcing to partner/ISD
+- **Commit readiness signal** (for uncommitted milestones): Assess whether the milestone could be committed by evaluating:
+  - `msp_monthlyuse` = estimated **change** in monthly revenue (delta, not absolute). Is this delta realistic given execution state?
+  - Delivery evidence: tasks with owners, dates, and active progress
+  - Customer scope confirmation that maps to the revenue delta
+  - Label each uncommitted milestone: `Committable` / `Not yet committable` / `Needs review` with brief reasoning
+  - **CSU assignment**: When labeling `Committable`, resolve the CSA (preferred, if actively working the aligned project) or CSAM (fallback) from the opportunity deal team and include their name + email as the suggested assignee. If no CSU role on deal team, flag the gap.
+  - **CSU handoff required**: Note that commitment requires a handoff discussion with the receiving CSU role and their explicit confirmation — label cannot be `Committable` without this.
+  - Check vault `Reference/Milestone-Commitment-Rule.md` for the full commitment rule if available
+- **Committed milestone owner check**: For milestones already committed, verify the owner is a CSA or CSAM. If not, flag: "⚠ Committed but not assigned to CSU — reassign to [CSA/CSAM name]"
 
 ## Output Schema
 
 - `health_report`: milestone-level status with classification and reason
+- `commit_readiness`: for each uncommitted milestone — `Committable` / `Not yet committable` / `Needs review` with reasoning (based on revenue delta confidence)
 - `customer_summary`: customer-safe status bullets
 - `internal_summary`: action items with owners and dates
 - `dry_run_updates`: update/task preview payloads

@@ -10,9 +10,9 @@ Generate a project status summary by combining vault context with fresh CRM data
 
 ### Step 1 — Read Vault Context
 
-- `read_note` on `Projects/<Name>.md` → customer, type, priority, tech stack, open items, status.
-- `search_notes({ query: "<project name>" })` scoped to `Meetings/` → recent meetings referencing this project.
-- `read_multiple_notes` on the 3-5 most recent matches → extract activity, decisions, action items.
+- `oil:read_note({ path: "Projects/<Name>.md" })` → customer, type, priority, tech stack, open items, status.
+- `oil:search_vault({ query: "<project name>", filter_folder: "Meetings" })` → recent meetings referencing this project.
+- For the 3-5 most recent matches, call `oil:read_note({ path: "<match path>" })` individually → extract activity, decisions, action items.
 
 ### Step 2 — M365 Evidence via WorkIQ
 
@@ -44,9 +44,9 @@ Combine vault + WorkIQ + CRM data into a scannable status report. Show the sourc
 
 ### Step 5 — Update Vault
 
-Use `patch_note` to update `Projects/<Name>.md`:
-- Append the generated status summary under `## Status History` with today's date.
-- Update `status` frontmatter via `update_frontmatter` if it changed.
+Use `oil:patch_note` to update `Projects/<Name>.md`:
+- Append the generated status summary under `## Status History` with today's date: `oil:patch_note({ path: "Projects/<Name>.md", heading: "Status History", content: "...", operation: "prepend" })`.
+- If `status` frontmatter changed, use `oil:write_note` to update the full note (read first, merge, then write).
 
 ## Output Format
 

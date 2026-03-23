@@ -39,6 +39,8 @@ These work for any role:
 | Weekly pipeline review | `It's Monday — run my weekly pipeline review. What needs cleanup across my Stage 2 and 3 opps?` |
 | Check handoff readiness | `The Fabrikam AI Copilot deal just got customer agreement. Is it ready to hand off to CSU?` |
 | Plan a proof | `We need a POC plan for the Northwind opportunity. What should the proof cover and who owns what?` |
+| Prioritize accounts | `Rank my accounts by GHCP growth potential — where should I focus?` |
+| Full account review | `Run a full account review for Contoso — seats, engagement, and pipeline.` |
 
 ---
 
@@ -48,6 +50,9 @@ These work for any role:
 |----------|--------|
 | Daily task hygiene | `Run my daily task hygiene check — any stale tasks or missing owners on my active milestones?` |
 | Proof scoping | `The SE and Specialist need to align on success criteria for the Contoso pilot. Help us scope the proof plan.` |
+| Activity impact | `Did my VBDs with Contoso actually drive GHCP seat growth? Show me before/after data.` |
+| Meeting prep | `Prep me for the Contoso QBR tomorrow — pull context from vault and CRM.` |
+| Account health | `Run a full account review for Contoso — I need the health card and seat analysis.` |
 
 ---
 
@@ -80,6 +85,7 @@ These work for any role:
 
 | Scenario | Prompt |
 |----------|--------|
+| Meeting prep or notes | `Prep me for the meeting with Contoso tomorrow` or paste raw notes: `Process these meeting notes: ...` |
 | Stage identification | `What stage is the Contoso deal actually in? The CRM says Stage 3 but activity looks like Stage 2.` |
 | Exit criteria | `Are we ready to advance to Stage 4 on the Northwind opportunity? Check exit criteria.` |
 | Stage loopback | `The proof failed — customer environment wasn't ready. Should we loop back to Stage 2?` |

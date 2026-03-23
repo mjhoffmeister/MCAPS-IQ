@@ -68,6 +68,41 @@ The vault is the local context layer. CRM is system-of-record for live state.
 - Use `get_customer_context({ customer })` and/or `prepare_crm_prefetch({ customers })`.
 - Reuse GUIDs/TPIDs from vault instead of rediscovering through broad CRM search.
 
+### Vault Exhaustion Protocol (mandatory before live-system fallback)
+
+Before querying Teams, Outlook, CRM, or WorkIQ for data, exhaust the vault using this tiered search strategy. **Do not skip tiers** — a shallow `search_vault` miss does not mean the vault lacks the data.
+
+| Tier | Tool | What it finds | When to use |
+|---|---|---|---|
+| **1. Customer context** | `get_customer_context({ customer })` | Full note: opportunities, milestones, team, action items, connect hooks, agent insights, linked people, meetings | Always first for customer-scoped queries |
+| **2. Frontmatter query** | `query_notes({ where: { tags: "<topic>" }, folder: "Customers" })` | Notes matching structured metadata (tags, tpid, status, customer) | Cross-customer discovery ("which accounts have GHCP data?") |
+| **3. Vault search** | `search_vault({ query: "<terms>", filter_folder: "Customers" })` | Title, tag, heading, and body content matches (lexical + fuzzy) | Free-text search when customer name isn't known |
+| **4. Graph traversal** | `query_graph({ path: "<note>", direction: "neighborhood" })` | Related notes via wikilinks (2-hop) | Finding related context around a known note |
+| **5. Read specific note** | `read_note` on path from Tier 1–4 results | Full body content, sections, inline data | Deep-read when you know the note exists but need specific section content |
+
+**Escalation rule**: Only go to live systems (CRM, M365, WorkIQ) after Tiers 1–3 return no relevant results. If Tier 1 returns a customer context with the data you need, **stop** — do not also query CRM for the same data.
+
+**Common vault-miss patterns to avoid**:
+- Searching `search_vault("GHCP seats")` → no results → going to PBI. Fix: Tier 2 `query_notes({ where: { tags: "ghcp" } })` would find the note.
+- Searching `search_vault("contacts Contoso")` → no results → going to Teams. Fix: Tier 1 `get_customer_context({ customer: "Contoso" })` returns `linkedPeople` and `team`.
+- Searching for a person's email → going to Graph API. Fix: `get_person_context({ name })` returns cached `email` and `teamsId`.
+
+**Scalability note**: As the vault grows to dozens of accounts, prefer Tier 2 (`query_notes`) over Tier 3 (`search_vault`) for structured lookups. Frontmatter queries are O(n) on note count but filter precisely; fuzzy search can produce false positives at scale. Use `filter_folder` and `filter_tags` parameters to narrow scope.
+
+### Person / Entity Deep-Search Protocol
+
+When searching for a **person name**, **email**, or **entity reference** that may live inside note body content (table rows, inline mentions, team rosters), do not rely on a single tool call. Use this deterministic sweep:
+
+1. **`get_person_context({ name })`** — direct hit if a `People/<Name>.md` note exists.
+2. **`search_vault({ query: "<name>" })`** — searches titles, tags, headings, and body content. Use `tier: "lexical"` for exact-name matches; default fuzzy for partial/typo-tolerant matches.
+3. **`get_customer_context({ customer })`** — if you know which customer the person is associated with, check the `team` and `linkedPeople` fields directly.
+4. **`query_notes({ where: { tags: "contacts" } })`** — finds dedicated contact notes across the vault.
+5. **`read_note` on candidate paths** — if Tiers 1–4 identify a likely note but the person data is in a table row or inline section, read the full note to extract it.
+
+**Why this matters**: Even with body-content search, some entity references may span aliases, abbreviated names, or non-standard formatting. The multi-tool sweep ensures coverage regardless of how the data was originally authored.
+
+**Do not**: Skip to live systems (M365, CRM deal team lookups) after a single `search_vault` miss. Exhaust the vault sweep first.
+
 ### VAULT-CORRELATE
 
 - After M365/WorkIQ retrieval, run `resolve_people_to_customers` and `correlate_with_vault`.
