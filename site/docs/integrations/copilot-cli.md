@@ -14,49 +14,42 @@ tags:
 
 ## Install
 
-=== "macOS"
+### Option 1: Plugin Install (Recommended)
 
-    ```bash
-    brew install copilot-cli
-    ```
+Install MCAPS IQ as a Copilot CLI plugin — no cloning required:
 
-=== "npm"
+```bash
+copilot plugin install microsoft/MCAPS-IQ
+```
 
-    ```bash
-    npm install -g @github/copilot
-    ```
+This registers the MSX CRM MCP server, Power BI analytics, 43 skills, and 4 custom agents. The server builds automatically on first run.
 
-!!! info "License"
-    Included in Copilot Free, Pro, Pro+, Business, and Enterprise subscriptions.
+!!! note "Prerequisites"
+    - [Copilot CLI](https://docs.github.com/copilot/how-tos/set-up/install-copilot-cli) installed
+    - Node.js 20+
+    - Azure CLI signed in (`az login`) on VPN
 
----
+Manage your plugin:
 
-## Prerequisites
+```bash
+copilot plugin list              # Verify installation
+copilot plugin update mcaps-iq   # Update to latest
+copilot plugin uninstall mcaps-iq  # Remove
+```
 
-Same as the VS Code flow:
+!!! warning "VS Code-only features"
+    Some skills (e.g., `morning-brief`, `customer-evidence-pack`) depend on Calendar, Mail, and Teams MCP servers that are only available in VS Code. These skills gracefully skip those steps in CLI.
 
-- Azure CLI signed in (`az login`)
-- VPN connected
-- Dependencies installed (`npm install`)
+### Option 2: Run from Cloned Repo
 
----
-
-## How It Works
-
-Copilot CLI picks up the project configuration automatically when run from the repo root:
-
-- **MCP servers** — reads `.vscode/mcp.json`
-- **AGENTS.md** — loads agent instructions
-- **Skills & instructions** — same `.github/` files as VS Code
-
----
-
-## Run It
+If you've already cloned the repo for VS Code, Copilot CLI works from the same checkout:
 
 ```bash
 cd mcaps-iq
 copilot
 ```
+
+This picks up all configuration automatically — MCP servers from `.vscode/mcp.json`, agents, skills, and instructions.
 
 Built-in CLI commands:
 
