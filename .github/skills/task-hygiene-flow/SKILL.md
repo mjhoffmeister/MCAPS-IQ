@@ -37,13 +37,16 @@ Keeps milestone tasks current and actionable by detecting missing owners, stale 
 | Status current | Reflects actual progress | Flag for status refresh |
 | Blocker documented | If blocked, reason is stated | Flag for blocker text |
 | Completion condition | Clear done-criteria exist | Flag for criteria addition |
+| HoK legal coverage (HoK tasks only) | Legal agreement confirmed before execution | **Block task**; flag for legal coverage |
+| HoK environment tier (HoK tasks only) | Dev/Test/Prod explicitly classified | Flag for environment classification |
 
 ## Decision Logic
 
 - Prioritize tasks on near-term milestones (due within 30 days)
-- For uncommitted milestones: focus on BANT gap closure tasks
-- For committed milestones where SE influenced: ensure continuity until CSU execution is stable
+- For uncommitted milestones: focus on BANT gap closure tasks and HoK positioning tasks
+- For committed milestones where SE influenced: ensure continuity until CSU execution is stable; verify HoK artifacts are transferred
 - Skip milestones where SE has no active contribution
+- **HoK tasks**: If a task involves customer environment work, verify legal coverage status. Block execution tasks without confirmed legal coverage and chain to `hok-readiness-check`.
 
 ## Output Schema
 

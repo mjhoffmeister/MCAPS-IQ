@@ -35,6 +35,7 @@ Ensures clean STU→CSU handoff by validating that committed milestones have exp
 - [ ] What success looks like (measurable outcomes)
 - [ ] What was promised and explicitly out of scope
 - [ ] Proof artifacts and customer agreement evidence are findable
+- [ ] **HoK artifacts** (if HoK engagement occurred): legal coverage documentation, environment access details, work completed, environment tier, and any ongoing HoK commitments transferred to CSU
 - [ ] CSU-aligned owner assigned to each committed milestone
 - [ ] Next 2–3 actions are assigned and dated
 - [ ] Clear cadence: next meeting, stakeholders, escalation path

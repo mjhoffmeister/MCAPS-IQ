@@ -34,6 +34,12 @@ Own **pipeline creation and progression** through MCEM Stages 2–3 for the solu
 5. Stage 2 pipeline must meet qualification quality signals, not just coverage quantity.
 6. Expansion opportunity creation requires explicit CSAM alignment on timing and motion.
 
+### Exclusive Ownership (Specialist-only actions)
+- **`create_milestone`** — Specialist is the only role that creates milestones. Other roles must flag gaps to Specialist.
+- **Opportunity field updates** (stage, close date, revenue, monthly use) — Specialist-owned.
+- **Milestone structure changes** (name, date, monthlyUse, workload, commitment) — Specialist-owned (CSAM co-owns in Stage 4-5).
+- See `msx-role-and-write-gate.instructions.md` §2a for the full Role-Action Authority Matrix.
+
 ## Cross-Role Skill Lens
 
 When running shared skills, apply this Specialist focus:

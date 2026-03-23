@@ -13,6 +13,8 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 | **Committed**   | Customer agreement + internal readiness for execution (`msp_commitmentrecommendation = 861980003`)                                                                     |
 | **Stage 1–5**  | MCEM stages: Listen & Consult → Inspire & Design → Empower & Achieve → Realize Value → Manage & Optimize                                                             |
 | **EDE**         | Enhanced Designated Engineer — a dedicated technical resource aligned to a Unified Support package and customer TPID. Tracked in vault `## Unified Coverage`, not CRM |
+| **HoK**         | Hands-on-Keyboard — SE-led hands-on work in customer development, test, or production environments to accelerate cloud consumption. Legal coverage required before execution. |
+| **Cusp Customer** | A customer where HoK next steps are uncertain — interested but not committed to environment access, or stalled technical progression with ambiguous follow-through. Requires leadership discussion. |
 | **Swarming**    | Cross-role collaboration on adjacent pipeline within the same account — working opportunities outside your direct assignment to bring full account value                |
 
 ## Opportunity Identifier Discipline

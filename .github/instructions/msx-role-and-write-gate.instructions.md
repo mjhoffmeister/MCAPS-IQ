@@ -41,8 +41,30 @@ Before calling any CRM read tool that may return large result sets (especially `
   - escalation triggers.
 - If a requested action conflicts with the selected role boundary, call out the conflict and propose the correct owner/route.
 
+## 2a) Role-Action Authority Matrix (Mandatory pre-write check)
+
+Before proposing or executing **any** write-intent action, check this matrix. If the active role is not in the **Allowed Roles** column, **STOP** — do not propose the action. Instead, name the correct role and suggest the user coordinate with that person.
+
+| Action | Allowed Roles | Blocked Roles (must redirect) |
+|---|---|---|
+| `create_milestone` | **Specialist** | SE, CSA, CSAM — redirect to Specialist |
+| `update_milestone` (structure: name, date, monthlyUse, workload, commitment) | **Specialist**, **CSAM** (Stage 4-5 only) | SE, CSA — redirect to Specialist/CSAM |
+| `update_milestone` (status only: On Track/At Risk/Blocked) | **Specialist**, **CSAM**, **CSA** | SE — can flag but redirect status update to milestone owner |
+| `create_task` | **All roles** (on milestones they touch) | — |
+| `update_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
+| `close_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
+| Opportunity field updates (stage, close date, revenue) | **Specialist** | SE, CSA, CSAM — redirect to Specialist |
+| Deal team membership | **Specialist**, **self-add by any role** | — |
+
+**Enforcement rule**: When the agent detects a gap (e.g., "this milestone has no tasks"), the recommendation must respect the matrix:
+- If the gap is a missing **milestone** → recommend the user flag it to their **Specialist**, not create it themselves.
+- If the gap is a missing **task** on an existing milestone → the active role may create it (if they touch that milestone).
+- If the gap is a stale **opportunity field** → recommend the user flag it to their **Specialist**.
+
 ## 3) Mandatory Plan Mode for Write-Intent Actions
-Before calling any write-intent tool (`create_task`, `update_task`, `close_task`, `create_milestone`, `update_milestone`), always run a confirmation step.
+Before calling any write-intent tool (`create_task`, `update_task`, `close_task`, `create_milestone`, `update_milestone`), always:
+1. **Check §2a Role-Action Authority Matrix** — confirm the active role is allowed. If not, STOP and redirect.
+2. Run a confirmation step.
 
 ### 3a) Picklist Field Mapping (Required for `create_milestone` and `update_milestone`)
 Before building the confirmation packet for milestone create/update operations:

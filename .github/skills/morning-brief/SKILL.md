@@ -77,6 +77,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 - Meeting today + associated opportunity has overdue tasks → promote to 🔴
 - Vault risk flag + no recent CRM activity → promote to 🟡 with "silent risk" label
 - CRM milestone committed + no recent customer communication → flag as communication gap
+- **SE role + HoK**: Opportunities with no HoK positioning → promote to 🟡 with "HoK not positioned" label. HoK tasks without legal coverage → promote to 🔴 with "legal gate missing" label. Cusp customers (uncertain next steps) → surface in Gaps & Risks with leadership escalation note.
 
 ## Output Schema
 
@@ -104,6 +105,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 - **At-risk milestones**: {count} — {names}
 - **Overdue tasks**: {count}
 - **Upcoming commits**: {milestones due <30 days}
+- **HoK status** (SE role): {active_hok_count} active | {positioned_count} positioned | {not_positioned_count} not yet positioned | {cusp_count} cusp customers
 
 ## Gaps & Risks
 - {risk}: {evidence} → {role to act} | {minimum intervention}
@@ -114,7 +116,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 - `meetings_today`: structured meeting list with prep context
 - `pipeline_snapshot`: summary counts and at-risk items
 - `gaps_and_risks`: proactive risk flags with evidence
-- `next_action`: "Morning brief complete. Drill into any item, or run `pipeline-hygiene-triage` for full portfolio cleanup."
+- `next_action`: "Morning brief complete. Drill into any item, or run `pipeline-hygiene-triage` for full portfolio cleanup." | SE role: "Morning brief complete. {cusp_count} cusp customers flagged — run `hok-readiness-check` for HoK portfolio review, or drill into any item."
 - `connect_hook_hint`: Impact Area(s): Culture & Collaboration — "Morning brief synthesized {n} items across {mediums_count} mediums — {act_now_count} requiring immediate action, {today_count} for today"
 
 ## Customization
