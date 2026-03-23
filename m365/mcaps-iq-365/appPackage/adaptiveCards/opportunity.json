@@ -1,0 +1,78 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "$data": "${$root}",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "**Opp # ${if(opportunityNumber, opportunityNumber, 'N/A')}**",
+                  "wrap": true,
+                  "size": "Medium",
+                  "weight": "Bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${if(name, name, 'Unnamed Opportunity')}",
+                  "wrap": true,
+                  "spacing": "Small"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "${if(stage, stage, 'Unknown')}",
+                  "wrap": true,
+                  "weight": "Bolder",
+                  "color": "Accent"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Est. Close Date",
+              "value": "${if(estimatedCloseDate, estimatedCloseDate, 'Unknown')}"
+            },
+            {
+              "title": "Health/Risk",
+              "value": "${if(healthRisk, healthRisk, 'Unknown')}"
+            },
+            {
+              "title": "Relationship",
+              "value": "${if(relationship, relationship, 'Unknown')}"
+            },
+            {
+              "title": "Next Step",
+              "value": "${if(nextStep, nextStep, 'None specified')}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Open in CRM",
+      "url": "${recordUrl}"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "$data": "${$root}",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "**Staged Operation: ${if(operationType, operationType, 'Unknown')}**",
+          "wrap": true,
+          "size": "Medium",
+          "weight": "Bolder"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${if(summary, summary, 'No summary available')}",
+          "wrap": true,
+          "spacing": "Small"
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            {
+              "title": "Operation ID",
+              "value": "${if(operationId, operationId, 'N/A')}"
+            },
+            {
+              "title": "Entity Type",
+              "value": "${if(entityType, entityType, 'Unknown')}"
+            },
+            {
+              "title": "Target ID",
+              "value": "${if(targetId, targetId, 'New record')}"
+            },
+            {
+              "title": "Status",
+              "value": "${if(staged, 'Pending Approval', 'Executed')}"
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "**Proposed Changes:**",
+          "wrap": true,
+          "spacing": "Medium",
+          "weight": "Bolder"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${if(proposedChanges, proposedChanges, 'No changes specified')}",
+          "wrap": true,
+          "spacing": "Small"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Approve",
+      "data": {
+        "action": "execute",
+        "operationId": "${operationId}"
+      },
+      "style": "positive"
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Reject",
+      "data": {
+        "action": "cancel",
+        "operationId": "${operationId}"
+      },
+      "style": "destructive"
+    }
+  ]
+}

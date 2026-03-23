@@ -1,15 +1,15 @@
 {
 	"servers": {
 		
-		"workiq": {
-			"command": "npx",
-			"args": [
-				"-y",
-				"@microsoft/workiq@0.4.0",
-				"mcp"
-			],
-			"type": "stdio"
-		},
+		// "workiq": {
+		// 	"command": "npx",
+		// 	"args": [
+		// 		"-y",
+		// 		"@microsoft/workiq@0.4.0",
+		// 		"mcp"
+		// 	],
+		// 	"type": "stdio"
+		// },
 		"msx-crm": {
 			"type": "stdio",
 			"command": "node",
@@ -61,6 +61,11 @@
 		"github": {
 			"type": "http",
 			"url": "https://api.githubcopilot.com/mcp/"
+		},
+		"workiq": {
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_M365Copilot",
+			"headers": {},
 		},
 		"calendar": {
 			"type": "http",

@@ -12,11 +12,21 @@ tools:
   - todo
   - agent
   # MCP servers
-  - "msx-crm/*"
-  - "oil/*"
-  - "excalidraw/*"
-  - "workiq/*"
-  - m365-actions
+  - msx-crm/*
+  - oil/*
+  - excalidraw/*
+  - workiq/*
+
+handoffs: 
+  - label: M365 Write Operations
+    agent: m365-actions
+    prompt: "Delegate Microsoft 365 write operation (Teams message, calendar event, email) to the m365-actions subagent. Provide resolved UPNs when available."
+    send: true
+
+  - label: Power BI Analysis
+    agent: pbi-analyst
+    prompt: "Delegate medium/heavy Power BI analysis tasks to the pbi-analyst subagent. Return only the rendered report output."
+    send: true
 
 
 ---
