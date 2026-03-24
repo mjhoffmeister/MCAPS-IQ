@@ -9,6 +9,12 @@
 
 MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 data. Instead of clicking through MSX screens, you describe what you need in the Copilot chat window and the tools handle it.
 
+> **Copilot CLI plugin quick install:**`copilot plugin install microsoft/MCAPS-IQ`
+
+> [!TIP]
+> **Best experience:** Use VS Code Copilot Chat with this repository checked out locally. Plugin deployment for Copilot CLI is supported, but it is not the ideal default because it does not include this repo's `.github/prompts/` and `.github/instructions/` files. For power users, Copilot CLI + the `mcaps-iq` plugin is still a great terminal-first pattern.
+>
+
 - **Read your pipeline** — look up opportunities, milestones, tasks, and ownership
 - **Update CRM records** — create tasks, close milestones, update statuses (always asks before writing)
 - **Search M365** — find Teams chats, meeting transcripts, emails, and documents
@@ -95,7 +101,11 @@ copilot plugin install microsoft/MCAPS-IQ
 
 **Prerequisites:** Node.js 20+, [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli), `az login` on VPN.
 
-This gives you the MSX CRM MCP server (27 tools) and Power BI analytics. Skills and agents from the repo are included, though some workflows (e.g., `morning-brief`) depend on additional MCP servers (WorkIQ, Calendar, Mail) that are only available in VS Code.
+Plugin deployment is **supported** and gives you the MSX CRM MCP server (27 tools) and Power BI analytics. It is best for terminal-first power users.
+
+For most users, VS Code Copilot Chat is the better default because plugin deployment does not include this repo's `.github/prompts/` and `.github/instructions/` files.
+
+Skills and agents from the repo are included, though some workflows (e.g., `morning-brief`) depend on additional MCP servers (WorkIQ, Calendar, Mail) that are only available in VS Code.
 
 ---
 
@@ -127,7 +137,8 @@ See [all scenario prompts by role →](site/docs/prompts/scenario-prompts.md)
 ## Guided Flows (Slash Commands)
 
 Type `/` in the Copilot chat panel and pick a flow. Each one detects your role and tailors the experience.
-*Note: Accessing prompts stored in the .github/prompts directory through `/` only works for VS Code Copilot Chat experience. For GitHub Copilot CLI, try just describing the prompt. `/getting-started` --> 'Help me get this environment set up'"*
+
+> Note: Accessing prompts stored in `.github/prompts` through `/` only works in VS Code Copilot Chat. In GitHub Copilot CLI, describe the flow in natural language (for example: "Help me get this environment set up").
 
 | Command              | When to use             | What it does                                                              |
 | -------------------- | ----------------------- | ------------------------------------------------------------------------- |
@@ -167,15 +178,15 @@ See [Write Operations &amp; Safety](site/docs/architecture/safety.md) for full d
 
 ## Go Deeper
 
-| Topic                               | Link                                              |
-| ----------------------------------- | ------------------------------------------------- |
-| All scenario prompts by role        | [site/docs/prompts/scenario-prompts.md](site/docs/prompts/scenario-prompts.md) |
-| `mcaps` command & Copilot CLI       | [site/docs/integrations/copilot-cli.md](site/docs/integrations/copilot-cli.md)           |
-| Obsidian vault integration          | [site/docs/integrations/obsidian.md](site/docs/integrations/obsidian.md)     |
-| Power BI analytics                  | [site/docs/integrations/powerbi.md](site/docs/integrations/powerbi.md)       |
-| Customization guide                 | [site/docs/customization/index.md](site/docs/customization/index.md)       |
-| Architecture, tools & internals     | [site/docs/architecture/index.md](site/docs/architecture/index.md)         |
-| FAQ                                 | [site/docs/faq/index.md](site/docs/faq/index.md)                           |
+| Topic                           | Link                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| All scenario prompts by role    | [site/docs/prompts/scenario-prompts.md](site/docs/prompts/scenario-prompts.md) |
+| `mcaps` command & Copilot CLI | [site/docs/integrations/copilot-cli.md](site/docs/integrations/copilot-cli.md) |
+| Obsidian vault integration      | [site/docs/integrations/obsidian.md](site/docs/integrations/obsidian.md)       |
+| Power BI analytics              | [site/docs/integrations/powerbi.md](site/docs/integrations/powerbi.md)         |
+| Customization guide             | [site/docs/customization/index.md](site/docs/customization/index.md)           |
+| Architecture, tools & internals | [site/docs/architecture/index.md](site/docs/architecture/index.md)             |
+| FAQ                             | [site/docs/faq/index.md](site/docs/faq/index.md)                               |
 
 ---
 

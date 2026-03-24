@@ -1,4 +1,11 @@
 {
+	"inputs": [
+		{
+			"id": "vault_path",
+			"type": "promptString",
+			"description": "Absolute path to your Obsidian vault",
+		}
+	],
 	"servers": {
 		"workiq": {
 			"type": "stdio",
@@ -7,38 +14,40 @@
 		},
 		"msx-crm": {
 			"type": "stdio",
-			"command": "node",
-			"args": ["scripts/msx-start.js"]
-		},
-		"powerbi-remote": {
-            "type": "http",
-            "url": "https://api.fabric.microsoft.com/v1/mcp/powerbi"
-        },
-		"ado": {
-			"type": "stdio",
 			"command": "npx",
-			"args": [
-				"-y",
-				"@azure-devops/mcp",
-				"${input:ado_org}",
-				"-d",	
-				"core",
-				"work",
-				"work-items",
-				"repositories",
-				"pipelines"
-			]
-		},	
-		// Obsidian Intelligence Layer (OIL) — knowledge layer MCP server
-		// Subtree: mcp/oil (https://github.com/JinLee794/Obsidian-Intelligence-Layer)
-		// Setup: npm install
-		// Vault path loaded from .env (created during `npm install` / `node scripts/init.js`).
-		// If not configured, workflows fall back to stateless CRM-only operation.
+			"args": ["-y", "--registry", "https://npm.pkg.github.com", "@microsoft/msx-mcp-server@latest"]
+		},
+		// Obsidian Intelligence Layer (OIL) MCP — provides knowledge layer capabilities for AI agents, built on top of Obsidian vaults.
 		"oil": {
 			"type": "stdio",
-			"command": "node",
-			"args": ["scripts/oil-start.js"]
+			"command": "npx",
+			"args": ["-y", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
+			"env": {
+				"OBSIDIAN_VAULT_PATH": "${input:vault_path}"
+			}
 		},
+		// // Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
+		// // Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
+		// "github": {
+		// 	"type": "http",
+		// 	"url": "https://api.githubcopilot.com/mcp/"
+		// },
+		
+		// "ado": {
+		// 	"type": "stdio",
+		// 	"command": "npx",
+		// 	"args": [
+		// 		"-y",
+		// 		"@azure-devops/mcp",
+		// 		"${input:ado_org}",
+		// 		"-d",	
+		// 		"core",
+		// 		"work",
+		// 		"work-items",
+		// 		"repositories",
+		// 		"pipelines"
+		// 	]
+		// },	
 
 		// // Excalidraw MCP — create, manage, and render Excalidraw diagrams as SVG
 		// "excalidraw": {
@@ -50,12 +59,10 @@
 		// 	}
 		// },
 
-		// // Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
-		// // Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
-		// "github": {
-		// 	"type": "http",
-		// 	"url": "https://api.githubcopilot.com/mcp/"
-		// },
+		"powerbi-remote": {
+            "type": "http",
+            "url": "https://api.fabric.microsoft.com/v1/mcp/powerbi"
+        },
 		"calendar": {
 			"type": "http",
 			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_CalendarTools",

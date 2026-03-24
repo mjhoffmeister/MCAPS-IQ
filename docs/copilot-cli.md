@@ -2,6 +2,17 @@
 
 [GitHub Copilot CLI](https://github.com/features/copilot/cli/) is a terminal-native agentic coding agent that supports MCP servers, custom agents, and skills — the same ones in this repo. You can run the full MCAPS toolkit from your shell without opening VS Code.
 
+## Install MCAPS IQ Plugin
+
+Install the plugin directly from GitHub:
+
+```bash
+copilot plugin install microsoft/MCAPS-IQ
+```
+
+Plugin deployment is supported and works well for terminal-first power users.
+For the best overall guided experience, use VS Code Copilot Chat with this repo checked out locally.
+
 ## Install Copilot CLI
 
 ```bash

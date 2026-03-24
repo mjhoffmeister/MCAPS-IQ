@@ -28,12 +28,18 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["mcp", "dynamics365", "crm", "msx"],
+  "keywords": [
+    "mcp",
+    "dynamics365",
+    "crm",
+    "msx"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.1",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "zod": "^3.23.0"
   },

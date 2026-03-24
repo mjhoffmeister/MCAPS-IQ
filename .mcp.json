@@ -1,15 +1,15 @@
 {
   "mcpServers": {
-    "msx-crm": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["scripts/msx-start.js"]
-    },
-    "oil": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["scripts/oil-start.js"]
-    },
+	"msx-crm": {
+		"type": "stdio",
+		"command": "npx",
+		"args": ["-y", "--registry", "https://npm.pkg.github.com", "@microsoft/msx-mcp-server@latest"]
+	},
+	"oil": {
+		"type": "stdio",
+		"command": "npx",
+		"args": ["-y", "--registry", "https://npm.pkg.github.com", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"]
+	},
     "workiq": {
       "type": "stdio",
       "command": "npx",

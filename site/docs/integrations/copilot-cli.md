@@ -10,11 +10,17 @@ tags:
 
 [GitHub Copilot CLI](https://github.com/features/copilot/cli/) runs the same MCP tools, agents, and skills directly in your terminal — no VS Code required.
 
+For the best overall experience, we recommend using VS Code Copilot Chat with this repository checked out locally.
+
+Plugin deployment in Copilot CLI is fully supported, but it is not the ideal default for most users because it does not include this repo's `.github/prompts/` and `.github/instructions/` files.
+
+That said, Copilot CLI + the `mcaps-iq` plugin is a great power-user pattern for terminal-first workflows.
+
 ---
 
 ## Install
 
-### Option 1: Plugin Install (Recommended)
+### Option 1: Plugin Install (Supported, Power-User Friendly)
 
 Install MCAPS IQ as a Copilot CLI plugin — no cloning required:
 
@@ -23,6 +29,9 @@ copilot plugin install microsoft/MCAPS-IQ
 ```
 
 This registers the MSX CRM MCP server, Power BI analytics, 43 skills, and 4 custom agents. The server builds automatically on first run.
+
+!!! warning "Plugin tradeoff"
+    Plugin deployment currently does not include this repo's `.github/prompts/` and `.github/instructions/` files. If you want the most complete guided experience, use VS Code Copilot Chat (or run Copilot CLI from a local clone via Option 2).
 
 !!! note "Prerequisites"
     - [Copilot CLI](https://docs.github.com/copilot/how-tos/set-up/install-copilot-cli) installed

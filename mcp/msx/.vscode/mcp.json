@@ -1,5 +1,9 @@
 {
     "servers": {
-
+        "msx-crm": {
+            "type": "stdio",
+            "command": "node",
+            "args": ["${workspaceFolder}/dist/index.js"]
+        }
     }
 }

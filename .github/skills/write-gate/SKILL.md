@@ -1,6 +1,6 @@
 ---
 name: write-gate
-description: "MSX Role Mapping + Write Confirmation Gate. Enforces role mapping from CRM user profile and human-in-the-loop confirmation before write operations. Triggers: CRM write, create task, update task, close task, create milestone, update milestone, write confirmation, role authority, role mapping, picklist field mapping."
+description: "MSX Role Mapping + Write Confirmation Gate. Enforces role mapping from CRM user profile and human-in-the-loop confirmation before write operations. Triggers: CRM write, create task, update task, close task, create milestone, update milestone, manage deal team, staged operation, staged changes, pending operations, execute operation, execute all, write confirmation, role authority, role mapping, picklist field mapping."
 ---
 
 # MSX Role Mapping + Write Confirmation Gate
@@ -68,6 +68,13 @@ Rules:
 - Do not perform write-intent calls in the same response that first proposes changes.
 - If any identity field is missing, stop and ask for it.
 - For multi-record changes, list each record and require approval for the full set.
+
+### Staged response rendering (mandatory)
+When a write-intent tool returns a staged operation:
+- Show the staged summary to the user, including current state, proposed change, and record link(s).
+- Include the operation ID and ask explicitly for approval (`approve` / `revise`).
+- Do not collapse the staged output into a one-line summary.
+- If more than one operation is staged, call `list_pending_operations` and present each pending diff before asking for approval.
 
 ## 4) Safety and Auditability
 - Re-state identifiers before executing write-intent operations.

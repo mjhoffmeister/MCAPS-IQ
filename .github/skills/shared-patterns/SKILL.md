@@ -36,9 +36,18 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 ## Runtime Contract
 
 - **Read tools are live**: `msx-crm:crm_auth_status`, `msx-crm:crm_whoami`, `msx-crm:get_my_active_opportunities`, `msx-crm:list_accounts_by_tpid`, `msx-crm:list_opportunities`, `msx-crm:get_milestones`, `msx-crm:get_milestone_activities`, `msx-crm:crm_get_record`, `msx-crm:crm_query`, `msx-crm:get_task_status_options`.
-- **Write-intent tools are dry-run**: `msx-crm:create_task`, `msx-crm:update_task`, `msx-crm:close_task`, `msx-crm:update_milestone` return `mock: true` preview payloads.
-- **No approval-execution tools exposed yet**: treat write outputs as recommended operations pending future staged execution.
-- Follow the `write-gate` skill for mandatory human confirmation before any write-intent operation.
+- **Write-intent tools are staged (not immediate writes)**: `msx-crm:create_task`, `msx-crm:update_task`, `msx-crm:close_task`, `msx-crm:create_milestone`, `msx-crm:update_milestone`, `msx-crm:manage_deal_team`, `msx-crm:manage_milestone_team` return staged operations with `staged: true` and an `operationId`.
+- **Approval-execution tools are live**: `msx-crm:list_pending_operations`, `msx-crm:view_staged_changes_diff`, `msx-crm:execute_operation`, `msx-crm:execute_all`, `msx-crm:cancel_operation`, `msx-crm:cancel_all`.
+- Follow the `write-gate` skill for mandatory human confirmation before calling any execute tool.
+
+### Staged Write Presentation Contract (CLI + Plugin)
+
+When a staged write response is returned, the agent MUST:
+1. Show the staged summary to the user (including before/after values and record links).
+2. Preserve the operation ID exactly (`OP-*`) and repeat it in the approval prompt.
+3. Ask for explicit approval (`approve` / `revise`) before any execution call.
+4. Never auto-call `execute_operation` in the same response that staged the change.
+5. For multiple pending writes, call `list_pending_operations` and present every operation's diff before asking for approval.
 
 ## Upfront Scoping Pattern
 
