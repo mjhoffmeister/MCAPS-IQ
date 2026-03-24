@@ -1,5 +1,8 @@
 node_modules/
 .beads
+# Auth token cache (contains refresh tokens — never commit)
+.auth-cache/
+
 # Logs
 *.log
 *.bak

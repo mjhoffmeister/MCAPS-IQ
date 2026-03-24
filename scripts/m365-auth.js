@@ -18,6 +18,10 @@
  *
  * Token cache: <repo-root>/.auth-cache/m365-tokens.json (gitignored)
  * The cache stores refresh tokens so subsequent startups are silent.
+ *
+ * Security note: On Windows, POSIX file modes (0o600) are not enforced by NTFS.
+ * The .auth-cache directory is gitignored to prevent credential leaks, but the
+ * token file is accessible to any process running as the same Windows user.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
@@ -36,7 +40,7 @@ function getAuthority(tenant) {
   return `https://login.microsoftonline.com/${tenant}/oauth2/v2.0`;
 }
 
-// ── All known agent365 scopes ──────────────────────────────────────
+// —— All known agent365 scopes ——————————————————————————
 // Requesting all at once so the user authenticates only once.
 const ALL_M365_SCOPES = [
   "https://agent365.svc.cloud.microsoft/McpServers.Calendar.All",
@@ -52,7 +56,7 @@ function log(msg) {
   process.stderr.write(`[m365-auth] ${msg}\n`);
 }
 
-// ── Cache operations ───────────────────────────────────────────────
+// —— Cache operations ———————————————————————————————————
 function readCache() {
   try {
     if (existsSync(CACHE_FILE)) {
@@ -64,6 +68,9 @@ function readCache() {
 
 function writeCache(data) {
   mkdirSync(CACHE_DIR, { recursive: true });
+  // Note: mode 0o600 is best-effort. On Windows/NTFS it is not enforced —
+  // the file is protected only by the user's Windows profile ACLs.
+  // The .auth-cache directory is gitignored to prevent credential leaks.
   writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), { mode: 0o600 });
 }
 
@@ -74,7 +81,7 @@ function clearCache() {
   } catch { /* ignore */ }
 }
 
-// ── Token refresh via refresh_token grant ──────────────────────────
+// —— Token refresh via refresh_token grant ——————————————
 async function refreshToken(cache, tenant) {
   const authority = getAuthority(tenant);
   const body = new URLSearchParams({
@@ -111,7 +118,7 @@ async function refreshToken(cache, tenant) {
   return newCache.access_token;
 }
 
-// ── Device code flow (interactive) ─────────────────────────────────
+// —— Device code flow (interactive) —————————————————————
 async function deviceCodeLogin(tenant) {
   const authority = getAuthority(tenant);
 
@@ -137,7 +144,7 @@ async function deviceCodeLogin(tenant) {
 
   // Show user instructions on stderr (doesn't interfere with stdio MCP transport)
   log("");
-  log("═══════════════════════════════════════════════════════════════");
+  log("════════════════════════════════════════════════════════════════");
   log("  M365 Authentication Required");
   log("");
   log(`  1. Open: ${verification_uri}`);
@@ -145,7 +152,7 @@ async function deviceCodeLogin(tenant) {
   log(`  3. Sign in with your Microsoft account`);
   log("");
   log("  Waiting for authentication...");
-  log("═══════════════════════════════════════════════════════════════");
+  log("════════════════════════════════════════════════════════════════");
   log("");
 
   // Step 2: Poll for token
@@ -196,7 +203,7 @@ async function deviceCodeLogin(tenant) {
   throw new Error("Device code login timed out. Please try again.");
 }
 
-// ── Public API ─────────────────────────────────────────────────────
+// —— Public API —————————————————————————————————————————
 
 /**
  * Get a valid access token for agent365 M365 MCP servers.
@@ -238,7 +245,7 @@ export async function getM365Token(options = {}) {
   return await deviceCodeLogin(tenant);
 }
 
-// ── CLI interface ──────────────────────────────────────────────────
+// —— CLI interface ——————————————————————————————————————
 const isMain = process.argv[1] &&
   resolve(process.argv[1]) === resolve(import.meta.filename);
 

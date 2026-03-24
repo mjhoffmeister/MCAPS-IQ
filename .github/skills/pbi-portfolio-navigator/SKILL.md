@@ -1,6 +1,6 @@
 ---
 name: pbi-portfolio-navigator
-description: 'Power BI report router: detects which PBI report a user is asking about and routes to the correct pre-configured prompt, or guides discovery when the report is unclear. Matches natural-language phrases (e.g., "azure all in one", "customer incidents", "GHCP new logo", "service deep dive") to existing pbi-*.prompt.md files. Falls back to pbi-prompt-builder when no match exists. Triggers: PBI report, Power BI report, azure all in one, all-in-one, AIO, customer incidents, outages, CMI, GHCP, new logo incentive, service deep dive, SL5, ACR by service, which PBI report, what reports, show me reports, consumption report, portfolio report, pipeline report, run PBI prompt, open PBI prompt.'
+description: 'Power BI report router: detects which PBI report a user is asking about and routes to the correct pre-configured prompt, or guides discovery when the report is unclear. Matches natural-language phrases (e.g., "azure all in one", "customer incidents", "GHCP new logo", "service deep dive", "SE productivity") to existing pbi-*.prompt.md files. Falls back to pbi-prompt-builder when no match exists. Triggers: PBI report, Power BI report, azure all in one, all-in-one, AIO, customer incidents, outages, CMI, GHCP, new logo incentive, service deep dive, SL5, ACR by service, SE productivity, SE scorecard, seller productivity, which PBI report, what reports, show me reports, consumption report, portfolio report, pipeline report, run PBI prompt, open PBI prompt.'
 argument-hint: 'Describe what you want to analyze or name the Power BI report'
 ---
 
@@ -26,6 +26,7 @@ Routes user queries about Power BI reports to the correct pre-configured `pbi-*.
 | `cmi` | customer incidents, outages, CMI, CritSit, escalations, incident review, reactive support, AA&MSXI | `pbi-customer-incident-review.prompt.md` | AA&MSXI (CMI) | Active incidents, escalations, outage trends, reactive support health |
 | `cxo` | CXObserve, CXP, support experience, customer health, customer support review, support overview, TPID lookup, account support, customer experience | `pbi-cxobserve-account-review.prompt.md` | AA&MSXI (CMI) | Single-customer support experience: health scorecard, active incidents, escalations, satisfaction, trends — CXObserve portal equivalent |
 | `ghcp` | GHCP, new logo, new logo incentive, growth incentive, GHCP new logo | `pbi-ghcp-new-logo-incentive.prompt.md` | MSXI (DIM_GHCP_Initiative) | Account eligibility, qualifying status, realized ACR against thresholds |
+| `sep` | SE productivity, seller productivity, my SE metrics, SE scorecard, SE review, SE performance, how am I doing, individual seller review, HoK activity count, milestones engaged, committed pipe engaged | `pbi-se-productivity-review.prompt.md` | Azure Individual Seller Productivity FY26 | SE scorecard, HoK activities, customer coverage, milestone detail, engagement velocity |
 
 ## Routing Flow
 
@@ -40,6 +41,7 @@ Extract the user's intent and compare against the **Aliases** column above. Matc
    - "CXObserve for TPID 12345" or "support experience for Contoso" → `cxo`
    - "Which services are growing?" → `sl5`
    - "Am I qualifying for the growth incentive?" → `ghcp`
+   - "How am I doing?" or "SE scorecard" or "my productivity" → `sep`
 3. **Ambiguous or partial match** → present the top 1–2 candidates with a one-line description and ask the user to confirm.
 4. **No match** → go to Step 2.
 
@@ -56,12 +58,13 @@ If no alias or question matches, present the full catalog:
 > | 3 | **Customer Incidents (CMI)** — outages, CritSits, reactive support | `cmi` |
 > | 4 | **CXObserve Account Review** — single-customer support experience (health, incidents, escalations, satisfaction, trends) | `cxo` |
 > | 5 | **GHCP New Logo Incentive** — account eligibility & qualifying status | `ghcp` |
-> | 6 | **None of these** — help me build a new one |
+> | 6 | **SE Productivity** — SE scorecard, HoK activities, customer coverage, milestones (SE role) | `sep` |
+> | 7 | **None of these** — help me build a new one |
 >
 > Which one are you looking for? (pick a number or describe your question)
 
-- If user picks 1–5 → route to the prompt.
-- If user picks 6 or describes something not in the catalog → chain to `pbi-prompt-builder` skill.
+- If user picks 1–6 → route to the prompt.
+- If user picks 7 or describes something not in the catalog → chain to `pbi-prompt-builder` skill.
 
 ### Step 3 — Execute the Prompt
 

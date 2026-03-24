@@ -26,10 +26,10 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, delimiter } from "node:path";
 import { homedir, platform } from "node:os";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 
-// ── Parse CLI arguments ────────────────────────────────────────────
+// —— Parse CLI arguments ————————————————————————————————
 const { values: args } = parseArgs({
   options: {
     url:      { type: "string" },
@@ -55,7 +55,7 @@ const isWin = platform() === "win32";
 const ROOT = resolve(import.meta.dirname, "..");
 const envFile = resolve(ROOT, ".env");
 
-// ── Load .env ──────────────────────────────────────────────────────
+// —— Load .env ——————————————————————————————————————————
 if (existsSync(envFile)) {
   const lines = readFileSync(envFile, "utf-8").split("\n");
   for (const raw of lines) {
@@ -74,7 +74,7 @@ if (existsSync(envFile)) {
 const TENANT_ID = args.tenant || process.env.MSX_TENANT_ID || DEFAULT_TENANT_ID;
 const SERVER_NAME = args.name || new URL(REMOTE_URL).pathname.split("/").pop() || "http-proxy";
 
-// ── Ensure PATH includes common tool locations ─────────────────────
+// —— Ensure PATH includes common tool locations ———————————
 const home = homedir();
 const extraDirs = isWin
   ? [
@@ -100,7 +100,7 @@ if (existing.length) {
   }
 }
 
-// ── Resolve az CLI path ────────────────────────────────────────────
+// —— Resolve az CLI path ————————————————————————————————
 let _azPath;
 function getAz() {
   if (_azPath) return _azPath;
@@ -119,7 +119,7 @@ function getAz() {
   return _azPath;
 }
 
-// ── Token management ───────────────────────────────────────────────
+// —— Token management ———————————————————————————————————
 // Two auth modes:
 //   --resource <URL>  → az CLI token (for Power BI, etc.)
 //   --auth m365       → device-code flow via m365-auth.js (for agent365 servers)
@@ -127,16 +127,23 @@ function getAz() {
 let cachedToken = null;
 let tokenExpiry = 0;
 
-// az CLI token (synchronous)
+// az CLI token (synchronous) — uses execFileSync (no shell) to avoid injection
 function getAzToken() {
   if (cachedToken && Date.now() < tokenExpiry - 60_000) return cachedToken;
 
   const az = getAz();
   let token;
   try {
-    token = execSync(
-      `"${az}" account get-access-token --resource "${AUTH_RESOURCE}" --tenant "${TENANT_ID}" --query accessToken -o tsv`,
-      { encoding: "utf-8", timeout: 30_000, shell: true, stdio: ["pipe", "pipe", "pipe"] }
+    token = execFileSync(
+      az,
+      [
+        "account", "get-access-token",
+        "--resource", AUTH_RESOURCE,
+        "--tenant", TENANT_ID,
+        "--query", "accessToken",
+        "-o", "tsv",
+      ],
+      { encoding: "utf-8", timeout: 30_000, stdio: ["pipe", "pipe", "pipe"] }
     ).trim();
   } catch (err) {
     const msg = err.stderr || err.message || "";
@@ -184,7 +191,7 @@ async function getToken() {
   return null;
 }
 
-// ── Main ───────────────────────────────────────────────────────────
+// —— Main ———————————————————————————————————————————————
 function log(msg) {
   process.stderr.write(`[http-proxy:${SERVER_NAME}] ${msg}\n`);
 }
@@ -219,7 +226,7 @@ async function main() {
     ListPromptsRequestSchema,
   } = await import("@modelcontextprotocol/sdk/types.js");
 
-  // ── Upstream client (remote HTTP endpoint) ─────────────────────
+  // —— Upstream client (remote HTTP endpoint) ———————————
   const upstreamTransport = new StreamableHTTPClientTransport(
     new URL(REMOTE_URL),
     {
@@ -241,7 +248,7 @@ async function main() {
   await upstream.connect(upstreamTransport);
   log(`Connected to upstream: ${REMOTE_URL}`);
 
-  // ── Discover upstream capabilities ─────────────────────────────
+  // —— Discover upstream capabilities ———————————————————
   const serverCapabilities = upstream.getServerCapabilities();
   const capabilities = {};
   if (serverCapabilities?.tools) capabilities.tools = {};
@@ -249,7 +256,7 @@ async function main() {
   if (serverCapabilities?.prompts) capabilities.prompts = {};
   if (Object.keys(capabilities).length === 0) capabilities.tools = {};
 
-  // ── Local stdio server ─────────────────────────────────────────
+  // —— Local stdio server ———————————————————————————————
   const server = new Server(
     { name: SERVER_NAME, version: "1.0.0" },
     { capabilities }
