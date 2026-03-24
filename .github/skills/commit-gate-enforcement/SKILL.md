@@ -44,6 +44,7 @@ Prevents premature milestone commitment by validating that delivery readiness ev
   - `msp_milestonedate` is set and realistic
   - At least one active task with owner and due date
   - CSAM execution-readiness confirmation present (or CSA for technical feasibility)
+  - **HoK legal gate** (if HoK engagement is part of the delivery): Legal coverage confirmed before commitment. If HoK tasks exist on the milestone without legal coverage documentation, the gate FAILS.
   - **Revenue delta confidence**: `msp_monthlyuse` represents estimated *change* in monthly revenue (not absolute). The user must have reason to believe this delta will be attained — based on delivery evidence, customer scope confirmation, or execution plan alignment. If the delta appears unrealistic given current state, flag it.
   - **CSU ownership**: A CSA (preferred, if actively working the aligned project) or CSAM (fallback) must be identified on the deal team and set as the milestone owner upon commitment. If the current owner is not a CSU role, include a dry-run `update_milestone` to reassign.
   - **CSU handoff confirmed**: The SE/Specialist must have had a handoff discussion with the receiving CSU role, and the CSU must have explicitly confirmed commitment criteria are met. Without this confirmation, the gate FAILS regardless of other criteria.

@@ -48,6 +48,13 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 
 **Vault (OIL)**: Customer context and durable memory. Operate statelessly if unavailable. **Connect Hooks**: `connect-hooks.instructions.md`.
 
+**HoK (Hands-on-Keyboard) routing**:
+- `HoK`, `hands-on-keyboard`, `HoK readiness`, `legal coverage`, `customer environment`, `cusp customer`, `HoK positioning`, `HoK engagement`, `HoK field playbook`, `environment access` → load `hok-readiness-check` skill.
+- SE role is expected to position HoK with every client. When SE is the confirmed role, proactively surface HoK positioning status during pipeline reviews, morning briefs, and milestone triage.
+- **Legal gate**: Never recommend HoK execution without confirmed legal coverage. Flag as blocker if missing.
+- **Cusp customer identification**: When pipeline review surfaces customers with uncertain next steps, classify as "cusp" and generate leadership brief per `hok-readiness-check` skill.
+- HoK resources: SE Playbook, SE Readiness Backpack, HoK Field Playbook, Teams channels per Solution Play (M&M, Data, Apps, Software), Skilling Plans at https://aka.ms/FRI.
+
 **Account Review routing (GHCP + multi-signal)**:
 - `account review`, `account health`, `health card`, `full account view`, `GHCP`, `GHCP seats`, `seat analysis`, `seat composition`, `attach rate`, `multi-signal review` → run `account-review.prompt.md` (parent agent orchestrates vault + PBI + M365 + CRM). Section 2 (Seat Analysis) delegates to `pbi-analyst` with `pbi-ghcp-seats-analysis` — runs MSXI + OctoDash combined in a single call.
 
@@ -66,6 +73,7 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
   - `azure portfolio`, `azure review`, `gap to target`, `ACR attainment`, `budget attainment` → `pbi-azure-all-in-one-review`
   - `service deep dive`, `SL5`, `service-level consumption` → `pbi-azure-service-deep-dive-sl5-aio`
   - `GHCP new logo`, `new logo incentive` → `pbi-ghcp-new-logo-incentive`
+  - `SE productivity`, `SE performance`, `SE scorecard`, `seller productivity`, `individual seller review`, `how am I doing`, `milestones engaged`, `committed pipe engaged`, `HoK activity count` → `pbi-se-productivity-review`
 - **Subagent-only prompts** (not top-level triggers — invoked by parent prompts via delegation):
   - `pbi-ghcp-seats-analysis` — used by `account-review.prompt.md` Section 2 (Seat Analysis) when delegating to `pbi-analyst`
 - **Delegation pattern**: Resolve the TPID / customer scope (via CRM or user input), then delegate to `pbi-analyst` with the prompt name, semantic model ID, and scope filters. Consume the returned report for downstream CRM correlation, vault persistence, or risk surfacing.
