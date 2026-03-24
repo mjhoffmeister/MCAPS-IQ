@@ -11,14 +11,19 @@ import { registerTools } from './tools.js';
 const DEFAULT_CRM_URL = 'https://microsoftsales.crm.dynamics.com';
 const DEFAULT_TENANT_ID = '72f988bf-86f1-41af-91ab-2d7cd011db47';
 
-function getConfig() {
+interface ServerConfig {
+  crmUrl: string;
+  tenantId: string;
+}
+
+function getConfig(): ServerConfig {
   return {
     crmUrl: process.env.MSX_CRM_URL || DEFAULT_CRM_URL,
     tenantId: process.env.MSX_TENANT_ID || DEFAULT_TENANT_ID
   };
 }
 
-async function main() {
+async function main(): Promise<void> {
   const config = getConfig();
 
   const authService = createAuthService({

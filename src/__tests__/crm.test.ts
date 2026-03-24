@@ -1,19 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCrmClient } from '../crm.js';
+import type { AuthService } from '../auth.js';
+import type { CrmClient } from '../crm.js';
+import type { Mock } from 'vitest';
 
-function mockAuthService(token = 'test-token') {
+function mockAuthService(token = 'test-token'): AuthService {
   return {
     ensureAuth: vi.fn().mockResolvedValue({ success: true }),
     getToken: vi.fn().mockReturnValue(token),
     getCrmUrl: vi.fn().mockReturnValue('https://test.crm.dynamics.com'),
-    clearToken: vi.fn()
-  };
+    clearToken: vi.fn(),
+    getAuthStatus: vi.fn().mockReturnValue({ isAuthenticated: false }),
+    _state: { token: null, metadata: null, crmUrl: 'https://test.crm.dynamics.com', tenantId: '00000000-0000-0000-0000-000000000000' }
+  } as unknown as AuthService;
 }
 
 describe('createCrmClient', () => {
-  let auth;
-  let client;
-  let fetchMock;
+  let auth: AuthService;
+  let client: CrmClient;
+  let fetchMock: Mock;
 
   beforeEach(() => {
     auth = mockAuthService();
@@ -107,6 +112,67 @@ describe('createCrmClient', () => {
     expect(result.ok).toBe(true);
     expect(result.data.value).toHaveLength(2);
     expect(result.data.value.map(r => r.id)).toEqual([1, 2]);
+  });
+
+  it('requestAllPages — returns failure when nextLink page fetch fails', async () => {
+    const page1 = { value: [{ id: 1 }], '@odata.nextLink': 'https://test.crm.dynamics.com/page2' };
+
+    fetchMock
+      // First page succeeds
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve(page1)
+      })
+      // nextLink fails
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve({ error: { message: 'Service unavailable' } })
+      });
+
+    const result = await client.requestAllPages('opportunities');
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(503);
+    expect(result.data.message).toContain('Pagination failed');
+    expect(result.data.partialCount).toBe(1);
+    expect(result.data.partial.value).toHaveLength(1);
+  });
+
+  it('requestAllPages — retries nextLink once after 401 with refreshed auth', async () => {
+    const page1 = { value: [{ id: 1 }], '@odata.nextLink': 'https://test.crm.dynamics.com/page2' };
+    const page2 = { value: [{ id: 2 }] };
+
+    fetchMock
+      // First page
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve(page1)
+      })
+      // nextLink first attempt -> 401
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve({ error: { message: 'Unauthorized' } })
+      })
+      // nextLink retry after refresh
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve(page2)
+      });
+
+    const result = await client.requestAllPages('opportunities');
+    expect(auth.clearToken).toHaveBeenCalledOnce();
+    expect(auth.ensureAuth).toHaveBeenCalledTimes(3);
+    expect(result.ok).toBe(true);
+    expect(result.data.value).toHaveLength(2);
   });
 
   it('request — retries with fresh token on 401', async () => {

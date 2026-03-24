@@ -2,14 +2,22 @@
 
 MCP server for Dynamics 365 / MSX CRM operations. Gives GitHub Copilot (and any MCP-compatible AI agent) read/write access to opportunities, milestones, tasks, and account data — with a **human-in-the-loop approval queue** for all write operations.
 
+> **Want to understand how it works?** See the [Documentation Guide](docs/README.md) for architecture walkthroughs, the staged write flow, and milestone query optimization.
+
 ## Features
 
 - **Read tools** — query opportunities, milestones, tasks, accounts, and metadata via OData
-- **Write tools** — create/update/close tasks, update milestones — all staged for approval before execution
+- **Write tools** — create milestones, create/update/close tasks, update milestones — all staged for approval before execution
+- **Team management** — list, add, or remove members on deal teams and milestone access teams
 - **Approval queue** — every CRM write is staged, previewed (before → after diff), and executed only after explicit human confirmation
 - **Batch operations** — stage multiple changes, review all at once, execute in one shot
+- **Post-write verification** — after successful CRM writes, automatically re-fetches the record and returns final state with a deep-link URL
+- **Ownership verification** — milestone updates include pre-execution identity checks (owner, deal team, or opportunity ownership)
 - **Azure CLI auth** — authenticates via `az account get-access-token` (no secrets in config)
 - **Composite tools** — higher-level operations like `find_milestones_needing_tasks` chain multiple CRM calls automatically
+- **Entity allowlist** — `crm_query` and `crm_get_record` restrict access to a declared set of entity sets, preventing open-ended data extraction
+- **Pagination ceiling** — `crm_query` auto-pagination caps at 500 records per call
+- **Audit logging** — every tool invocation emits structured NDJSON to stderr (tool name, entity set, record count, blocked requests)
 
 ## Prerequisites
 
@@ -24,8 +32,8 @@ MCP server for Dynamics 365 / MSX CRM operations. Gives GitHub Copilot (and any 
 
 ```bash
 # Clone
-git clone https://github.com/Microsoft/msx-copilot-mcp.git
-cd msx-copilot-mcp/mcp-server
+git clone https://github.com/Microsoft/mcaps-iq.git
+cd mcaps-iq/mcp/msx
 
 # Install dependencies
 npm install
@@ -44,7 +52,7 @@ Add the server to `.vscode/mcp.json` in your workspace:
     "msx-crm": {
       "type": "stdio",
       "command": "node",
-      "args": ["/absolute/path/to/msx-copilot-mcp/mcp-server/src/index.js"],
+      "args": ["/absolute/path/to/mcaps-iq/mcp/msx/src/index.js"],
       "env": {
         "MSX_CRM_URL": "https://microsoftsales.crm.dynamics.com",
         "MSX_TENANT_ID": "72f988bf-86f1-41af-91ab-2d7cd011db47"
@@ -54,7 +62,7 @@ Add the server to `.vscode/mcp.json` in your workspace:
 }
 ```
 
-> **Tip**: Replace the `args` path with the actual path on your machine. If you cloned to `~/Repos/msx-copilot-mcp`, use `["${userHome}/Repos/msx-copilot-mcp/mcp-server/src/index.js"]`.
+> **Tip**: Replace the `args` path with the actual path on your machine. If you cloned to `~/Repos/mcaps-iq`, use `["${userHome}/Repos/mcaps-iq/mcp/msx/src/index.js"]`.
 
 ### Environment Variables
 
@@ -71,15 +79,16 @@ Add the server to `.vscode/mcp.json` in your workspace:
 |---|---|
 | `crm_whoami` | Validate CRM access and return current user identity |
 | `crm_auth_status` | Check authentication status — user, expiry, CRM URL |
-| `crm_query` | Execute read-only OData GET against any Dynamics 365 entity set (supports `$filter`, `$select`, `$orderby`, `$top`, `$expand`, auto-pagination) |
-| `crm_get_record` | Retrieve a single record by entity set + GUID |
+| `crm_query` | Execute read-only OData GET against an **allowed** Dynamics 365 entity set (supports `$filter`, `$select`, `$orderby`, `$top`, `$expand`; auto-pagination capped at 500 records) |
+| `crm_get_record` | Retrieve a single record by entity set + GUID (entity must be on the allowlist) |
 | `list_opportunities` | List open opportunities by account IDs or customer name keyword |
-| `get_my_active_opportunities` | Active opportunities where you're the owner or have milestone ownership |
-| `get_milestones` | Milestones by ID, number, opportunity, owner, or "mine" — with status/keyword/task-presence filtering |
-| `get_milestone_activities` | Tasks/activities linked to one or more milestones |
+| `get_my_active_opportunities` | Active opportunities where you're the owner or on the deal team (via `msp_dealteams` or milestone ownership heuristic) |
+| `get_milestones` | Milestones by customer name, opportunity name/GUID, milestone ID/number, or owner — with status/keyword/task-presence filtering, inline task embedding (`includeTasks`), and format options (`full`/`summary`/`triage`) |
+| `get_milestone_activities` | Tasks/activities linked to one or more milestones (batch retrieval supported) |
 | `find_milestones_needing_tasks` | Composite: customer keywords → accounts → opps → milestones → identifies those without tasks |
 | `list_accounts_by_tpid` | Find accounts by MS Top Parent ID |
 | `get_task_status_options` | Retrieve valid task status/statuscode options from metadata |
+| `get_milestone_field_options` | Retrieve picklist options for milestone fields (workload type, delivered by, Azure region, capacity type) |
 
 ### Visualization Tools
 
@@ -95,10 +104,18 @@ All write tools **stage** the operation and return a preview. Nothing is written
 
 | Tool | Description |
 |---|---|
-| `create_task` | Create a task linked to a milestone |
-| `update_task` | Update task fields (subject, due date, description, status) |
-| `close_task` | Close a task via CloseTask action |
-| `update_milestone` | Update milestone fields (date, monthly use, comments) |
+| `create_milestone` | Create a milestone linked to an opportunity (supports date, monthly use, status, category, commitment, owner, workload, comments, workload type, delivered by, Azure region, capacity type) |
+| `create_task` | Create a task linked to a milestone (supports category, subject, due date, owner, description) |
+| `update_task` | Update task fields (subject, due date, description, statusCode) |
+| `close_task` | Close a task with three-tier fallback (CloseTask action → bound Close endpoint → direct PATCH) |
+| `update_milestone` | Update milestone fields (name, date, monthly use, status, category, commitment, workload, owner, currency, comments, workload type, etc.) — includes ownership verification before execution |
+
+### Team Management Tools (Staged)
+
+| Tool | Description |
+|---|---|
+| `manage_deal_team` | List, add, or remove deal team members on an opportunity via D365 Access Teams; resolves email → systemUserId |
+| `manage_milestone_team` | List, add, or remove members on a milestone's access team (Milestone Team template in MSX) |
 
 ### Approval Queue Tools
 
@@ -208,6 +225,13 @@ Update task <GUID> due date to 2026-04-30.
 Close task <GUID> as completed.
 ```
 
+### Team Management
+```
+Who is on the deal team for opportunity <GUID>?
+Add user@microsoft.com to the deal team on opportunity <GUID>.
+Remove a team member from the milestone team.
+```
+
 ### Approval Queue
 ```
 Show pending operations.
@@ -236,12 +260,13 @@ For the best experience, add a `copilot-instructions.md` to your repo's `.github
 - Derive missing identifiers via MCP read tools (e.g., `crm_whoami`) — do not create ad-hoc scripts.
 
 ## CRM Query Discipline
-- Never guess property names — verify via `crm_query` or `get_task_status_options`.
+- Never guess property names — verify via `crm_query`, `get_task_status_options`, or `get_milestone_field_options`.
 - Use `crm_query` with `$filter`, `$select`, `$top` for targeted lookups.
-- Prefer `get_milestones` with a specific `opportunityId` over unfiltered `mine: true` for large datasets.
+- Prefer composite tools: `get_milestones` with `customerKeyword` or `opportunityKeyword` resolves names → GUIDs → milestones in a single call.
+- Never call `get_milestones` without a scoping parameter — provide at least one of: `customerKeyword`, `opportunityKeyword`, `opportunityId`, `milestoneId`, `milestoneNumber`, `ownerId`, or explicit `mine: true`.
 
 ## Write Safety
-- All write operations (create_task, update_task, close_task, update_milestone) are staged first.
+- All write operations (create/update/close tasks, create/update milestones, manage teams) are staged first.
 - Always show the user the staged preview before executing.
 - Use `execute_operation` for single approvals, `execute_all` for batch.
 - Never auto-execute staged operations without user confirmation.
@@ -267,7 +292,7 @@ For the best experience, add a `copilot-instructions.md` to your repo's `.github
 │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │
 │  │ tools.js │ │ crm.js   │ │ approval-queue.js│ │
 │  │          │ │          │ │                  │ │
-│  │ 22 tools │→│ OData    │ │ Stage → Review   │ │
+│  │ 27 tools │→│ OData    │ │ Stage → Review   │ │
 │  │ (read +  │ │ + retry  │ │ → Execute/Cancel │ │
 │  │  write)  │ │ + paging │ │ (EventEmitter)   │ │
 │  └──────────┘ └────┬─────┘ └──────────────────┘ │
@@ -289,23 +314,67 @@ For the best experience, add a `copilot-instructions.md` to your repo's `.github
 | File | Purpose |
 |---|---|
 | `src/index.js` | Entry point — creates McpServer, wires auth → CRM client → tools, connects stdio transport |
-| `src/tools.js` | All 22 MCP tool definitions with input validation, OData query construction, and approval queue integration |
-| `src/crm.js` | HTTP client for Dynamics 365 OData API — retry logic, pagination, token management |
+| `src/tools.js` | All 27 MCP tool definitions with input validation, OData query construction, and approval queue integration |
+| `src/crm.js` | HTTP client for Dynamics 365 OData API — retry logic, pagination (with configurable ceiling), token management |
 | `src/auth.js` | Azure CLI token acquisition (`az account get-access-token`) with caching and expiry detection |
 | `src/validation.js` | GUID normalization, TPID validation, OData string sanitization |
 | `src/approval-queue.js` | EventEmitter-based queue for staged write operations with TTL expiry (10 min default) |
+| `src/audit.js` | Structured NDJSON audit logger — emits tool invocations, entity sets, record counts, and blocked requests to stderr |
 
 ## Running Tests
 
 ```bash
-cd mcp-server
+cd mcp/msx
 npm test            # single run
 npm run test:watch  # watch mode
 ```
 
+## Data Governance
+
+### Entity Allowlist
+
+`crm_query` and `crm_get_record` only accept entity sets declared in `ALLOWED_ENTITY_SETS` (defined in `src/tools.js`). Queries to unlisted entities are rejected with a descriptive error. The current allowlist:
+
+| Entity Set | Purpose |
+|---|---|
+| `accounts` | Account lookup and TPID resolution |
+| `contacts` | Contact lookup |
+| `opportunities` | Pipeline and deal state |
+| `msp_engagementmilestones` | Milestone tracking |
+| `msp_dealteams` | Deal team membership |
+| `msp_workloads` | Workload lookup |
+| `tasks` | Task/activity records |
+| `systemusers` | User identity resolution |
+| `transactioncurrencies` | Currency lookup for milestones |
+| `connections` | Deal team / partner linkage (alternative to `msp_dealteams` in some orgs) |
+| `connectionroles` | Connection role names (companion to `connections`) |
+| `processstages` | BPF stage name resolution for MCEM stage identification |
+| `teams` | Access team queries (deal team and milestone team management) |
+| `EntityDefinitions` | Metadata queries (e.g., status option sets) |
+
+To add an entity, update the `ALLOWED_ENTITY_SETS` set in `src/tools.js`. Purpose-built tools (e.g., `get_milestones`, `list_opportunities`) bypass the allowlist because they already constrain scope through hard-coded entity paths and field selections.
+
+### Pagination Ceiling
+
+`crm_query` caps auto-pagination at **500 records** (`CRM_QUERY_MAX_RECORDS` in `src/tools.js`). The `$top` parameter is also capped to this value. If more records exist, the response includes `truncated: true`. Purpose-built tools are not subject to this limit.
+
+### Audit Logging
+
+Every `crm_query` and `crm_get_record` invocation emits a structured NDJSON record to **stderr** (separate from MCP's stdio transport on stdout). Each record includes:
+
+```json
+{"ts": "2026-03-09T...", "tool": "crm_query", "entitySet": "accounts", "params": {"filter": "...", "select": "..."}, "recordCount": 12}
+```
+
+Blocked requests include `"blocked": true` and a `"reason"` field. To capture audit logs, redirect stderr:
+
+```bash
+node src/index.js 2>> /path/to/audit.ndjson
+```
+
 ## See Also
 
-Check out [microsoft/mcaps-copilot-tools](https://github.com/microsoft/mcaps-copilot-tools) for a demo of this MCP server being used in practice.
+This server is part of [microsoft/mcaps-iq](https://github.com/microsoft/mcaps-iq), which includes Copilot instructions, skills, and companion MCP servers for the full MCAPS workflow.
 
 ## License
 

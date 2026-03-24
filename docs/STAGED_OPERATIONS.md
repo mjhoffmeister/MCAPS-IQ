@@ -1,4 +1,10 @@
+[← Back to Docs Index](README.md)
+
 # Staged Operations — Human-in-the-Loop Write Flow
+
+> **Prerequisite reading:** [Architecture Guide](ARCHITECTURE.md) — covers authentication, CRM requests, and the tool categories.
+
+**TL;DR** — Every CRM write (create, update, close) is staged in memory first. You see a before/after preview, then explicitly approve or cancel. Nothing touches CRM until you say "execute." Operations expire after 10 minutes if not acted on.
 
 ## Problem
 
@@ -169,3 +175,11 @@ No CRM writes happen until `execute_operation` or `execute_all` is called.
 - **Audit log**: Persist executed operations to a local file for traceability
 - **Undo**: After `execute_operation`, store the before-state so a follow-up "undo" can revert
 - **Configurable TTL**: Allow users to set expiry via environment variable
+
+---
+
+## What to Read Next
+
+- **[Architecture Guide](ARCHITECTURE.md)** — Full server overview including authentication, entity allowlists, and all tool categories.
+- **[Milestone Lookup Optimization](MILESTONE_LOOKUP_OPTIMIZATION.md)** — How read-side milestone queries are consolidated into single tool calls.
+- **[Main README](../README.md)** — Quick start guide, setup instructions, and full tool reference.
