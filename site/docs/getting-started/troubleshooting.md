@@ -21,7 +21,7 @@ Can't get things running? This page covers every common issue, organized by symp
 
 ## Installation Problems
 
-??? failure "`npm install` fails with EACCES permission errors"
+??? failure "Optional local tooling install fails with EACCES permission errors"
     **Symptom:** Error messages about missing write permissions to `~/.npm` or `node_modules`.
     
     **Fix (macOS/Linux):**
@@ -35,7 +35,7 @@ Can't get things running? This page covers every common issue, organized by symp
     npm install --no-optional
     ```
 
-??? failure "`npm install` fails on Windows with execution policy error"
+??? failure "Optional local tooling install fails on Windows with execution policy error"
     **Symptom:** PowerShell blocks script execution during install.
     
     **Fix:**
@@ -44,12 +44,12 @@ Can't get things running? This page covers every common issue, organized by symp
     ```
     Then retry `npm install`.
 
-??? failure "`npm install` hangs indefinitely"
+??? failure "npx package fetch hangs or fails"
     **Cause:** Usually a proxy or VPN issue blocking npm registry access.
     
     **Fix:**
     ```bash
-    # Check if npm can reach the registry
+    # Check if npm can reach a registry
     npm ping
     
     # If behind a proxy
@@ -122,10 +122,13 @@ Can't get things running? This page covers every common issue, organized by symp
 ??? failure "Server won't start — 'Start' button does nothing"
     **Check:**
     1. Is Node.js installed? (`node --version`)
-    2. Were dependencies installed? (`ls mcp/msx/node_modules`)
+    2. Can npx resolve the server package?
+       ```bash
+       npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
+       ```
     3. Try starting manually in terminal:
        ```bash
-       node mcp/msx/src/index.js
+       node scripts/msx-start.js
        ```
        This shows the actual error.
 
@@ -189,6 +192,6 @@ Can't get things running? This page covers every common issue, organized by symp
 
 ## Still Stuck?
 
-1. Run the full diagnostic: `npm run check`
+1. Run the full diagnostic: `node scripts/init.js --check`
 2. Check the [FAQ](../faq/index.md) for more answers
 3. Open an issue: [GitHub Issues](https://github.com/microsoft/MCAPS-IQ/issues)

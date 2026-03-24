@@ -4,8 +4,8 @@
  * Cross-platform environment initializer for mcaps-iq.
  *
  * Usage:
- *   node scripts/init.js          # install + build all MCP servers
- *   node scripts/init.js --check  # verify environment without installing
+ *   node scripts/init.js          # optional local tooling setup + environment bootstrap
+ *   node scripts/init.js --check  # verify runtime prerequisites and local tooling status
  *
  * Exit codes:
  *   0 — success
@@ -134,13 +134,13 @@ function checkPrereqs() {
 
 // ── server initialization ───────────────────────────────────────────
 function initServers() {
-  let allOk = true;
+  let optionalFailures = 0;
   for (const server of SERVERS) {
-    heading(`Initializing ${server.name}`);
+    heading(`Initializing optional local tooling: ${server.name}`);
 
     if (!existsSync(server.dir)) {
-      fail(`Directory not found: ${server.dir}`);
-      allOk = false;
+      warn(`Directory not found (optional): ${server.dir}`);
+      optionalFailures += 1;
       continue;
     }
 
@@ -162,9 +162,14 @@ function initServers() {
         warn(`Expected entry point not found: ${server.verify}`);
       }
     } catch (err) {
-      fail(`Failed — ${err.message}`);
-      allOk = false;
+      warn(`Optional setup failed for ${server.name}: ${err.message}`);
+      optionalFailures += 1;
     }
+  }
+
+  if (optionalFailures > 0) {
+    warn(`${optionalFailures} optional local tooling step(s) failed or were skipped.`);
+    warn("MCP runtime via .vscode/mcp.json is still available through npx/http servers.");
   }
 
   heading("Package-based MCP servers (npx)");
@@ -175,15 +180,15 @@ function initServers() {
     }
   }
 
-  return allOk;
+  return true;
 }
 
 // ── check-only mode ─────────────────────────────────────────────────
 function checkOnly() {
   const prereqsOk = checkPrereqs();
 
-  heading("Checking local MCP servers");
-  let serversOk = true;
+  heading("Checking optional local tooling");
+  let optionalReady = true;
   for (const server of SERVERS) {
     const nodeModules = join(server.dir, "node_modules");
     const artifact = join(server.dir, server.verify);
@@ -198,8 +203,8 @@ function checkOnly() {
       const missing = [];
       if (!installed) missing.push("npm install");
       if (server.build && !built) missing.push(server.build);
-      fail(`${server.name} — needs: ${missing.join(", ")}`);
-      serversOk = false;
+      warn(`${server.name} — optional local setup missing: ${missing.join(", ")}`);
+      optionalReady = false;
     }
   }
 
@@ -211,12 +216,16 @@ function checkOnly() {
     }
   }
 
-  if (prereqsOk && serversOk) {
-    heading("Environment is ready ✔");
+  if (prereqsOk) {
+    heading("Runtime environment is ready ✔");
+    if (!optionalReady) {
+      warn("Optional local tooling is not fully installed.");
+      warn("Run 'node scripts/init.js' if you need local eval/docs tooling and mcaps alias registration.");
+    }
   } else {
-    heading("Environment has issues — run `node scripts/init.js` to fix");
+    heading("Runtime prerequisites have issues — fix the errors above");
   }
-  return prereqsOk && serversOk;
+  return prereqsOk;
 }
 
 // ── global alias registration ───────────────────────────────────────

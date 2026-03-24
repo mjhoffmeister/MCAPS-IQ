@@ -62,8 +62,8 @@ sequenceDiagram
 | `.github/skills/` | 27 atomic domain skills (loaded on demand) | **Yes** — tailor to your operating model |
 | `.github/prompts/` | Reusable prompt templates (slash commands) | **Yes** — create workflows you repeat |
 | `.vscode/mcp.json` | MCP server definitions | **Yes** — add/remove data sources |
-| `mcp/msx/` | MSX CRM MCP server | Optional — works out of the box |
-| `mcp/oil/` | Obsidian Intelligence Layer | Optional — enables persistent vault memory |
+| `scripts/msx-start.js` | MSX CRM MCP launcher (published package via npx) | Optional — starts on demand |
+| `scripts/oil-start.js` | OIL MCP launcher (published package via npx) | Optional — enables persistent vault memory |
 | `docs/` | Architecture docs | Reference only |
 
 ---

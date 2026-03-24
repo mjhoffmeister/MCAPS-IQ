@@ -33,17 +33,26 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 - [ ] [Node.js 18+](https://nodejs.org/)
 - [ ] [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 
-### Step 1: Clone and install
+### Step 1: Clone the repo
 
 ```bash
 git clone https://github.com/microsoft/mcaps-iq.git
 cd mcaps-iq
+```
+
+> **No local npm install required for MCP runtime.** The default servers in [.vscode/mcp.json](.vscode/mcp.json) run via npx or HTTP.
+
+### Optional: Install local tooling
+
+Use this only if you want repo-local eval/docs tooling or automatic global mcaps alias setup:
+
+```bash
 npm install
 ```
 
-> **Prefer a GUI?** Open the repo in VS Code and run **"Setup: Install Everything"** from the Command Palette (`Cmd+Shift+P` → `Tasks: Run Task`).
+> **Prefer a GUI?** Open the repo in VS Code and run **"Setup: Optional Local Tooling"** from the Command Palette (`Cmd+Shift+P` → `Tasks: Run Task`).
 
-> **`mcaps` command installed automatically.** The install registers a global `mcaps` command on your system. After install, you can type `mcaps` from **any directory** in any terminal to launch a Copilot CLI session with the full MCAPS IQ toolkit (MCP servers, agents, skills) — no need to `cd` into the repo first. See [Copilot CLI integration](site/docs/integrations/copilot-cli.md) for details.
+> **mcaps command registration.** Running optional local setup registers a global mcaps command on your system so you can launch Copilot CLI from any directory. See [Copilot CLI integration](site/docs/integrations/copilot-cli.md) for details.
 
 ### Step 2: Sign in to Azure
 

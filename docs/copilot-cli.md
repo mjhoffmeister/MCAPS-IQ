@@ -45,7 +45,7 @@ Copilot CLI automatically picks up the project's configuration when you run it f
 
 ### The `mcaps` command (recommended)
 
-After running `npm install` in the repo, a global `mcaps` command is registered on your system. You can use it from **any directory** — no need to `cd` into the repo:
+After running optional local setup (`npm install`, or `npm link --ignore-scripts`) in the repo, a global `mcaps` command is registered on your system. You can use it from **any directory** — no need to `cd` into the repo:
 
 ```bash
 # From anywhere — home dir, another project, etc.

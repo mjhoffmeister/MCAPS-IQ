@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Clone the repo, install dependencies, and sign in to Azure.
+description: Clone the repo, configure runtime, and sign in to Azure.
 tags:
   - getting-started
   - installation
@@ -10,12 +10,12 @@ tags:
 
 <div class="step-indicator" markdown>
 <span class="step done">1. Prerequisites ✓</span>
-<span class="step active">2. Install</span>
+<span class="step active">2. Runtime Setup</span>
 <span class="step">3. First Chat</span>
 <span class="step">4. Choose Role</span>
 </div>
 
-Three commands and you're done.
+Two commands and you're done.
 
 ---
 
@@ -30,48 +30,42 @@ cd mcaps-iq
 
 ---
 
-## Step 2: Install Dependencies
+## Step 2: Runtime Setup
 
-=== "One command (recommended)"
+=== "Default runtime (recommended)"
 
+    ```bash
+    code .
+    ```
+
+    Then open `.vscode/mcp.json` and click **Start** on `msx-crm` (and `workiq` if needed).
+    The default servers run via `npx`/HTTP, so no local server source install is required.
+
+=== "Optional local tooling"
+
+    Use this only if you want local eval/docs tooling or automatic global `mcaps` alias setup:
+    
     ```bash
     npm install
     ```
-    
-    This runs the setup script automatically (`postinstall`), which:
-    
-    - Installs the MSX CRM MCP server dependencies
-    - Installs the OIL server dependencies (if present)
-    - Validates your environment
-    - Creates a `.env` file if needed
 
-=== "VS Code Task"
-
-    If you prefer a GUI:
-    
-    1. Open the repo in VS Code: `code .`
-    2. Press ++cmd+shift+p++
-    3. Type **"Tasks: Run Task"**
-    4. Select **"Setup: Install Everything"**
+    Or in VS Code: ++cmd+shift+p++ → **Tasks: Run Task** → **Setup: Optional Local Tooling**
 
 === "Manual (advanced)"
 
     ```bash
-    # Install root dependencies
-    npm install
-    
-    # Install MSX MCP server
-    cd mcp/msx && npm install && cd ../..
-    
-    # Install OIL (optional — for Obsidian vault integration)
-    cd mcp/oil && npm install && npm run build && cd ../..
+    # Check runtime prerequisites without local installs
+    node scripts/init.js --check
+
+    # Optional local tooling bootstrap
+    node scripts/init.js
     ```
 
 !!! tip "What to expect"
-    The install takes about 30 seconds. You'll see npm output for each sub-package. If anything fails, the setup script tells you exactly what went wrong.
+    Runtime startup is immediate once servers are started in `.vscode/mcp.json`. Optional local tooling setup may take longer depending on npm/network conditions.
 
 !!! success "Global `mcaps` command"
-    The installer automatically registers a **global `mcaps` command** on your system via `npm link`. After install, you can type `mcaps` from **any directory** in **any terminal window** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full MCAPS IQ toolkit — MCP servers, agents, and skills are auto-loaded regardless of where you are.
+    Optional local tooling setup registers a **global `mcaps` command** on your system via `npm link`. After setup, you can type `mcaps` from **any directory** in **any terminal window** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full MCAPS IQ toolkit — MCP servers, agents, and skills are auto-loaded regardless of where you are.
 
     ```bash
     # Works from anywhere — no need to cd into the repo
@@ -113,7 +107,7 @@ Want to double-check everything before moving on?
 === "Automated check"
 
     ```bash
-    npm run check
+    node scripts/init.js --check
     ```
     
     Or in VS Code: ++cmd+shift+p++ → **"Tasks: Run Task"** → **"Setup: Check Environment"**
@@ -130,9 +124,9 @@ Want to double-check everything before moving on?
 
 ---
 
-## Common Install Issues
+## Common Setup Issues
 
-??? failure "npm install fails with permission errors"
+??? failure "Optional local tooling install fails with permission errors"
     ```bash
     # Fix npm permissions (macOS/Linux)
     sudo chown -R $(whoami) ~/.npm
@@ -144,6 +138,14 @@ Want to double-check everything before moving on?
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     ```
     Then retry `npm install`.
+
+??? failure "npx cannot fetch MSX or OIL packages"
+    ```bash
+    npm ping
+    npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
+    npx -y @jinlee794/obsidian-intelligence-layer@latest mcp
+    ```
+    If package fetch fails, check VPN/proxy and npm registry authentication.
 
 ??? failure "`az login` hangs or fails"  
     1. Make sure you're on VPN

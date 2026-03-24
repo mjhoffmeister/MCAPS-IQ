@@ -339,10 +339,9 @@ Baseline intent (historical): add regression tests that fail pre-fix, then pass 
 ### Verification Commands
 
 ```bash
-cd mcp/oil && npx vitest run src/__tests__/securepath-traversal.test.ts
-cd ../msx && npx vitest run src/__tests__/crm.test.js
-cd ../oil && npx vitest run
-cd ../msx && npx vitest run
+# Run these in the upstream package repositories:
+# - Obsidian-Intelligence-Layer: securepath-traversal and full vitest suites
+# - msx-copilot-mcp (or package source repo): crm and full vitest suites
 ```
 
 ### Verification Outcome (2026-03-15)
@@ -396,7 +395,7 @@ Mail: `SearchMessages`, `GetMessage`, `SendEmailWithAttachments`, `ReplyToMessag
 ## Appendix B: Recommended SDL Actions
 
 - [ ] Submit for DSR security review with this threat model attached
-- [x] Run `npm audit` across all workspaces (`mcp/msx/`, `mcp/oil/`, root) — **Done 2026-03-14**: fixed hono prototype pollution in both MCP servers
+- [x] Run `npm audit` across runtime package repos and this root workspace — **Done 2026-03-14**: fixed hono prototype pollution in both MCP servers
 - [x] Pin `@microsoft/workiq` version in mcp.json — **Done 2026-03-14**: pinned to `@microsoft/workiq@0.4.0` (RH-4)
 - [x] Implement persistent audit log (file-based NDJSON) — **Done 2026-03-14**: `audit.js` now writes to `.copilot/logs/audit.ndjson` (configurable via `MCAPS_AUDIT_LOG` env var) (RC-1)
 - [x] Add AI-attribution metadata to CRM write payloads — **Done 2026-03-14**: `[AI-assisted via MCAPS-IQ]` suffix on description/comments fields (RH-2)

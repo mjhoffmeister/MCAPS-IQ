@@ -27,31 +27,22 @@ The **Obsidian Intelligence Layer (OIL)** turns your local Obsidian vault into a
 
 ## Setup
 
-### 1. Build OIL
-
-```bash
-cd mcp/oil
-npm install
-npm run build
-cd ../..
-```
-
-### 2. Enable in MCP Config
+### 1. Enable in MCP Config
 
 Open `.vscode/mcp.json` and uncomment the `"oil"` block:
 
 ```jsonc
 "oil": {
     "type": "stdio",
-    "command": "node",
-    "args": ["mcp/oil/dist/index.js"],
+    "command": "npx",
+    "args": ["-y", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
     "env": {
-        "OBSIDIAN_VAULT_PATH": "${input:obsidianVaultPath}"
+        "OBSIDIAN_VAULT_PATH": "${input:vault_path}"
     }
 }
 ```
 
-### 3. Start the Server
+### 2. Start the Server
 
 Click **Start** on `oil` in VS Code. When prompted, enter the absolute path to your vault.
 
@@ -69,7 +60,8 @@ YourVault/
 └── oil.config.yaml  # Optional — customize paths and fields
 ```
 
-See `mcp/oil/bench/fixtures/vault/` for example template files.
+See the upstream OIL repository for example template files and advanced configuration:
+https://github.com/JinLee794/Obsidian-Intelligence-Layer
 
 ---
 

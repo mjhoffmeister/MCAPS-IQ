@@ -40,12 +40,13 @@ Look up specific error messages you encounter.
 
 ## MCP Server Errors
 
-??? failure "`Error: Cannot find module 'mcp/msx/src/index.js'`"
-    **Cause:** Dependencies not installed.
+??? failure "`npx` fails to launch `@microsoft/msx-mcp-server`"
+    **Cause:** Package fetch/auth issue (registry access, VPN, or npm auth config).
     
     **Fix:**
     ```bash
-    npm install
+    npm ping
+    npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
     ```
 
 ??? failure "`ECONNREFUSED` or `Connection refused`"

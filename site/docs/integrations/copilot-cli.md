@@ -53,7 +53,7 @@ copilot plugin uninstall mcaps-iq  # Remove
 
 If you've already cloned the repo for VS Code, Copilot CLI works from the same checkout:
 
-The `mcaps` command is the easiest way to start. It was registered globally when you ran `npm install`, so it works from **any directory**:
+The `mcaps` command is the easiest way to start. It is registered globally when you run optional local setup (`npm install`, or `npm link --ignore-scripts`) in this repo.
 
 ```bash
 # From anywhere — your home directory, a project folder, etc.
@@ -68,30 +68,7 @@ This launches Copilot CLI with the repo's MCP servers, agents, and skills auto-l
     If Copilot CLI isn't installed, `mcaps` falls back to opening the repo in VS Code.
 
 ??? tip "Re-register the alias if needed"
-    If `mcaps` isn't found after install (e.g., you opened a new terminal session before PATH refreshed):
-    ```bash
-    cd mcaps-iq
-    npm link --ignore-scripts
-    ```
-
-Alternatively, if you prefer to run Copilot CLI manually:
-
-The `mcaps` command is the easiest way to start. It was registered globally when you ran `npm install`, so it works from **any directory**:
-
-```bash
-# From anywhere — your home directory, a project folder, etc.
-mcaps
-```
-
-This launches Copilot CLI with the repo's MCP servers, agents, and skills auto-loaded. You don't need to `cd` into the repo first — `mcaps` handles that for you.
-
-??? info "What `mcaps` does under the hood"
-    The `mcaps` command runs `copilot --allow-all-tools --add-dir <repo-root>`, pointing Copilot CLI at the mcaps-iq repo wherever it lives on your machine. If you have the `OBSIDIAN_VAULT` environment variable set, it also adds your vault as an additional directory.
-
-    If Copilot CLI isn't installed, `mcaps` falls back to opening the repo in VS Code.
-
-??? tip "Re-register the alias if needed"
-    If `mcaps` isn't found after install (e.g., you opened a new terminal session before PATH refreshed):
+    If `mcaps` isn't found after setup (for example PATH refresh delay):
     ```bash
     cd mcaps-iq
     npm link --ignore-scripts

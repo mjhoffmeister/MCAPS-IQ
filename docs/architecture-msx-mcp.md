@@ -18,8 +18,8 @@ This document describes how the three MCP servers — **MSX CRM**, **WorkIQ**, a
   - [Update-Oriented Tools](#update-oriented-tools)
 - [Planned Approval-Based Write Flow](#planned-approval-based-write-flow)
 - [Key Implementation Files](#key-implementation-files)
-  - [MSX CRM Server (`mcp/msx/`)](#msx-crm-server-mcpmsx)
-  - [OIL Server (`mcp/oil/`) — optional](#oil-server-mcpoil--optional)
+  - [MSX CRM Server (package)](#msx-crm-server-package)
+  - [OIL Server (package) — optional](#oil-server-package--optional)
 - [Cross-Source Workflow (CRM + WorkIQ + Vault)](#cross-source-workflow-crm--workiq--vault)
   - [Steps](#steps)
 - [Copilot CLI Example Flow (Simple)](#copilot-cli-example-flow-simple)
@@ -31,9 +31,9 @@ This document describes how the three MCP servers — **MSX CRM**, **WorkIQ**, a
 flowchart TB
   U["User / Copilot Chat"] --> Agent["Copilot Agent\n(.github/ instructions + skills)"]
 
-  Agent --> MSX["msx-crm MCP Server\n(mcp/msx/src/index.js)"]
+  Agent --> MSX["msx-crm MCP Server\n(npx @microsoft/msx-mcp-server)"]
   Agent --> WIQ["workiq MCP Server\n(ask_work_iq)"]
-  Agent -.->|optional| OIL["OIL MCP Server\n(mcp/oil/dist/index.js)"]
+  Agent -.->|optional| OIL["OIL MCP Server\n(npx @jinlee794/obsidian-intelligence-layer)"]
 
   MSX --> CRM[("MSX CRM / Dynamics 365\n/api/data/v9.2")]
   WIQ --> M365[("Microsoft 365\nTeams · Outlook · SharePoint")]
@@ -210,12 +210,12 @@ sequenceDiagram
 
 ## Planned Approval-Based Write Flow
 
-`mcp/msx/STAGED_OPERATIONS.md` describes a staged pattern (`stage -> review -> execute`) for safe production writes:
+The write-safety documentation describes a staged pattern (`stage -> review -> execute`) for safe production writes:
 - Stage operation with preview.
 - User approves/cancels.
 - Execute approved operation against CRM.
 
-This is design guidance and not yet wired into `src/tools.js`.
+See `docs/write-safety.md` for the current guidance used in this repo.
 
 ## Data Governance Controls
 
@@ -232,23 +232,15 @@ Purpose-built tools (`get_milestones`, `list_opportunities`, etc.) bypass the en
 
 ## Key Implementation Files
 
-### MSX CRM Server (`mcp/msx/`)
-- `src/index.js` — server bootstrap and stdio transport.
-- `src/tools.js` — MCP tool contracts, entity allowlist (`ALLOWED_ENTITY_SETS`), pagination ceiling (`CRM_QUERY_MAX_RECORDS`), and approval queue integration.
-- `src/auth.js` — Azure CLI token acquisition and token metadata.
-- `src/crm.js` — OData request layer, retries, pagination (with configurable `maxRecords` ceiling).
-- `src/validation.js` — GUID normalization, TPID validation, OData string sanitization.
-- `src/approval-queue.js` — EventEmitter-based staged write queue with TTL expiry.
-- `src/audit.js` — Structured NDJSON audit logger for tool invocations.
+### MSX CRM Server (package)
+- Runtime launcher in this repo: `scripts/msx-start.js`
+- Package executed at runtime: `@microsoft/msx-mcp-server@latest` (via `npx`)
+- Source of truth for server internals (tool contracts, auth, CRM client, validation): upstream package repository
 
-### OIL Server (`mcp/oil/`) — optional
-- `src/index.ts` — server bootstrap and stdio transport.
-- `src/tools/orient.ts` — orient tools (get_vault_context, get_customer_context, etc.).
-- `src/tools/retrieve.ts` — retrieve tools (search_vault, prepare_crm_prefetch, etc.).
-- `src/tools/write.ts` — gated write tools (promote_findings, etc.).
-- `src/tools/composite.ts` — cross-domain composite operations.
-- `src/graph.ts` — in-memory knowledge graph from vault wikilinks.
-- `src/search.ts` — 3-tier search (lexical → fuzzy → semantic).
+### OIL Server (package) — optional
+- Runtime launcher in this repo: `scripts/oil-start.js`
+- Package executed at runtime: `@jinlee794/obsidian-intelligence-layer@latest` (via `npx`)
+- Source of truth for server internals (graph/search/write/composite logic): upstream package repository
 
 ## Cross-Source Workflow (CRM + WorkIQ + Vault)
 

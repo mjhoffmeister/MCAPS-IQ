@@ -108,7 +108,7 @@ See [Obsidian Integration](../integrations/obsidian.md) for the full 22-tool ref
 Servers are defined in `.vscode/mcp.json`. Each entry specifies:
 
 - **type** — `stdio` (local process) or `sse` (network)
-- **command** — what to run (e.g., `node mcp/msx/src/index.js`)
+- **command** — what to run (for example `npx` with a published MCP package)
 - **env** — environment variables (CRM URL, tenant ID, etc.)
 
 !!! warning "Security"
