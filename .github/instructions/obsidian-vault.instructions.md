@@ -67,6 +67,8 @@ The vault is the local context layer. CRM is system-of-record for live state.
 
 - Use `get_customer_context({ customer })` and/or `prepare_crm_prefetch({ customers })`.
 - Reuse GUIDs/TPIDs from vault instead of rediscovering through broad CRM search.
+- **TPID auto-resolution**: `get_customer_context` and `prepare_crm_prefetch` accept TPIDs (numeric IDs) directly — they auto-resolve to the matching customer name via frontmatter lookup. Pass either the customer name or their TPID and the tool handles it.
+- **Prefer customer names when known**: TPID resolution scans all customer notes — passing the name directly is faster. Use TPIDs only when the name is unknown.
 
 ### Vault Exhaustion Protocol (mandatory before live-system fallback)
 
