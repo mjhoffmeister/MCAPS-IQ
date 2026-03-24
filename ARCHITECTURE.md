@@ -5,9 +5,6 @@ Quick orientation for new contributors. Full docs live in [`site/docs/`](site/do
 ## Folder Layout
 
 ```
-├── mcp/                    Local MCP server source in this repo
-│   └── excalidraw/           Diagram generator for account-structure visuals
-│
 ├── evals/                  Evaluation harness & test judges
 │   ├── */*.eval.ts           Offline evals (routing, tool-calls, output-format, anti-patterns)
 │   ├── live/                 Live evals (require Azure OpenAI + az login)
@@ -48,15 +45,15 @@ Quick orientation for new contributors. Full docs live in [`site/docs/`](site/do
 
 ## Key Entry Points
 
-| What you want to do           | Start here                           |
-|-------------------------------|--------------------------------------|
-| **Use the tool**              | `README.md` → Getting Started        |
-| **Understand the system**     | `site/docs/architecture/overview.md` |
-| **Add or edit a skill**       | `.github/skills/<name>/SKILL.md`     |
-| **Run evals**                 | `npm run eval` / `npm run eval:live` |
-| **Build the doc site**        | `npm run docs:build`                 |
-| **Add an MCP server tool**    | Upstream MCP package repo or `mcp/<server>/src/*` for local servers |
-| **Write a new prompt**        | `.github/prompts/<name>.prompt.md`   |
+| What you want to do              | Start here                                                            |
+| -------------------------------- | --------------------------------------------------------------------- |
+| **Use the tool**           | `README.md` → Getting Started                                      |
+| **Understand the system**  | `site/docs/architecture/overview.md`                                |
+| **Add or edit a skill**    | `.github/skills/<name>/SKILL.md`                                    |
+| **Run evals**              | `npm run eval` / `npm run eval:live`                              |
+| **Build the doc site**     | `npm run docs:build`                                                |
+| **Add an MCP server tool** | Upstream MCP package repo or `mcp/<server>/src/*` for local servers |
+| **Write a new prompt**     | `.github/prompts/<name>.prompt.md`                                  |
 
 ## npm Scripts (quick reference)
 
