@@ -1,6 +1,6 @@
 ---
-description: "CRM read query scoping strategy for MSX/MCEM. Scope-Before-Retrieve pattern: VAULT-PREFETCH, composite tools, crm_query filters, get_milestones usage. Use when constructing CRM queries, milestone lookups, or opportunity scoping to avoid oversized payloads. Prevents unscoped get_milestones(mine:true) calls."
-applyTo: "mcp/msx/**"
+name: crm-query-strategy
+description: "CRM read query scoping strategy for MSX/MCEM. Scope-Before-Retrieve pattern: VAULT-PREFETCH, composite tools, crm_query filters, get_milestones usage. Triggers: CRM query construction, milestone lookup, opportunity scoping, get_milestones usage, crm_query filters, oversized payload, unscoped query, query strategy."
 ---
 
 # CRM Query Strategy (Scope-Before-Retrieve)
@@ -82,7 +82,7 @@ Prefer composite tools over chaining primitives:
 
 ## Step 3 — crm_query for Filtered Lookups
 
-Preferred tool for milestone queries needing filtering. See `crm-entity-schema.instructions.md` for full schema.
+Preferred tool for milestone queries needing filtering. See `crm-entity-schema` skill for full schema.
 
 **Guardrails**: `crm_query` enforces an entity allowlist and a 500-record pagination ceiling. Only entity sets in `ALLOWED_ENTITY_SETS` are permitted. Queries to unlisted entities are rejected with a descriptive error.
 
@@ -128,19 +128,19 @@ For "which milestones need tasks":
 
 | Pattern | Status |
 |---|---|
-| `get_milestones(mine: true)` → "which ones need attention?" | ❌ Unscoped — use customerKeyword or opportunityId instead |
-| `get_milestones({})` or `get_milestones()` with no params | ❌ Rejected — scoping required |
-| `crm_query({ entitySet: "msp_milestones" })` | ❌ Wrong entity set |
-| `crm_query` with `msp_forecastedconsumptionrecurring` | ❌ Field doesn't exist |
-| `crm_query` with `msp_estimatedcompletiondate` | ❌ Use `msp_milestonedate` |
-| Loop: list_opportunities per customer → get_milestones per opp → get_milestone_activities per ms | ❌ ~30 calls |
-| Skipping vault when OIL is available | ❌ Wastes API calls |
-| `get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` | ✅ **1 call** (best) |
-| `get_milestones({ customerKeyword: "Contoso", includeTasks: true })` | ✅ **1 call** with inline tasks |
-| `get_milestones({ opportunityKeyword: "Azure Migration" })` | ✅ **1 call** (name resolution) |
-| `get_milestones({ opportunityIds: [...], statusFilter: "active" })` | ✅ Batch with filtering |
-| `oil:get_customer_context("Contoso")` → use GUID → `get_milestones({ opportunityId })` | ✅ Vault-first (2 calls) |
-| `oil:prepare_crm_prefetch({ customers: [...] })` → paste into `crm_query` | ✅ CRM-ready prefetch |
-| `find_milestones_needing_tasks({ customerKeywords: [...] })` | ✅ 1 call |
-| `crm_query` with proper `$filter`/`$select`/`$top` | ✅ Filtered, efficient |
-| `get_milestone_activities({ milestoneIds: ["ms1","ms2","ms3"] })` | ✅ Batch (1 call) |
+| `get_milestones(mine: true)` → "which ones need attention?" | Bad — Unscoped — use customerKeyword or opportunityId instead |
+| `get_milestones({})` or `get_milestones()` with no params | Bad — Rejected — scoping required |
+| `crm_query({ entitySet: "msp_milestones" })` | Bad — Wrong entity set |
+| `crm_query` with `msp_forecastedconsumptionrecurring` | Bad — Field doesn't exist |
+| `crm_query` with `msp_estimatedcompletiondate` | Bad — Use `msp_milestonedate` |
+| Loop: list_opportunities per customer → get_milestones per opp → get_milestone_activities per ms | Bad — ~30 calls |
+| Skipping vault when OIL is available | Bad — Wastes API calls |
+| `get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` | Good — **1 call** (best) |
+| `get_milestones({ customerKeyword: "Contoso", includeTasks: true })` | Good — **1 call** with inline tasks |
+| `get_milestones({ opportunityKeyword: "Azure Migration" })` | Good — **1 call** (name resolution) |
+| `get_milestones({ opportunityIds: [...], statusFilter: "active" })` | Good — Batch with filtering |
+| `oil:get_customer_context("Contoso")` → use GUID → `get_milestones({ opportunityId })` | Good — Vault-first (2 calls) |
+| `oil:prepare_crm_prefetch({ customers: [...] })` → paste into `crm_query` | Good — CRM-ready prefetch |
+| `find_milestones_needing_tasks({ customerKeywords: [...] })` | Good — 1 call |
+| `crm_query` with proper `$filter`/`$select`/`$top` | Good — Filtered, efficient |
+| `get_milestone_activities({ milestoneIds: ["ms1","ms2","ms3"] })` | Good — Batch (1 call) |

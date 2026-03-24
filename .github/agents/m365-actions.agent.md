@@ -2,11 +2,11 @@
 name: m365-actions
 description: "M365 action agent: sends Teams messages, manages calendar events, composes/sends emails, accesses SharePoint/OneDrive files, and creates/modifies Word documents. Delegated from the main agent or @mcaps when M365 write operations are needed. Handles UPN resolution, chat lookup, and message delivery. Triggers: send message, send email, create meeting, schedule meeting, reply to email, forward email, post in channel, search SharePoint, upload file, create Word doc."
 tools:
-  - "teams/*"
-  - "calendar/*"
-  - "mail/*"
-  - "sharepoint/*"
-  - "word/*"
+  - teams/*
+  - calendar/*
+  - mail/*
+  - sharepoint/*
+  - word/*
   - edit/editFiles
   - read
 
@@ -57,6 +57,7 @@ The parent agent should resolve UPNs via OIL vault before delegating. If you rec
 **There is currently no Graph-native list/filter messages tool** in the agent365 Mail MCP. This means there is no reliable path from search → full structured headers within the current toolset.
 
 **Workaround — multi-query strategy:**
+
 1. Use `SearchMessages` with a highly specific query that asks M365 Copilot to list every To and CC recipient individually with email addresses. Phrase the query to explicitly request "list every person on the CC line with their email address" rather than asking for the message generally.
 2. If CC is still summarized (e.g., "account team"), re-query asking M365 Copilot to expand the group: "Who exactly is on the CC line of [subject]? List every individual name and email."
 3. If still incomplete, report the limitation to the parent agent with the Outlook Web link so the user can verify headers directly.

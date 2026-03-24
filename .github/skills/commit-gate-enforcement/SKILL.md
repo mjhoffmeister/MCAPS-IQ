@@ -53,6 +53,22 @@ Prevents premature milestone commitment by validating that delivery readiness ev
 
 > **Commitment help contact**: Cory.Kincaid@microsoft.com — escalate commitment questions here.
 
+## Delivery Accountability Mapping (RACI)
+
+When gaps are found at the commit gate, classify delivery accountability:
+
+| Role | Responsibility |
+|---|---|
+| **CSAM** | Outcome orchestration, customer expectation management, risk escalation |
+| **CSA** | Technical feasibility, architecture guardrails, execution integrity |
+| **Partner/ISD/Unified** | Day-to-day delivery execution |
+| **Specialist** | Pipeline integrity (Stages 2-3 only) |
+
+**Common mismatches to flag**:
+- CSAM listed as milestone owner but delivery motion indicates Partner/ISD/Unified → reassign
+- No delivery owner explicitly named → flag as execution risk
+- Delivery owner exists but not executing → route escalation to delivery org
+
 ## Role Lens (applied via role cards)
 
 - **CSA focus**: Architectural feasibility, technical delivery risk, environment prerequisites

@@ -1,6 +1,6 @@
 ---
 name: role-orchestration
-description: 'Role orchestration router: given current deal state, recommends which organizational unit (ATU, STU, CSU, or Partner) should own the immediate next step. Prevents action paralysis from multi-team overlap. Chains with mcem-stage-identification, exit-criteria-validation, and risk-surfacing for full deal triage. Triggers: who leads next, team assignment, action paralysis, ATU/STU/CSU routing, which team, next-step owner, who should own.'
+description: 'Role orchestration router and authority tie-breaker: given current deal state, recommends which unit (ATU, STU, CSU, or Partner) should own the next step. Also resolves conflicting role guidance by assigning a single decision-owner per disputed domain. Triggers: who leads next, team assignment, action paralysis, ATU/STU/CSU routing, which team, next-step owner, who should own, tie-break, conflicting direction, who decides, authority clarification, role disagreement, deadlock, who has final say.'
 argument-hint: 'Provide opportunityId and the specific action or decision needing team assignment'
 ---
 
@@ -52,9 +52,27 @@ Determines which role should lead the next action based on MCEM stage accountabi
 - Cross-stage actions → lead role is determined by where the opportunity currently sits
 - If user's role differs from recommended lead → present handoff recommendation
 
+## Authority Tie-Break (Conflicting Role Guidance)
+
+When two roles give conflicting direction on the same work item:
+
+| Domain | Decision Owner | Communication Owner |
+|---|---|---|
+| Technical feasibility | CSA | CSA informs CSAM |
+| Architecture constraints | CSA | CSA documents, CSAM communicates to customer |
+| Customer expectation | CSAM | CSAM manages timeline/scope messaging |
+| Delivery resourcing | CSAM (escalation) | CSAM owns partner/ISD coordination |
+| Timeline adjustment | CSAM (customer) + CSA (technical) | Joint |
+
+- Technical disputes → CSA is final authority
+- Customer-facing implications → CSAM communicates adjustments
+- Mixed → CSA decides technical path, CSAM communicates customer impact
+- Neither claims decision → flag as `unresolved_authority` requiring explicit assignment
+
 ## Output Schema
 
 - `recommended_lead`: role name + rationale
 - `contributing_roles`: other roles with specific asks
 - `handoff_needed`: boolean + direction if user is not the lead role
+- `authority_conflicts`: disputed areas with tie-break decisions (when applicable)
 - `next_action`: names the skill the lead role should invoke next

@@ -1,9 +1,59 @@
 ---
 name: nomination
-description: "Fill and submit an Americas Living Our Culture award nomination via Playwright MCP browser automation. Triggered by @doctor when @mcaps delegates a completed nomination for form submission. Handles SSO auth, multi-step form navigation, field population, and pre-submit review."
+description: "Generate and submit Americas Living Our Culture award nominations. Covers award categories, form structure, narrative framing, compliance rules, ACR verification, and optional Playwright browser automation for form submission. Triggers: nomination, Living Our Culture, award nomination, Americas award, Make it Happen, Team First, nominee, nomination form."
 ---
 
-# Nomination Form Fill
+# Living Our Culture Nomination
+
+## Award Categories
+
+| Category | Team Size | Reward | Best For |
+|---|---|---|---|
+| **Make it Happen** | Up to 4 | $1,500/person | Going the distance, cross-role execution |
+| **Try New Things** | Up to 4 | $1,500/person | Bold thinking, growth mindset |
+| **Team First** | 5–10 FTEs, 2+ OUs | $1,500/person | Cross-segment collaborative impact |
+| **Create a Place of Belonging** | Up to 4 | $1,500/person | Inclusion, community building |
+| **Manager of the Quarter** | Individual | $2,000 | Model, Coach, Care leadership |
+| **Leading with Compliance** | Up to 4 | $1,500/person | Compliance culture, integrity |
+| **oneAMI Award** | Up to 4, multi-OU | $1,500/person | Customer Zero AI adoption |
+
+**Cash Award Cap**: 2 per fiscal year, $3,500 USD total. **Default for ACR nominations** (SE + SSP + GH AE = 3 people): **Make it Happen**.
+
+## Form Field Constraints
+
+| Field | Max Chars |
+|---|---|
+| Project Name | 90 |
+| TPID | free text (dedicated field — never in narrative) |
+| Headline 1/2/3 | 300 each |
+| Story narrative | 6,000 |
+| Per-nominee contribution | free text |
+
+## Narrative Rules (Mandatory)
+
+**Core principle**: Adoption-first, commitment-as-outcome. The ACR commitment is the *outcome* of the strategy — never a discovery of a gap.
+
+**Forbidden**: Do NOT reference prior CRM values, "before" numbers, ACR deltas, corrections, gaps, variances, discrepancies. Do NOT use: "discovered," "found," "corrected," "underreported," "missing."
+
+| Instead of... | Say... |
+|---|---|
+| "ACR was missing from CRM" | "The team committed $X/mo in GHCP ACR" |
+| "We discovered a gap" | "The team committed the verified monthly ACR" |
+| "Updated from $X to $Y" | "Committed $Y/mo in GHCP ACR on the milestone" |
+
+## ACR Verification
+
+1. **GH Account Executive confirmation** — the truth
+2. **CRM committed value** — if already committed with GH AE-confirmed number
+3. **MSXI / OctoDash** — starting points, not final
+
+## Style Consistency
+
+Check vault `Nominations/` for existing nominations. Match tone and detail level.
+
+---
+
+# Nomination Form Fill (Browser Automation)
 
 Fill the Living Our Culture nomination form at `https://wwrrnomination.azurewebsites.net/LivingOurCulture/SubmitNomination` using Playwright MCP tools.
 

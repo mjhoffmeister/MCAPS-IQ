@@ -51,3 +51,21 @@ Qualifies incoming customer signals into actionable Stage 2 pipeline by validati
 - `draft_opportunity`: recommended field values for new opportunity (if qualified)
 - `draft_milestones`: minimum milestone set with owners and dates
 - `next_action`: "Opportunity qualified. Would you like to initiate `proof-plan-orchestration` for Stage 2 technical shaping?"
+
+## Customer Outcome Scoping (Pre-Stage 2)
+
+When qualifying, also define explicit, measurable KPIs during initial engagement:
+
+### Outcome Clarity Criteria
+
+| Element | Required | Evidence |
+|---|---|---|
+| Business problem stated | Yes | Customer-articulated need (not Microsoft projection) |
+| Measurable success metric | Yes | Quantifiable target (reduce X by Y%, achieve Z users) |
+| Baseline available | Recommended | Current state measurement exists or plan to obtain |
+| Timeline expectation | Yes | Customer's expected value realization window |
+| Stakeholder identified | Recommended | Named sponsor or decision maker |
+
+- Missing baseline → acceptable to proceed but flag for Stage 2 collection
+- No measurable metric → block progression; create task to define measurement
+- Multiple outcomes → prioritize by customer emphasis and commercial alignment

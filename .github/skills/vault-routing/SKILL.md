@@ -1,0 +1,106 @@
+---
+name: vault-routing
+description: "Obsidian vault integration — local knowledge layer, customer roster, durable storage, CRM prefetch context, Connect hook routing. Triggers: vault reads, customer defaults, durable memory, Obsidian notes, OIL tools, customer roster, vault-first storage, cross-medium context assembly, vault prefetch, vault promote, vault correlate, vault lookup, local knowledge store, vault file retrieval, prefetch data, customer notes file."
+---
+
+# Obsidian Vault — Operational Contract
+
+The vault is the local context layer. CRM is system-of-record for live state.
+
+## Core Rules
+
+- Vault scopes who/what to query; CRM validates current status.
+- Run VAULT-PREFETCH before broad CRM retrieval when OIL is available.
+- Persist only validated findings to vault (no speculative writes).
+- Treat vault-listed customers as active roster for proactive workflows.
+- If OIL is unavailable, continue statelessly and state the gap.
+
+## OIL Tools (Primary)
+
+### Read and scope
+
+- `get_vault_context`
+- `get_customer_context`
+- `oil_get_opportunity_context`
+- `oil_get_milestone_context`
+- `prepare_crm_prefetch`
+- `search_vault`
+- `query_notes`
+
+### Correlate and promote
+
+- `resolve_people_to_customers`
+- `correlate_with_vault`
+- `promote_findings`
+- `capture_connect_hook`
+
+### Entity sync writes (gated)
+
+- `oil_create_opportunity`
+- `oil_update_opportunity`
+- `oil_create_milestone`
+- `oil_update_milestone`
+- `manage_pending_writes`
+
+## Vault Protocol Phases
+
+### Availability guard
+
+1. Call `get_vault_context()` once per workflow.
+2. Cache availability for the current turn.
+3. If unavailable, skip vault phases and continue with CRM-only flow.
+
+### VAULT-PREFETCH
+
+- Use `get_customer_context({ customer })` and/or `prepare_crm_prefetch({ customers })`.
+- Reuse GUIDs/TPIDs from vault instead of rediscovering through broad CRM search.
+
+### Vault Exhaustion Protocol (mandatory before live-system fallback)
+
+Before querying Teams, Outlook, CRM, or WorkIQ for data, exhaust the vault using this tiered search strategy. **Do not skip tiers** — a shallow `search_vault` miss does not mean the vault lacks the data.
+
+| Tier | Tool | What it finds | When to use |
+|---|---|---|---|
+| **1. Customer context** | `get_customer_context({ customer })` | Full note: opportunities, milestones, team, action items, connect hooks, agent insights, linked people, meetings | Always first for customer-scoped queries |
+| **2. Frontmatter query** | `query_notes({ where: { tags: "<topic>" }, folder: "Customers" })` | Notes matching structured metadata (tags, tpid, status, customer) | Cross-customer discovery |
+| **3. Vault search** | `search_vault({ query: "<terms>", filter_folder: "Customers" })` | Title, tag, heading, and body content matches (lexical + fuzzy) | Free-text search when customer name isn't known |
+| **4. Graph traversal** | `query_graph({ path: "<note>", direction: "neighborhood" })` | Related notes via wikilinks (2-hop) | Finding related context around a known note |
+| **5. Read specific note** | `read_note` on path from Tier 1–4 results | Full body content, sections, inline data | Deep-read when you know the note exists but need specific section content |
+
+**Escalation rule**: Only go to live systems (CRM, M365, WorkIQ) after Tiers 1–3 return no relevant results.
+
+### VAULT-CORRELATE
+
+- After M365/WorkIQ retrieval, run `resolve_people_to_customers` and `correlate_with_vault`.
+- Keep vault query date window aligned to source retrieval window.
+
+### VAULT-PROMOTE
+
+- Persist validated outcomes via `promote_findings`.
+- Capture measurable impact with `capture_connect_hook`.
+
+### VAULT-SYNC
+
+1. Read current vault entities.
+2. Diff against CRM retrieval.
+3. Write only new/changed entities with `oil_create_*`/`oil_update_*`.
+4. Confirm writes through pending queue.
+
+## Write Safety
+
+- One entity per write call.
+- Do not manually synthesize entity markdown when entity tools exist.
+- Confirm large sync batches before execution.
+
+## Fallback (No Vault)
+
+- Ask user for customer scope or use `crm_whoami` context.
+- Skip vault correlation and promotion.
+- Connect hook fallback target: `.connect/hooks/hooks.md`.
+
+## Anti-Patterns
+
+- CRM-wide retrieval without vault scoping when vault is available.
+- Treating cached vault status as live CRM truth.
+- Persisting unvalidated assumptions.
+- Creating customer files for one-off transient lookups.
