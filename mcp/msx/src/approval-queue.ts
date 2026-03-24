@@ -23,6 +23,7 @@ export interface StagedOperation {
   status: OperationStatus;
   // Attached by specific tools after staging
   identity?: Record<string, unknown>;
+  linkedOpId?: string;
   fallbackEntitySet?: string;
   fallbackPayload?: Record<string, unknown>;
 }

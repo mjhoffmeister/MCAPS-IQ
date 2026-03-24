@@ -1622,7 +1622,7 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
         milestoneNumber, milestoneName, milestoneOppId, milestoneOwnerId,
         milestoneId: nid, opportunityName
       });
-      if (!access.ok) return error(access.error);
+      if (!access.ok) return error(access.error!);
 
       // Build before-state limited to fields being changed
       const before: Record<string, unknown> = {};
@@ -1690,8 +1690,8 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
       if (invalidIds.length) return error(`Invalid milestone GUIDs: ${invalidIds.join(', ')}`);
 
       const queue = getApprovalQueue();
-      const allOps = [];
-      const skipped = [];
+      const allOps: Array<{ milestoneNumber: string | null; name: string; opportunity: string | null; operationIds: string[]; before: string; after: string }> = [];
+      const skipped: Array<{ id: string; milestoneNumber?: string | null; name?: string; reason: string }> = [];
 
       for (const nid of normalizedIds) {
         const fullRecord = await crmClient.request(`msp_engagementmilestones(${nid})`, {
@@ -1702,10 +1702,14 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
           continue;
         }
 
-        const record = fullRecord.data;
-        const currentName = record.msp_name || '';
-        const milestoneNumber = record.msp_milestonenumber || null;
-        const milestoneOppId = record._msp_opportunityid_value || null;
+        const record = fullRecord.data as Record<string, unknown> | null;
+        if (!record) {
+          skipped.push({ id: nid, reason: 'Empty response' });
+          continue;
+        }
+        const currentName = (record.msp_name as string) || '';
+        const milestoneNumber = (record.msp_milestonenumber as string) || null;
+        const milestoneOppId = (record._msp_opportunityid_value as string) || null;
         const opportunityName = fv(record, '_msp_opportunityid_value') || null;
 
         if (currentName.toLowerCase().includes(`#${tag.toLowerCase()}`)) {
@@ -1734,7 +1738,7 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
           opportunityName,
         };
 
-        const currentComments = record.msp_forecastcomments || '';
+        const currentComments = (record.msp_forecastcomments as string) || '';
         const tagComment = `Tag #${tag} applied. Reason: ${reason.trim()}`;
         const newComments = currentComments ? `${currentComments}\n${tagComment}` : tagComment;
         const commentOp = queue.stage({
@@ -1798,10 +1802,11 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
         return error(`Milestone ${nid} not found or inaccessible (${fullRecord.status}): ${fullRecord.data?.message || 'lookup failed'}`);
       }
 
-      const record = fullRecord.data;
-      const currentName = record.msp_name || '';
-      const milestoneNumber = record.msp_milestonenumber || null;
-      const milestoneOppId = record._msp_opportunityid_value || null;
+      const record = fullRecord.data as Record<string, unknown> | null;
+      if (!record) return error('Empty response from CRM');
+      const currentName = (record.msp_name as string) || '';
+      const milestoneNumber = (record.msp_milestonenumber as string) || null;
+      const milestoneOppId = (record._msp_opportunityid_value as string) || null;
       const opportunityName = fv(record, '_msp_opportunityid_value') || null;
 
       // Verify the tag exists on the milestone (case-insensitive)
@@ -1834,7 +1839,7 @@ export function registerTools(server: McpServer, crmClient: CrmClient): void {
       };
 
       // Stage 2: PATCH forecast comments with removal reason
-      const currentComments = record.msp_forecastcomments || '';
+      const currentComments = (record.msp_forecastcomments as string) || '';
       const removeComment = `Tag #${tag} removed. Reason: ${reason.trim()}`;
       const newComments = currentComments ? `${currentComments}\n${removeComment}` : removeComment;
       const commentOp = queue.stage({
