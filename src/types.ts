@@ -27,6 +27,8 @@ export interface PersonFrontmatter extends NoteFrontmatter {
   company?: string;
   org?: "internal" | "customer" | "partner";
   customers?: string[];
+  email?: string;
+  teams_id?: string;
 }
 
 export interface MeetingFrontmatter extends NoteFrontmatter {
@@ -44,6 +46,8 @@ export interface GraphNode {
   path: string;
   title: string;
   tags: string[];
+  headings: string[];
+  bodySnippet: string; // first N chars of body (frontmatter-stripped) for search
   frontmatter: NoteFrontmatter;
   outLinks: Set<string>; // paths this note links to
   inLinks: Set<string>; // paths that link to this note
@@ -67,12 +71,21 @@ export interface TagCount {
 export interface OpportunityRef {
   name: string;
   guid?: string;
+  status?: string;
+  stage?: string;
+  owner?: string;
+  salesplay?: string;
+  last_validated?: string;
 }
 
 export interface MilestoneRef {
   name: string;
   id?: string;
   number?: string;
+  status?: string;
+  milestonedate?: string;
+  owner?: string;
+  opportunity?: string;
 }
 
 export interface TeamMember {
@@ -106,6 +119,8 @@ export interface CustomerContext {
 
 export interface PersonContext {
   frontmatter: PersonFrontmatter;
+  email?: string;
+  teamsId?: string;
   linkedCustomers: string[];
   recentMeetings: NoteRef[];
   backlinks: NoteRef[];
@@ -180,6 +195,9 @@ export interface SchemaConfig {
   templatesRoot: string;
   agentLog: string;
   connectHooksBackup: string;
+  opportunitiesSubdir: string;
+  milestonesSubdir: string;
+  insightsSubdir: string;
 }
 
 export interface FrontmatterSchemaConfig {
@@ -264,12 +282,22 @@ export interface StaleEntry {
   ageDays: number;
 }
 
+/** A structural layout issue detected in the vault. */
+export interface StructuralIssue {
+  type: "flat-customer" | "misplaced-entity";
+  currentPath: string;
+  expectedPath: string;
+  customer: string;
+  detail: string;
+}
+
 /** Vault-level health summary. */
 export interface VaultHealthReport {
   totalCustomers: number;
   customers: CustomerFreshness[];
   orphanedMeetings: string[];
   rosterGaps: string[];
+  structuralIssues: StructuralIssue[];
 }
 
 /** Vault-side data for drift comparison against live CRM state. */

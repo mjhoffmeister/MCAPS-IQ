@@ -10,6 +10,11 @@ import type { GraphIndex } from "../graph.js";
 import type { SessionCache } from "../cache.js";
 import type { OilConfig } from "../types.js";
 import {
+  validateCustomerName,
+  validateVaultPath,
+  validationError,
+} from "../validation.js";
+import {
   readNote,
   buildFolderTree,
   listFolder,
@@ -18,12 +23,20 @@ import {
   parseTeam,
   parseActionItems,
   toNoteRef,
+  resolveCustomerPath,
+  readOpportunityNotes,
+  readMilestoneNotes,
+  listCustomerEntities,
+  readInsightsPartitioned,
+  readMeetingsFromFrontmatter,
 } from "../vault.js";
 import type {
   CustomerContext,
   PersonContext,
   NoteRef,
   PeopleResolutionResult,
+  OpportunityRef,
+  MilestoneRef,
 } from "../types.js";
 
 /**
@@ -89,8 +102,11 @@ export function registerOrientTools(
       },
     },
     async ({ customer, lookback_days, include_similar, include_open_items, assignee }) => {
+      const custErr = validateCustomerName(customer);
+      if (custErr) return validationError(`get_customer_context: ${custErr}`);
+
       const lookback = lookback_days ?? 90;
-      const customerFile = `${config.schema.customersRoot}${customer}.md`;
+      const customerFile = await resolveCustomerPath(vaultPath, config, customer);
 
       // Read customer note (with cache)
       let parsed = cache.getNote(customerFile);
@@ -113,25 +129,33 @@ export function registerOrientTools(
       }
 
       // Parse structured sections
-      const oppSection = parsed.sections.get("Opportunities") ?? "";
-      const milestoneSection = parsed.sections.get("Milestones") ?? "";
       const teamSection = parsed.sections.get("Team") ?? "";
-      const insightsSection = parsed.sections.get("Agent Insights") ?? "";
       const connectSection = parsed.sections.get("Connect Hooks") ?? "";
 
-      const opportunities = parseOpportunities(oppSection);
-      const milestones = parseMilestones(milestoneSection);
+      // Read entities — prefers sub-notes, falls back to section parsing
+      const opportunities = await readOpportunityNotes(vaultPath, config, customer);
+      const milestones = await readMilestoneNotes(vaultPath, config, customer);
       const team = parseTeam(teamSection);
-      const agentInsights = insightsSection
-        .split("\n")
-        .filter((l) => l.trim())
-        .map((l) => l.replace(/^[-*]\s+/, "").trim());
+
+      // Agent Insights — partitioned sub-notes first, fallback to monolithic section
+      const insightsResult = await readInsightsPartitioned(vaultPath, config, customer);
+      let agentInsights: string[];
+      if (insightsResult.partitioned) {
+        agentInsights = insightsResult.entries;
+      } else {
+        const insightsSection = parsed.sections.get("Agent Insights") ?? "";
+        agentInsights = insightsSection
+          .split("\n")
+          .filter((l) => l.trim())
+          .map((l) => l.replace(/^[-*]\s+/, "").trim());
+      }
 
       // Linked people: find People notes that reference this customer
       const linkedPeople = findLinkedPeople(graph, config, customer);
 
-      // Recent meetings — notes in Meetings/ with matching customer frontmatter
-      const recentMeetings = findRecentMeetings(
+      // Recent meetings — prefer frontmatter index (O(1)), fall back to graph scan
+      const fmMeetings = readMeetingsFromFrontmatter(parsed.frontmatter, lookback);
+      const recentMeetings = fmMeetings ?? findRecentMeetings(
         graph,
         config,
         customer,
@@ -199,6 +223,9 @@ export function registerOrientTools(
       },
     },
     async ({ name }) => {
+      const nameErr = validateCustomerName(name);
+      if (nameErr) return validationError(`get_person_context: person name — ${nameErr}`);
+
       const personFile = `${config.schema.peopleRoot}${name}.md`;
 
       let parsed = cache.getNote(personFile);
@@ -237,6 +264,8 @@ export function registerOrientTools(
           org: fm.org as PersonContext["frontmatter"]["org"],
           customers: linkedCustomers,
         },
+        email: typeof fm.email === "string" ? fm.email : undefined,
+        teamsId: typeof fm.teams_id === "string" ? fm.teams_id : undefined,
         linkedCustomers,
         recentMeetings,
         backlinks,
@@ -277,6 +306,13 @@ export function registerOrientTools(
       },
     },
     async ({ path, direction, hops, filter_tags, filter_folder }) => {
+      const pathErr = validateVaultPath(path);
+      if (pathErr) return validationError(`query_graph: ${pathErr}`);
+      if (filter_folder) {
+        const folderErr = validateVaultPath(filter_folder);
+        if (folderErr) return validationError(`query_graph: filter_folder — ${folderErr}`);
+      }
+
       const cacheKey = `graph:${direction}:${path}:${hops ?? 2}:${filter_tags?.join(",") ?? ""}:${filter_folder ?? ""}`;
       let result = cache.getTraversal(cacheKey);
 
@@ -348,6 +384,86 @@ export function registerOrientTools(
             skippedCount: result.unresolved.length,
           },
         }, null, 2) }],
+      };
+    },
+  );
+
+  // ── oil_get_opportunity_context ──────────────────────────────────────────
+
+  server.registerTool(
+    "oil_get_opportunity_context",
+    {
+      description: "[OIL/Vault] Returns all opportunities for a customer as structured data from the Obsidian vault — entity sub-notes (with full frontmatter) or section parsing fallback. Each opportunity includes GUID, status, stage, owner, and salesplay when available. NOT a CRM query — use MSX tools for live CRM data.",
+      inputSchema: {
+        customer: z.string().describe("Customer name"),
+      },
+    },
+    async ({ customer }) => {
+      const custErr = validateCustomerName(customer);
+      if (custErr) return validationError(`oil_get_opportunity_context: ${custErr}`);
+
+      const opportunities: OpportunityRef[] = await readOpportunityNotes(
+        vaultPath, config, customer,
+      );
+
+      if (opportunities.length === 0) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              customer,
+              opportunities: [],
+              _note: "No opportunities found. Check customer name or vault structure.",
+            }, null, 2),
+          }],
+        };
+      }
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({ customer, opportunities }, null, 2),
+        }],
+      };
+    },
+  );
+
+  // ── oil_get_milestone_context ────────────────────────────────────────────
+
+  server.registerTool(
+    "oil_get_milestone_context",
+    {
+      description: "[OIL/Vault] Returns all milestones for a customer as structured data from the Obsidian vault — entity sub-notes (with full frontmatter) or section parsing fallback. Each milestone includes ID, number, status, date, owner, and linked opportunity when available. NOT a CRM query — use MSX tools for live CRM data.",
+      inputSchema: {
+        customer: z.string().describe("Customer name"),
+      },
+    },
+    async ({ customer }) => {
+      const custErr = validateCustomerName(customer);
+      if (custErr) return validationError(`oil_get_milestone_context: ${custErr}`);
+
+      const milestones: MilestoneRef[] = await readMilestoneNotes(
+        vaultPath, config, customer,
+      );
+
+      if (milestones.length === 0) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              customer,
+              milestones: [],
+              _note: "No milestones found. Check customer name or vault structure.",
+            }, null, 2),
+          }],
+        };
+      }
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({ customer, milestones }, null, 2),
+        }],
       };
     },
   );
@@ -450,7 +566,7 @@ async function findOpenItems(
   const items: import("../types.js").ActionItem[] = [];
 
   // Collect all note paths linked to this customer
-  const customerFile = `${config.schema.customersRoot}${customer}.md`;
+  const customerFile = await resolveCustomerPath(vaultPath, config, customer);
   const forwardLinks = graph.getForwardLinks(customerFile);
   const backlinks = graph.getBacklinks(customerFile);
   const meetingNotes = findRecentMeetings(graph, config, customer, 90);
