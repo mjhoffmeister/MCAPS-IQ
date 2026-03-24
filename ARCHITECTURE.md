@@ -5,9 +5,7 @@ Quick orientation for new contributors. Full docs live in [`site/docs/`](site/do
 ## Folder Layout
 
 ```
-├── mcp/                    MCP server packages (the core runtime)
-│   ├── msx/                  Dynamics 365 CRM — opportunities, milestones, tasks
-│   ├── oil/                  Obsidian Intelligence Layer — vault search & knowledge graph
+├── mcp/                    Local MCP server source in this repo
 │   └── excalidraw/           Diagram generator for account-structure visuals
 │
 ├── evals/                  Evaluation harness & test judges
@@ -36,8 +34,8 @@ Quick orientation for new contributors. Full docs live in [`site/docs/`](site/do
 │
 ├── scripts/                Setup, launch & CI helpers
 │   ├── init.js               One-command setup wizard
-│   ├── msx-start.js          Launch MSX MCP server
-│   ├── oil-start.js          Launch OIL MCP server
+│   ├── msx-start.js          Launch MSX MCP server package via npx
+│   ├── oil-start.js          Launch OIL MCP server package via npx
 │   ├── pbi-start.js          Launch Power BI MCP server
 │   ├── capture-fixtures.js   Record live API responses for offline testing
 │   └── eval-persist.js       Baseline / diff / history for eval results
@@ -57,7 +55,7 @@ Quick orientation for new contributors. Full docs live in [`site/docs/`](site/do
 | **Add or edit a skill**       | `.github/skills/<name>/SKILL.md`     |
 | **Run evals**                 | `npm run eval` / `npm run eval:live` |
 | **Build the doc site**        | `npm run docs:build`                 |
-| **Add an MCP server tool**    | `mcp/<server>/src/tools.ts`          |
+| **Add an MCP server tool**    | Upstream MCP package repo or `mcp/<server>/src/*` for local servers |
 | **Write a new prompt**        | `.github/prompts/<name>.prompt.md`   |
 
 ## npm Scripts (quick reference)

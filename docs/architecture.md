@@ -31,8 +31,8 @@ You (Copilot Chat)
 | `.github/skills/`                 | 27 atomic domain skills (loaded on demand by keyword match)                                                                           | **Yes** — tailor to your operating model    |
 | `.github/prompts/`                | Reusable prompt templates (slash commands in VS Code; copyable prompts elsewhere)                                                      | **Yes** — create workflows you repeat often |
 | `.vscode/mcp.json`                | MCP server definitions (CRM, WorkIQ, Power BI, Obsidian)                                                                              | **Yes** — add/remove data sources           |
-| `mcp/msx/`                        | MSX CRM MCP server *(subtree: [microsoft/msx-copilot-mcp](https://github.com/microsoft/msx-copilot-mcp))*                                  | Optional — works out of the box                   |
-| `mcp/oil/`                        | Obsidian Intelligence Layer *(subtree: [microsoft/Obsidian-Intelligence-Layer](https://github.com/microsoft/Obsidian-Intelligence-Layer))* | Optional — enables persistent vault memory        |
+| `scripts/msx-start.js`            | MSX CRM MCP launcher (published package via `npx`)                                                                                    | Optional — starts on demand                  |
+| `scripts/oil-start.js`            | OIL MCP launcher (published package via `npx`)                                                                                        | Optional — enables persistent vault memory   |
 | `docs/`                           | Architecture docs and supporting material                                                                                             | Reference only                                     |
 
 ---
@@ -111,6 +111,6 @@ You can add any MCP-compatible server to this file. See the [Customization guide
 
 ---
 
-## Note on Subtrees
+## Package-based MCP Servers
 
-`mcp/msx` and `mcp/oil` are [git subtrees](https://www.atlassian.com/git/tutorials/git-subtree) — they live in this repo as normal files but are also maintained in their own standalone repos. No special clone flags needed.
+`msx-crm` and `oil` are launched from published npm packages via `npx` (see `.vscode/mcp.json` and `scripts/*-start.js`). This keeps the repo lighter and avoids vendoring those server source trees locally.

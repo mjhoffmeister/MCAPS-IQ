@@ -2,38 +2,29 @@
 
 The **[Obsidian Intelligence Layer (OIL)](https://github.com/JinLee794/Obsidian-Intelligence-Layer)** turns your local Obsidian vault into a durable knowledge layer for AI agents. Instead of starting every conversation from scratch, OIL gives agents persistent memory — customer context, meeting history, relationship maps, and accumulated insights — all indexed and queryable through MCP tools.
 
-OIL is included in this repo as a git subtree at `mcp/oil`.
-
 > **Don't use Obsidian?** No worries — everything works without it. The system operates statelessly (CRM-only) and you can bring your own persistence layer if desired.
 
 ---
 
 ## How to Enable It
 
-1. **Build OIL** (if you haven't already during setup):
-
-   ```bash
-   cd mcp/oil
-   npm install
-   npm run build
-   ```
-2. Open `.vscode/mcp.json` and uncomment the `"oil"` block:
+1. Open `.vscode/mcp.json` and enable the `"oil"` block:
 
 ```jsonc
 "oil": {
     "type": "stdio",
-    "command": "node",
-    "args": ["mcp/oil/dist/index.js"],
+    "command": "npx",
+    "args": ["-y", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
     "env": {
-        "OBSIDIAN_VAULT_PATH": "${input:obsidianVaultPath}"
+        "OBSIDIAN_VAULT_PATH": "${input:vault_path}"
     }
 }
 ```
 
-3. When prompted, enter the absolute path to your Obsidian vault (e.g., `/Users/yourname/Documents/MyVault`) — or set `OBSIDIAN_VAULT_PATH` as an environment variable.
-4. Click **Start** on `oil` in VS Code just like the other servers.
+2. When prompted, enter the absolute path to your Obsidian vault (for example, `/Users/yourname/Documents/MyVault`) — or set `OBSIDIAN_VAULT_PATH` in `.env`.
+3. Click **Start** on `oil` in VS Code just like the other servers.
 
-OIL exposes **22 domain-specific tools** including `get_customer_context`, `search_vault`, `prepare_crm_prefetch`, `promote_findings`, `check_vault_health`, and more. See the [OIL README](../mcp/oil/README.md) for the full tools reference.
+OIL exposes domain-specific tools including `get_customer_context`, `search_vault`, `prepare_crm_prefetch`, `promote_findings`, and `check_vault_health`. See the upstream [OIL README](https://github.com/JinLee794/Obsidian-Intelligence-Layer#readme) for full tool coverage and configuration details.
 
 ---
 
@@ -46,7 +37,7 @@ OIL exposes **22 domain-specific tools** including `get_customer_context`, `sear
 
 ---
 
-## What OIL Provides (22 Tools)
+## What OIL Provides
 
 | Category            | Tools                                                                                                                        | Purpose                                                |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -70,26 +61,21 @@ OIL exposes **22 domain-specific tools** including `get_customer_context`, `sear
    └── oil.config.yaml  # Optional — customize folder paths and field names
    ```
 
-   See [bench/fixtures/vault/](../mcp/oil/bench/fixtures/vault/) for example files you can copy as templates.
-3. **Build and configure OIL:**
-
-   ```bash
-   cd mcp/oil && npm install && npm run build && cd ../..
-   ```
-4. **Enable in `.vscode/mcp.json`** — uncomment the `oil` block and set your vault path:
+    See the upstream repository for sample vault fixtures and conventions.
+3. **Enable in `.vscode/mcp.json`** and set your vault path:
 
    ```jsonc
    "oil": {
        "type": "stdio",
-       "command": "node",
-       "args": ["mcp/oil/dist/index.js"],
+         "command": "npx",
+         "args": ["-y", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
        "env": {
            "OBSIDIAN_VAULT_PATH": "/absolute/path/to/YourVault"
        }
    }
    ```
-5. Click **Start** on `oil` in VS Code — the agent now has persistent memory.
+4. Click **Start** on `oil` in VS Code — the agent now has persistent memory.
 
 > You can also bring any MCP-compatible note server — just wire it into `.vscode/mcp.json`.
 
-See the full [OIL README](../mcp/oil/README.md) for configuration options, tool details, and architecture.
+See the full [OIL README](https://github.com/JinLee794/Obsidian-Intelligence-Layer#readme) for configuration options, tool details, and architecture.

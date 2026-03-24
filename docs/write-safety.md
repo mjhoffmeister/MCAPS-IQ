@@ -12,7 +12,7 @@ The write tools (`create_task`, `update_task`, `close_task`, `update_milestone`)
 
 ## How Write Safety Works
 
-All write operations use a **Stage → Review → Execute** pattern (see [STAGED_OPERATIONS.md](../mcp/msx/STAGED_OPERATIONS.md) for technical details):
+All write operations use a **Stage → Review → Execute** pattern (see [Architecture: Safe Write Pattern](architecture-msx-mcp.md#safe-write-pattern-stage-review-execute) for technical details):
 
 1. **Stage** — When you ask Copilot to create/update/close a record, the change is validated and staged locally. **Nothing is written to CRM yet.**
 2. **Review** — Copilot shows you a before/after diff of the proposed change and asks for your approval.

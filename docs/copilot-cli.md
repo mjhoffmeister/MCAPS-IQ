@@ -31,7 +31,7 @@ npm install -g @github/copilot
   ```bash
   az login
   ```
-- Dependencies installed (`mcp/msx/` and optionally `mcp/oil/`)
+- npm access to the published MCP packages used by `.vscode/mcp.json` (MSX and OIL are launched via `npx`)
 
 ## How It Works with This Repo
 

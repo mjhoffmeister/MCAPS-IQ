@@ -22,30 +22,30 @@ import { createInterface } from "node:readline";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 
-// ── MCP server definitions ──────────────────────────────────────────
-// Each entry describes an MCP sub-project and the commands needed to
-// initialise it.  Add new entries here as new servers appear.
+// ── Local MCP server definitions ────────────────────────────────────
+// These are the servers with source code vendored in this repo.
 const SERVERS = [
-  {
-    name: "msx-crm",
-    dir: join(ROOT, "mcp", "msx"),
-    install: "npm install",
-    build: "npm run build",
-    verify: "dist/index.js",
-  },
-  {
-    name: "oil (Obsidian Intelligence Layer)",
-    dir: join(ROOT, "mcp", "oil"),
-    install: "npm install",
-    build: "npm run build",
-    verify: "dist/index.js",
-  },
   {
     name: "excalidraw",
     dir: join(ROOT, "mcp", "excalidraw"),
     install: "npm install",
     build: null, // plain JS — no build step
     verify: "src/index.js",
+  },
+];
+
+// ── Package-based MCP server definitions ────────────────────────────
+// These servers are launched on-demand from npm via npx and do not
+// require local source checkout in this repo.
+const PACKAGE_SERVERS = [
+  {
+    name: "msx-crm",
+    package: "@microsoft/msx-mcp-server@latest",
+  },
+  {
+    name: "oil (Obsidian Intelligence Layer)",
+    package: "@jinlee794/obsidian-intelligence-layer@latest",
+    note: "Requires OBSIDIAN_VAULT_PATH to use vault tools.",
   },
 ];
 
@@ -166,6 +166,15 @@ function initServers() {
       allOk = false;
     }
   }
+
+  heading("Package-based MCP servers (npx)");
+  for (const server of PACKAGE_SERVERS) {
+    ok(`${server.name} — resolved at runtime via npx (${server.package})`);
+    if (server.note) {
+      console.log(`    ${server.note}`);
+    }
+  }
+
   return allOk;
 }
 
@@ -173,7 +182,7 @@ function initServers() {
 function checkOnly() {
   const prereqsOk = checkPrereqs();
 
-  heading("Checking MCP servers");
+  heading("Checking local MCP servers");
   let serversOk = true;
   for (const server of SERVERS) {
     const nodeModules = join(server.dir, "node_modules");
@@ -191,6 +200,14 @@ function checkOnly() {
       if (server.build && !built) missing.push(server.build);
       fail(`${server.name} — needs: ${missing.join(", ")}`);
       serversOk = false;
+    }
+  }
+
+  heading("Checking package-based MCP servers");
+  for (const server of PACKAGE_SERVERS) {
+    ok(`${server.name} — configured for npx package launch (${server.package})`);
+    if (server.note) {
+      console.log(`    ${server.note}`);
     }
   }
 

@@ -199,4 +199,4 @@ Big thanks to the original microsoft/MSX-Helper project for the foundation and i
 
 ## License
 
-MIT (see `mcp/msx/package.json`)
+MIT (see `LICENSE.md`)

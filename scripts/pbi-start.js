@@ -170,7 +170,7 @@ async function main() {
     process.exit(1);
   }
 
-  // Dynamic imports — the MCP SDK lives in mcp/msx/node_modules
+  // Dynamic imports from root dependencies.
   const { Server } = await import(
     "@modelcontextprotocol/sdk/server/index.js"
   );
