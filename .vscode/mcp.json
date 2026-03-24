@@ -16,7 +16,7 @@
 		"oil": {
 			"type": "stdio",
 			"command": "npx",
-			"args": ["-y", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
+			"args": ["-y", "--registry", "https://npm.pkg.github.com", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
 			"env": {
 				"OBSIDIAN_VAULT_PATH": "${input:vault_path}"
 			}
