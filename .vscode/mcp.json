@@ -7,11 +7,6 @@
 		}
 	],
 	"servers": {
-		"workiq": {
-			"type": "stdio",
-			"command": "npx",
-			"args": ["-y", "@microsoft/workiq@latest", "mcp"],
-		},
 		"msx-crm": {
 			"type": "stdio",
 			"command": "npx",
@@ -48,17 +43,11 @@
 		// 		"pipelines"
 		// 	]
 		// },	
-
-		// // Excalidraw MCP — create, manage, and render Excalidraw diagrams as SVG
-		// "excalidraw": {
-		// 	"type": "stdio",
-		// 	"command": "node",
-		// 	"args": ["mcp/excalidraw/src/index.js"],
-		// 	"env": {
-		// 		"REPO_ROOT": "${workspaceFolder}"
-		// 	}
-		// },
-
+		"workiq": {
+			"type": "stdio",
+			"command": "npx",
+			"args": ["-y", "@microsoft/workiq@latest", "mcp"],
+		},
 		"powerbi-remote": {
             "type": "http",
             "url": "https://api.fabric.microsoft.com/v1/mcp/powerbi"
