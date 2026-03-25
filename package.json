@@ -10,6 +10,8 @@
   "scripts": {
     "setup": "node scripts/init.js",
     "check": "node scripts/init.js --check",
+    "auth:packages": "node scripts/github-packages-auth.js",
+    "auth:packages:check": "node scripts/github-packages-auth.js --check",
     "postinstall": "node scripts/init.js",
     "docs:install": "pip install -r site/requirements.txt",
     "docs:serve": "mkdocs serve -f site/mkdocs.yml",

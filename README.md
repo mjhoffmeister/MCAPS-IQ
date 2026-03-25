@@ -46,6 +46,11 @@ cd mcaps-iq
 
 Use this only if you want repo-local eval/docs tooling or automatic global mcaps alias setup:
 
+> [!IMPORTANT]
+> **Use your personal GitHub account** (e.g. `JohnDoe`) when prompted during install.
+> **Do NOT use your Enterprise Managed User (EMU) account** — the one ending in `_microsoft`.
+> EMU accounts cannot access GitHub Packages from external organizations.
+
 ```bash
 npm install
 ```
@@ -62,6 +67,16 @@ az login
 
 > You must be on the corporate VPN and use your Microsoft corp account.
 
+### Step 2a: Bootstrap GitHub Packages access
+
+For private MCP packages like `@microsoft/msx-mcp-server` and `@microsoft/workiq`, run:
+
+```bash
+npm run auth:packages
+```
+
+This uses GitHub CLI login instead of asking users to create a PAT manually. The script prefers an already signed-in account with `read:packages`, or walks the user through `gh auth login` and writes a local repo `.npmrc` for this workspace.
+
 ### Step 3: Open in VS Code
 
 ```bash
@@ -72,6 +87,8 @@ code .
 
 1. Open `.vscode/mcp.json` in VS Code — you'll see a **"Start"** button above each server definition
 2. Click **Start** on `msx-crm` (required) and `workiq` (optional, for M365 searches)
+
+> If package auth is missing, the wrappers will prompt through GitHub CLI and then retry with the repo-local `.npmrc`.
 
 ### Step 5: Start chatting
 

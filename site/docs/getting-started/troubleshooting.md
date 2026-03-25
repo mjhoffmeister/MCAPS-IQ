@@ -122,11 +122,15 @@ Can't get things running? This page covers every common issue, organized by symp
 ??? failure "Server won't start — 'Start' button does nothing"
     **Check:**
     1. Is Node.js installed? (`node --version`)
-    2. Can npx resolve the server package?
+     2. Bootstrap GitHub Packages auth:
+         ```bash
+         npm run auth:packages
+         ```
+     3. Can npx resolve the server package?
        ```bash
        npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
        ```
-    3. Try starting manually in terminal:
+     4. Try starting manually in terminal:
        ```bash
        node scripts/msx-start.js
        ```
@@ -150,9 +154,10 @@ Can't get things running? This page covers every common issue, organized by symp
     
     **Fix:**
     ```bash
+    npm run auth:packages
     npx -y @microsoft/workiq mcp
     ```
-    If this fails, WorkIQ may not be available in your region yet. Everything else works without it.
+    If this fails, either your GitHub account lacks package access or WorkIQ is not available to your tenant yet.
 
 ---
 

@@ -17,6 +17,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
+import { ensureGithubPackagesAuth } from "./github-packages-auth.js";
 
 // ── repo root (scripts/ lives one level below) ──────────────────────
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -129,6 +130,24 @@ function checkPrereqs() {
     warn("  Install: https://learn.microsoft.com/cli/azure/install-azure-cli");
   }
 
+  const ghVersion = tryRun("gh --version");
+  if (ghVersion) {
+    ok(`GitHub CLI ${ghVersion.split("\n")[0].replace("gh version ", "")}`);
+    const ghStatus = tryRun("gh auth status");
+    if (ghStatus && ghStatus.includes("read:packages")) {
+      ok("GitHub Packages auth available via GitHub CLI");
+    } else if (ghStatus) {
+      warn("GitHub CLI is signed in, but no account with read:packages was detected.");
+      warn("  Run: npm run auth:packages");
+    } else {
+      warn("GitHub CLI installed but not signed in.");
+      warn("  Run: npm run auth:packages");
+    }
+  } else {
+    warn("GitHub CLI not found — recommended for private GitHub Packages auth.");
+    warn("  Install: https://cli.github.com/");
+  }
+
   return passed;
 }
 
@@ -179,6 +198,7 @@ function initServers() {
       console.log(`    ${server.note}`);
     }
   }
+  console.log("    Private GitHub Packages can be bootstrapped with: npm run auth:packages");
 
   return true;
 }
@@ -215,6 +235,7 @@ function checkOnly() {
       console.log(`    ${server.note}`);
     }
   }
+  console.log("    Private GitHub Packages bootstrap: npm run auth:packages");
 
   if (prereqsOk) {
     heading("Runtime environment is ready ✔");
@@ -427,6 +448,15 @@ if (checkMode) {
 
   const serversOk = initServers();
   if (serversOk) {
+    // ── GitHub Packages auth ────────────────────────────────────
+    heading("GitHub Packages authentication");
+    try {
+      await ensureGithubPackagesAuth();
+    } catch (err) {
+      warn(err.message);
+      warn("You can retry later with: npm run auth:packages");
+    }
+
     await configureEnv();
     const aliasOk = registerAlias();
     heading("All done ✔");

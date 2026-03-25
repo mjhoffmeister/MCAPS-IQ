@@ -64,6 +64,16 @@ cd mcaps-iq
 !!! tip "What to expect"
     Runtime startup is immediate once servers are started in `.vscode/mcp.json`. Optional local tooling setup may take longer depending on npm/network conditions.
 
+### One-time GitHub Packages auth
+
+Private MCP packages such as `@microsoft/msx-mcp-server` and `@microsoft/workiq` can be bootstrapped through GitHub CLI instead of a manually created PAT:
+
+```bash
+npm run auth:packages
+```
+
+The script looks for a signed-in GitHub account with `read:packages`, falls back to `gh auth login` if needed, and writes a repo-local `.npmrc` for this workspace.
+
 !!! success "Global `mcaps` command"
     Optional local tooling setup registers a **global `mcaps` command** on your system via `npm link`. After setup, you can type `mcaps` from **any directory** in **any terminal window** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full MCAPS IQ toolkit — MCP servers, agents, and skills are auto-loaded regardless of where you are.
 
@@ -141,11 +151,12 @@ Want to double-check everything before moving on?
 
 ??? failure "npx cannot fetch MSX or OIL packages"
     ```bash
+    npm run auth:packages
     npm ping
     npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
     npx -y @jinlee794/obsidian-intelligence-layer@latest mcp
     ```
-    If package fetch fails, check VPN/proxy and npm registry authentication.
+    If package fetch still fails, check VPN/proxy and confirm your GitHub account has package access.
 
 ??? failure "`az login` hangs or fails"  
     1. Make sure you're on VPN
