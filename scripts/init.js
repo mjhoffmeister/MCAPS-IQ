@@ -40,7 +40,7 @@ const SERVERS = [
 const PACKAGE_SERVERS = [
   {
     name: "msx-crm",
-    package: "@microsoft/msx-copilot-mcp@latest",
+    package: "@microsoft/msx-mcp-server@latest",
   },
   {
     name: "oil (Obsidian Intelligence Layer)",

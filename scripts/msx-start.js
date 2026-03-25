@@ -52,7 +52,7 @@ const result = spawnSync(
     "-y",
     "--registry",
     "https://npm.pkg.github.com",
-    "@microsoft/msx-copilot-mcp@latest",
+    "@microsoft/msx-mcp-server@latest",
     ...passthrough,
   ],
   {

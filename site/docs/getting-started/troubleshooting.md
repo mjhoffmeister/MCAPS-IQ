@@ -124,7 +124,7 @@ Can't get things running? This page covers every common issue, organized by symp
     1. Is Node.js installed? (`node --version`)
     2. Can npx resolve the server package?
        ```bash
-       npx -y --registry https://npm.pkg.github.com @microsoft/msx-copilot-mcp@latest
+       npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
        ```
     3. Try starting manually in terminal:
        ```bash

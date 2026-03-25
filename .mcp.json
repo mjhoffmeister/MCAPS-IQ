@@ -3,7 +3,7 @@
 	"msx-crm": {
 		"type": "stdio",
 		"command": "npx",
-		"args": ["-y", "--registry", "https://npm.pkg.github.com", "@microsoft/msx-copilot-mcp@latest"]
+		"args": ["-y", "--registry", "https://npm.pkg.github.com", "@microsoft/msx-mcp-server@latest"]
 	},
 	"oil": {
 		"type": "stdio",

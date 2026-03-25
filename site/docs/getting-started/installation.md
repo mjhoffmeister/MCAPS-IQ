@@ -142,7 +142,7 @@ Want to double-check everything before moving on?
 ??? failure "npx cannot fetch MSX or OIL packages"
     ```bash
     npm ping
-    npx -y --registry https://npm.pkg.github.com @microsoft/msx-copilot-mcp@latest
+    npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
     npx -y @jinlee794/obsidian-intelligence-layer@latest mcp
     ```
     If package fetch fails, check VPN/proxy and npm registry authentication.
