@@ -21,6 +21,7 @@
 			}
 		},
 		
+		
 		// // Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
 		// // Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
 		// "github": {
