@@ -23,18 +23,6 @@ import { ensureGithubPackagesAuth } from "./github-packages-auth.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 
-// ── Local MCP server definitions ────────────────────────────────────
-// These are the servers with source code vendored in this repo.
-const SERVERS = [
-  {
-    name: "excalidraw",
-    dir: join(ROOT, "mcp", "excalidraw"),
-    install: "npm install",
-    build: null, // plain JS — no build step
-    verify: "src/index.js",
-  },
-];
-
 // ── Package-based MCP server definitions ────────────────────────────
 // These servers are launched on-demand from npm via npx and do not
 // require local source checkout in this repo.
@@ -153,44 +141,6 @@ function checkPrereqs() {
 
 // ── server initialization ───────────────────────────────────────────
 function initServers() {
-  let optionalFailures = 0;
-  for (const server of SERVERS) {
-    heading(`Initializing optional local tooling: ${server.name}`);
-
-    if (!existsSync(server.dir)) {
-      warn(`Directory not found (optional): ${server.dir}`);
-      optionalFailures += 1;
-      continue;
-    }
-
-    try {
-      console.log(`  → ${server.install}`);
-      run(server.install, server.dir);
-      ok("Dependencies installed");
-
-      if (server.build) {
-        console.log(`  → ${server.build}`);
-        run(server.build, server.dir);
-        ok("Build succeeded");
-      }
-
-      const artifact = join(server.dir, server.verify);
-      if (existsSync(artifact)) {
-        ok(`Entry point verified: ${server.verify}`);
-      } else {
-        warn(`Expected entry point not found: ${server.verify}`);
-      }
-    } catch (err) {
-      warn(`Optional setup failed for ${server.name}: ${err.message}`);
-      optionalFailures += 1;
-    }
-  }
-
-  if (optionalFailures > 0) {
-    warn(`${optionalFailures} optional local tooling step(s) failed or were skipped.`);
-    warn("MCP runtime via .vscode/mcp.json is still available through npx/http servers.");
-  }
-
   heading("Package-based MCP servers (npx)");
   for (const server of PACKAGE_SERVERS) {
     ok(`${server.name} — resolved at runtime via npx (${server.package})`);
@@ -207,27 +157,6 @@ function initServers() {
 function checkOnly() {
   const prereqsOk = checkPrereqs();
 
-  heading("Checking optional local tooling");
-  let optionalReady = true;
-  for (const server of SERVERS) {
-    const nodeModules = join(server.dir, "node_modules");
-    const artifact = join(server.dir, server.verify);
-    const installed = existsSync(nodeModules);
-    const built = existsSync(artifact);
-
-    if (installed && built) {
-      ok(`${server.name} — ready`);
-    } else if (installed && !server.build) {
-      ok(`${server.name} — ready (no build step)`);
-    } else {
-      const missing = [];
-      if (!installed) missing.push("npm install");
-      if (server.build && !built) missing.push(server.build);
-      warn(`${server.name} — optional local setup missing: ${missing.join(", ")}`);
-      optionalReady = false;
-    }
-  }
-
   heading("Checking package-based MCP servers");
   for (const server of PACKAGE_SERVERS) {
     ok(`${server.name} — configured for npx package launch (${server.package})`);
@@ -239,10 +168,6 @@ function checkOnly() {
 
   if (prereqsOk) {
     heading("Runtime environment is ready ✔");
-    if (!optionalReady) {
-      warn("Optional local tooling is not fully installed.");
-      warn("Run 'node scripts/init.js' if you need local eval/docs tooling and mcaps alias registration.");
-    }
   } else {
     heading("Runtime prerequisites have issues — fix the errors above");
   }
