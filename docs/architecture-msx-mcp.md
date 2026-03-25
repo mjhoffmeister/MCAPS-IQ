@@ -31,7 +31,7 @@ This document describes how the three MCP servers — **MSX CRM**, **WorkIQ**, a
 flowchart TB
   U["User / Copilot Chat"] --> Agent["Copilot Agent\n(.github/ instructions + skills)"]
 
-  Agent --> MSX["msx-crm MCP Server\n(npx @microsoft/msx-mcp-server)"]
+  Agent --> MSX["msx-crm MCP Server\n(npx @microsoft/msx-copilot-mcp)"]
   Agent --> WIQ["workiq MCP Server\n(ask_work_iq)"]
   Agent -.->|optional| OIL["OIL MCP Server\n(npx @jinlee794/obsidian-intelligence-layer)"]
 
@@ -234,7 +234,7 @@ Purpose-built tools (`get_milestones`, `list_opportunities`, etc.) bypass the en
 
 ### MSX CRM Server (package)
 - Runtime launcher in this repo: `scripts/msx-start.js`
-- Package executed at runtime: `@microsoft/msx-mcp-server@latest` (via `npx`)
+- Package executed at runtime: `@microsoft/msx-copilot-mcp@latest` (via `npx`)
 - Source of truth for server internals (tool contracts, auth, CRM client, validation): upstream package repository
 
 ### OIL Server (package) — optional

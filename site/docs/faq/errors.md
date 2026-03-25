@@ -40,13 +40,13 @@ Look up specific error messages you encounter.
 
 ## MCP Server Errors
 
-??? failure "`npx` fails to launch `@microsoft/msx-mcp-server`"
+??? failure "`npx` fails to launch `@microsoft/msx-copilot-mcp`"
     **Cause:** Package fetch/auth issue (registry access, VPN, or npm auth config).
     
     **Fix:**
     ```bash
     npm ping
-    npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
+    npx -y --registry https://npm.pkg.github.com @microsoft/msx-copilot-mcp@latest
     ```
 
 ??? failure "`ECONNREFUSED` or `Connection refused`"
