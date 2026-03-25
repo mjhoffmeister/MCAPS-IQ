@@ -7,20 +7,20 @@
 		}
 	],
 	"servers": {
-		"msx-crm": {
+		"msx": {
 			"type": "stdio",
 			"command": "npx",
-			"args": ["-y", "--registry", "https://npm.pkg.github.com", "@microsoft/msx-mcp-server@latest"]
+			"args": ["-y", "@microsoft/msx-mcp-server@latest"]
 		},
-		// Obsidian Intelligence Layer (OIL) MCP — provides knowledge layer capabilities for AI agents, built on top of Obsidian vaults.
 		"oil": {
 			"type": "stdio",
 			"command": "npx",
-			"args": ["-y", "--registry", "https://npm.pkg.github.com", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
+			"args": ["-y", "@jinlee794/obsidian-intelligence-layer@latest", "mcp"],
 			"env": {
 				"OBSIDIAN_VAULT_PATH": "${input:vault_path}"
 			}
 		},
+		
 		// // Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
 		// // Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
 		// "github": {
