@@ -28,7 +28,9 @@
     "eval:trace": "npx tsx evals/traces/trace-harness.ts",
     "fixtures:capture": "node scripts/capture-fixtures.js",
     "fixtures:capture:dry": "node scripts/capture-fixtures.js --dry-run",
-    "fixtures:capture:redact": "node scripts/capture-fixtures.js --redact"
+    "fixtures:capture:redact": "node scripts/capture-fixtures.js --redact",
+    "squad:setup": "node scripts/setup-squad.js",
+    "squad:check": "node scripts/setup-squad.js --check"
   },
   "engines": {
     "node": ">=18"
