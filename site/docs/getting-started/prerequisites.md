@@ -145,6 +145,45 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
 
 ---
 
+### :material-github: GitHub CLI (`gh`)
+
+The GitHub CLI is required for authenticating to private GitHub Packages (like `@microsoft/msx-mcp-server`). The setup script will attempt to install it automatically, but you can also install it manually.
+
+!!! warning "Use your **personal** GitHub account"
+    When prompted to sign in, use your **personal GitHub account** (e.g. `JohnDoe`).
+    **Do NOT use your Enterprise Managed User (EMU) account** — the one ending in `_microsoft`.
+    EMU accounts cannot access GitHub Packages from external organizations.
+
+=== "Check"
+
+    ```bash
+    gh --version
+    # Should print gh version 2.x.x or higher
+    ```
+
+=== "Install"
+
+    ```bash
+    # macOS
+    brew install gh
+    ```
+
+    ```powershell
+    # Windows (run in VS Code terminal)
+    winget install GitHub.cli --silent --accept-package-agreements --accept-source-agreements
+
+    # Add to PATH for this session:
+    $env:Path += ";C:\Program Files\GitHub CLI"
+
+    # Verify:
+    gh --version
+    ```
+
+!!! tip "Still stuck after install?"
+    Open Copilot Chat (++cmd+shift+i++) and ask: *"Help me debug my MCP package auth setup"*
+
+---
+
 ### :material-microsoft-azure: Azure CLI
 
 === "Check"
@@ -199,6 +238,8 @@ If every item above checks out, you're ready to install:
     |---------|-----|
     | Node.js too old | Run `brew upgrade node` or download from nodejs.org |
     | No Copilot extension | Install from VS Code Marketplace |
+    | No GitHub CLI | `brew install gh` on Mac, `winget install GitHub.cli` on Windows |
     | No Azure CLI | `brew install azure-cli` on Mac |
     | Can't access VPN | Contact your IT support |
     | No Copilot license | Ask your manager for GitHub Copilot Business access |
+    | Package auth failing | Run `npm run auth:packages` or ask Copilot: *"Help me debug my MCP package auth setup"* |
