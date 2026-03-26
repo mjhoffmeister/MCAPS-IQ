@@ -80,6 +80,8 @@ MCAPS IQ ships with a **recommended 5+1 role configuration** tailored for seller
 | 5 | **Contrarian Coach** | Red-teams the plan, surfaces objections, coaches readiness |
 | 6 | **Work Context Comms Agent** _(optional)_ | Drafts briefs, follow-ups, recaps, and action lists |
 
+Plus **7 additional optional roles** mapped to the repo's existing skills — portfolio strategy, deal governance, pricing, BI analytics, impact evidence, partner motions, and enablement coaching.
+
 [:octicons-arrow-right-16: See detailed role descriptions](roles.md){ .md-button }
 
 ---

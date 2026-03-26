@@ -173,6 +173,15 @@ function printTeamGuidance() {
 
   Squad will propose named agents from a theme. Type 'yes' to confirm.
 
+  Additional optional roles (add any that fit your workflow):
+    •  7. Portfolio Strategist — account prioritization & landscape
+    •  8. Deal Governance & Stage Authority — MCEM exit criteria
+    •  9. Financial & Pricing Advisor — Azure cost modeling
+    • 10. BI & Consumption Analytics Specialist — Power BI deep dives
+    • 11. Impact & Evidence Curator — Connect hooks & nominations
+    • 12. Partner & Co-Sell Coordinator — partner delivery motions
+    • 13. Enablement & Readiness Coach — HoK, skilling, sales skills
+
   Theme ideas (include in your prompt to pick one):
     • "Use a heist crew theme"
     • "Use a space mission theme"
