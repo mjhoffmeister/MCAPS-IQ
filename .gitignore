@@ -42,7 +42,6 @@ temp/
 # M365 auth token cache (sensitive — contains refresh tokens)
 .auth-cache/
 
-.vscode/mcp.json
 .copilot
 
 # LenVolk

@@ -32,6 +32,9 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 - [ ] [VS Code](https://code.visualstudio.com/) with the [GitHub Copilot extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
 - [ ] [Node.js 18+](https://nodejs.org/)
 - [ ] [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
+- [ ] [GitHub CLI (`gh`)](https://cli.github.com/) — required for private package auth
+  - macOS: `brew install gh`
+  - Windows: `winget install GitHub.cli`
 
 ### Step 1: Clone the repo
 
@@ -69,13 +72,26 @@ az login
 
 ### Step 2a: Bootstrap GitHub Packages access
 
-For private MCP packages like `@microsoft/msx-mcp-server` and `@microsoft/workiq`, run:
+Some MCP packages (like `@microsoft/msx-mcp-server`) are private on GitHub Packages. The setup script handles this automatically during `npm install`, or you can run it separately:
 
 ```bash
 npm run auth:packages
 ```
 
-This uses GitHub CLI login instead of asking users to create a PAT manually. The script prefers an already signed-in account with `read:packages`, or walks the user through `gh auth login` and writes a local repo `.npmrc` for this workspace.
+The script will:
+1. Check if packages are already reachable
+2. If not, install GitHub CLI automatically (macOS/Windows) if missing
+3. Let you pick which GitHub account to authenticate with
+4. Write the auth token to `~/.npmrc` (your home directory — works across all projects)
+5. Verify package access
+
+> [!IMPORTANT]
+> **Use your personal GitHub account** (e.g. `JohnDoe`) when prompted.
+> **Do NOT use your Enterprise Managed User (EMU) account** — the one ending in `_microsoft`.
+> EMU accounts cannot access GitHub Packages from external organizations.
+
+> [!TIP]
+> **Still stuck?** Open Copilot Chat (`Cmd+Shift+I`) and ask: *"Help me debug my MCP package auth setup"*
 
 ### Step 3: Open in VS Code
 
@@ -88,7 +104,8 @@ code .
 1. Open `.vscode/mcp.json` in VS Code — you'll see a **"Start"** button above each server definition
 2. Click **Start** on `msx-crm` (required) and `workiq` (optional, for M365 searches)
 
-> If package auth is missing, the wrappers will prompt through GitHub CLI and then retry with the repo-local `.npmrc`.
+> [!TIP]
+> If a server fails to start with a 401/403/404 error, run `npm run auth:packages` to fix package auth. If that doesn't help, open Copilot Chat and ask: *"Help me debug my MCP package auth setup"*
 
 ### Step 5: Start chatting
 

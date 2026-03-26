@@ -132,8 +132,21 @@ function checkPrereqs() {
       warn("  Run: npm run auth:packages");
     }
   } else {
-    warn("GitHub CLI not found — recommended for private GitHub Packages auth.");
-    warn("  Install: https://cli.github.com/");
+    console.log();
+    console.log("  \x1b[1m\x1b[31m╔══════════════════════════════════════════════════════════╗\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   GitHub CLI (gh) is NOT installed.                      ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   It is required for private MCP package auth.           ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   It will be installed automatically during setup,       ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   or install manually:                                   ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[33m║     macOS:    brew install gh                            ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[33m║     Windows:  winget install --id GitHub.cli             ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[33m║     Linux:    https://github.com/cli/cli#installation    ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m╚══════════════════════════════════════════════════════════╝\x1b[0m");
+    console.log();
   }
 
   return passed;
@@ -380,6 +393,7 @@ if (checkMode) {
     } catch (err) {
       warn(err.message);
       warn("You can retry later with: npm run auth:packages");
+      warn("Or open Copilot Chat (Cmd+Shift+I) and ask: 'Help me debug my MCP package auth setup'");
     }
 
     await configureEnv();

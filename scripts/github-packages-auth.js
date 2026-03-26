@@ -36,6 +36,65 @@ function hasGhCli() {
   return !result.error && result.status === 0;
 }
 
+function hasCommand(cmd) {
+  const result = spawnSync(process.platform === "win32" ? "where" : "which", [cmd], { stdio: "ignore" });
+  return !result.error && result.status === 0;
+}
+
+async function tryInstallGhCli() {
+  const isWin = process.platform === "win32";
+  const isMac = process.platform === "darwin";
+
+  process.stderr.write("\n");
+  process.stderr.write("  \x1b[1m\x1b[31m╔══════════════════════════════════════════════════════════╗\x1b[0m\n");
+  process.stderr.write("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m\n");
+  process.stderr.write("  \x1b[1m\x1b[31m║   GitHub CLI (gh) is required but not installed.         ║\x1b[0m\n");
+  process.stderr.write("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m\n");
+  process.stderr.write("  \x1b[1m\x1b[31m╚══════════════════════════════════════════════════════════╝\x1b[0m\n");
+  process.stderr.write("\n");
+
+  // Detect available package manager and attempt auto-install
+  if (isMac && hasCommand("brew")) {
+    process.stdout.write("[auth:packages] Detected macOS with Homebrew. Installing GitHub CLI…\n");
+    const result = spawnSync("brew", ["install", "gh"], { cwd: ROOT, stdio: "inherit" });
+    if (!result.error && result.status === 0) {
+      process.stdout.write("[auth:packages] GitHub CLI installed successfully.\n");
+      return;
+    }
+    process.stderr.write("[auth:packages] Homebrew install failed.\n");
+  } else if (isWin && hasCommand("winget")) {
+    process.stdout.write("[auth:packages] Detected Windows with winget. Installing GitHub CLI…\n");
+    const result = spawnSync("winget", ["install", "GitHub.cli", "--silent", "--accept-package-agreements", "--accept-source-agreements"], { cwd: ROOT, stdio: "inherit" });
+    if (!result.error && result.status === 0) {
+      // Add GitHub CLI to PATH for the current process
+      const ghPath = "C:\\Program Files\\GitHub CLI";
+      process.env.PATH = `${process.env.PATH};${ghPath}`;
+      process.stdout.write(`[auth:packages] GitHub CLI installed. Added ${ghPath} to PATH for this session.\n`);
+      process.stdout.write("[auth:packages] To make this permanent, run in PowerShell:\n");
+      process.stdout.write(`  $env:Path += ";${ghPath}"\n`);
+      process.stdout.write(`  [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";${ghPath}", "User")\n`);
+      return;
+    }
+    process.stderr.write("[auth:packages] winget install failed.\n");
+  } else if (isWin) {
+    process.stderr.write("[auth:packages] winget not found. Install GitHub CLI manually:\n");
+    process.stderr.write("  https://cli.github.com/\n");
+    process.stderr.write("  Then run: $env:Path += \";C:\\Program Files\\GitHub CLI\"\n\n");
+  } else if (isMac) {
+    process.stderr.write("[auth:packages] Homebrew not found. Install GitHub CLI manually:\n");
+    process.stderr.write("  https://cli.github.com/\n\n");
+  } else {
+    // Linux
+    process.stderr.write("[auth:packages] Auto-install not available on this platform. Install GitHub CLI manually:\n");
+    process.stderr.write("  https://github.com/cli/cli#installation\n\n");
+  }
+
+  // If we couldn't auto-install and we're interactive, wait for the user
+  if (process.stdin.isTTY) {
+    await ask("  Press Enter after installing GitHub CLI to continue…");
+  }
+}
+
 function parseScopes(line) {
   const scopes = [];
   for (const match of line.matchAll(/'([^']+)'/g)) {
@@ -261,7 +320,10 @@ export async function ensureGithubPackagesAuth(options = {}) {
   }
 
   if (!hasGhCli()) {
-    throw new Error("GitHub CLI is required for private package auth. Install it from https://cli.github.com/.");
+    await tryInstallGhCli();
+    if (!hasGhCli()) {
+      throw new Error("GitHub CLI (gh) is still not available. Open Copilot Chat (Cmd+Shift+I) and ask: 'Help me debug my MCP package auth setup'");
+    }
   }
 
   // ── Step 3: Interactive sign-in ───────────────────────────────
@@ -282,7 +344,7 @@ export async function ensureGithubPackagesAuth(options = {}) {
     account = await promptAccountChoice(accounts);
   }
   if (!account) {
-    throw new Error("No GitHub account with read:packages found after login. Retry with 'npm run auth:packages'.");
+    throw new Error("No GitHub account with read:packages found after login. Open Copilot Chat and ask: 'Help me debug my MCP package auth setup'");
   }
 
   // ── Step 4: Write ~/.npmrc and re-verify ──────────────────────
@@ -305,6 +367,15 @@ export async function ensureGithubPackagesAuth(options = {}) {
         process.stderr.write(`  → ${r.name}: Check the package name/registry or network connectivity.\n`);
       }
     }
+    process.stderr.write("\n");
+    process.stderr.write("  \x1b[1m\x1b[36m┌──────────────────────────────────────────────────────────┐\x1b[0m\n");
+    process.stderr.write("  \x1b[1m\x1b[36m│  Still stuck? Open Copilot Chat (Cmd+Shift+I) and ask:  │\x1b[0m\n");
+    process.stderr.write("  \x1b[1m\x1b[36m│                                                          │\x1b[0m\n");
+    process.stderr.write("  \x1b[1m\x1b[36m│    \"Help me debug my MCP package auth setup\"             │\x1b[0m\n");
+    process.stderr.write("  \x1b[1m\x1b[36m│                                                          │\x1b[0m\n");
+    process.stderr.write("  \x1b[1m\x1b[36m│  Copilot can read your logs and walk you through it.     │\x1b[0m\n");
+    process.stderr.write("  \x1b[1m\x1b[36m└──────────────────────────────────────────────────────────┘\x1b[0m\n");
+    process.stderr.write("\n");
   }
 
   return {
