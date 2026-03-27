@@ -56,6 +56,12 @@ MCAPS IQ connects **GitHub Copilot** (in VS Code) to your **MSX CRM** and **Micr
 
     Knows your MCAPS role (Specialist, SE, CSA, CSAM) and tailors guidance accordingly.
 
+-   :material-account-group:{ .lg .middle } __[AI Agent Squads](squads/index.md)__
+
+    ---
+
+    Add a persistent team of AI specialists — orchestrator, data synthesizer, strategist, builder, and coach — that work in parallel and learn your accounts.
+
 </div>
 
 ---

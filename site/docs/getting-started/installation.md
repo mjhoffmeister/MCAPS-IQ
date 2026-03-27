@@ -175,4 +175,16 @@ Want to double-check everything before moving on?
 
 For more issues, see [Troubleshooting Setup](troubleshooting.md).
 
+---
+
+## Optional: Add AI Agent Squads
+
+Want a team of AI specialists that work in parallel? **Squads** give you persistent, named agents — an orchestrator, data synthesizer, win strategist, artifact builder, and deal coach — all living in your repo.
+
+```bash
+npm run squad:setup
+```
+
+This installs the [Squad CLI](https://github.com/bradygaster/squad) and initializes a `.squad/` directory with your agent team. Learn more in the [Squads guide](../squads/index.md).
+
 [:octicons-arrow-right-16: Continue to Your First Chat](first-chat.md){ .md-button .md-button--primary }

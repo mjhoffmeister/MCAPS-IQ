@@ -161,6 +161,11 @@ nav:
     - Editing Instructions: customization/instructions.md
     - Writing Skills: customization/skills.md
     - Adding MCP Servers: customization/mcp-servers.md
+  - Squads:
+    - squads/index.md
+    - Setup: squads/setup.md
+    - Recommended Roles: squads/roles.md
+    - Themes: squads/themes.md
   - FAQ & Troubleshooting:
     - faq/index.md
     - Common Issues: faq/common-issues.md
