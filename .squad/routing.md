@@ -6,13 +6,21 @@ How to decide who handles what.
 
 | Work Type | Route To | Examples |
 |-----------|----------|----------|
-| {domain 1} | {Name} | {example tasks} |
-| {domain 2} | {Name} | {example tasks} |
-| {domain 3} | {Name} | {example tasks} |
-| Code review | {Name} | Review PRs, check quality, suggest improvements |
-| Testing | {Name} | Write tests, find edge cases, verify fixes |
-| Scope & priorities | {Name} | What to build next, trade-offs, decisions |
+| Experience orchestration, bundle assembly, cross-agent synthesis | Danny | "Package this for the seller", "assemble the deliverable", multi-agent coordination |
+| Data retrieval, signal normalization, cross-source correlation | Livingston | CRM queries, PBI data pulls, M365 signal extraction, TPID resolution |
+| Win strategy, competitive positioning, sales plays | Rusty | "How do we win this?", positioning narratives, program design, sales plays |
+| Demos, decks, scripts, one-pagers, workshop kits | Nagel | "Build a POV deck", demo scripts, workshop materials, customer-facing artifacts |
+| Red-teaming, objection handling, readiness coaching | Saul | "Stress-test this plan", objection drills, "what's the worst question?" |
+| Briefs, follow-ups, recaps, exec messages | Frank | Meeting recaps, stakeholder emails, executive briefs, action summaries |
+| Account prioritization, landscape, portfolio tiering | Reuben | "Where should I focus?", whitespace analysis, account ranking, resource allocation |
+| MCEM exit criteria, stage validation, commit gates | Benedict | Stage progression checks, pipeline hygiene, BPF evidence audits, commit decisions |
+| Azure pricing, cost modeling, TCO, ROI | Turk | Pricing spreadsheets, reserved vs. PAYG analysis, consumption forecasting |
+| Power BI analytics, DAX queries, consumption deep dives | Basher | ACR reports, GHCP seats, SE productivity, service breakdowns, PBI semantic models |
+| Connect hooks, nominations, impact evidence, win posts | Linus | Evidence capture, award nominations, success stories, impact attribution |
+| Partner motions, co-sell, SI/ISV coordination | Virgil | Partner delivery assessment, co-sell registration, partner capability matching |
+| HoK readiness, skilling, seller enablement, sales coaching | Yen | HoK legal checks, skilling plans, enablement frameworks, readiness assessment |
 | Session logging | Scribe | Automatic — never needs routing |
+| Work monitoring, backlog, issue tracking | Ralph | "What's on the board?", keep-alive, issue triage |
 
 ## Issue Routing
 
