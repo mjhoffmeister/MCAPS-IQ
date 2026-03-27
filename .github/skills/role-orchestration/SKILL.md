@@ -29,11 +29,11 @@ Determines which role should lead the next action based on MCEM stage accountabi
 
 | Stage | Accountable Unit | Lead Role |
 |---|---|---|
-| Stage 1: Listen & Consult | ATU | Specialist (signal intake), CSAM (outcome input) |
-| Stage 2: Inspire & Design | STU | Specialist (lead), SE (technical), CSA (feasibility) |
-| Stage 3: Empower & Achieve | STU | Specialist (lead → handoff), SE (proof), CSA+CSAM (commit gate) |
-| Stage 4: Realize Value | CSU | CSAM (lead), CSA (architecture guardrails) |
-| Stage 5: Manage & Optimize | CSU | CSAM (lead), Specialist (expansion signals) |
+| Stage 1: Listen & Consult | ATU | ATS (technology strategy lead), Specialist (signal intake), CSAM (outcome input) |
+| Stage 2: Inspire & Design | STU | ATS (technology strategy lead), Specialist (lead), SE (technical), CSA (feasibility) |
+| Stage 3: Empower & Achieve | STU | Specialist (lead → handoff), SE (proof), CSA+CSAM (commit gate), ATS (strategy alignment) |
+| Stage 4: Realize Value | CSU | CSAM (lead), CSA (architecture guardrails), ATS (technology relationship) |
+| Stage 5: Manage & Optimize | CSU | CSAM (lead), ATS (optimization strategy lead), Specialist (expansion signals) |
 
 ## Action Classification
 
@@ -45,6 +45,8 @@ Determines which role should lead the next action based on MCEM stage accountabi
 | Proof execution | SE |
 | Delivery coordination | CSAM (orchestration), Partner/ISD (execution) |
 | Expansion evaluation | Specialist (pipeline), CSAM (timing) |
+| Technology strategy & AI/Security direction | ATS |
+| Technical team orchestration | ATS |
 
 ## Decision Logic
 
