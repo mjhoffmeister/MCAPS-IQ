@@ -1,4 +1,4 @@
-Y{
+{
 	"inputs": [
 		{
 			"id": "vault_path",
@@ -10,7 +10,7 @@ Y{
 		"msx": {
 			"type": "stdio",
 			"command": "npx",
-			"args": ["-y", "--registry", "https://npm.pkg.github.com", "@microsoft/msx-mcp-server@latest"]
+			"args": ["-y", "--@microsoft:registry=https://npm.pkg.github.com", "@microsoft/msx-mcp-server@latest"]
 		},
 		"oil": {
 			"type": "stdio",
