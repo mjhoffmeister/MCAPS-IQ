@@ -4,6 +4,7 @@
 			"id": "vault_path",
 			"type": "promptString",
 			"description": "Absolute path to your Obsidian vault",
+			"default": "${OBSIDIAN_VAULT}"
 		}
 	],
 	"servers": {

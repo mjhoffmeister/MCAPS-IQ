@@ -24,9 +24,18 @@ Keeps milestone tasks current and actionable by detecting missing owners, stale 
 2. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, `format: 'triage'`, and `includeTasks: true` — one call returns milestones pre-classified by urgency with inline tasks for SE-scoped milestones. If scoped to a single customer, use `customerKeyword` instead.
 3. Apply task completeness checks (see below).
 4. Generate dry-run corrections:
-   - `msx-crm:create_task` for missing tasks
+   - `msx-crm:create_task` for missing tasks (SE role: always pair with immediate `close_task` — see Activity Tracking below)
    - `msx-crm:update_task` for stale fields
    - `msx-crm:close_task` for completed actions
+
+## SE Activity Tracking Rule
+
+SE tasks are **activity records**, not open work items. When the active role is SE:
+- Every `create_task` MUST be immediately followed by `close_task` in the same confirmation packet.
+- Tasks are created in a closed state — they record completed activities (proof delivered, HoK session executed, technical review conducted), not future to-dos.
+- The confirmation packet should present the create-and-close as a single atomic operation: "Create and close task: [description]".
+- If the SE describes a **planned/future** activity, do NOT create a task. Instead, note the intent and advise the SE to record it after the activity is performed.
+- Open SE tasks found during hygiene sweeps are anomalies — flag them and propose immediate closure or reclassification.
 
 ## Task Completeness Checks
 
@@ -35,6 +44,7 @@ Keeps milestone tasks current and actionable by detecting missing owners, stale 
 | Owner assigned | Task has named owner | Flag for assignment |
 | Due date set | Realistic future date | Flag for date update |
 | Status current | Reflects actual progress | Flag for status refresh |
+| **Task is closed** (SE only) | Task status = Completed/Closed | Flag for immediate closure — SE tasks are activity records |
 | Blocker documented | If blocked, reason is stated | Flag for blocker text |
 | Completion condition | Clear done-criteria exist | Flag for criteria addition |
 | HoK legal coverage (HoK tasks only) | Legal agreement confirmed before execution | **Block task**; flag for legal coverage |

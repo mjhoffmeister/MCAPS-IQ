@@ -61,6 +61,15 @@ Use the selected role skill as the primary workflow contract for boundary decisi
 - Why the change is needed
 - Expected impact and any risk
 
+### SE Activity Tracking: Create-and-Close (Mandatory for SE role)
+
+When the active role is **SE**, every `create_task` MUST be paired with an immediate `close_task` in the same confirmation packet. SE tasks are **activity records** (completed work), not open work items.
+
+- Present as a single atomic operation: "Create and close task: [description]".
+- The confirmation packet shows both the create and close as one proposed action.
+- Approval covers both operations — no separate confirm for the close.
+- If the SE describes a **future/planned** activity, do NOT create a task. Advise recording it after the activity is performed.
+
 ### Confirmation language
 Ask for explicit approval: "Please confirm this update is correct. Reply: `approve` to proceed or `revise` to change details."
 

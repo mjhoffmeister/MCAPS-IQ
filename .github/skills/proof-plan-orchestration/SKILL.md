@@ -26,7 +26,7 @@ Defines the technical proof plan by scoping proof type (POC/Pilot/Demo/HoK), suc
 4. Define proof plan components (see below).
 5. Generate dry-run actions:
    - `msx-crm:update_milestone` for scope/criteria updates on existing proof milestones
-   - `msx-crm:create_task` for proof execution tasks with owners and dates
+   - `msx-crm:create_task` for proof execution tasks with owners and dates (SE role: pair with immediate `close_task` — SE tasks are activity records, not open work items)
 
 ## Proof Plan Components
 

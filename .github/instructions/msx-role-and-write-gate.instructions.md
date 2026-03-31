@@ -86,6 +86,16 @@ Before building the confirmation packet for milestone create/update operations:
 
 **Linkification**: Every opportunity, milestone, and task in the confirmation packet must be a clickable CRM link. Use `recordUrl` from `get_milestones` when available, otherwise construct from the entity logical name and GUID (see `crm-entity-schema.instructions.md` § CRM Record URL Pattern).
 
+### SE Activity Tracking: Create-and-Close (Mandatory for SE role)
+
+When the active role is **SE**, every `create_task` MUST be paired with an immediate `close_task` in the same confirmation packet. SE tasks are **activity records** (completed work), not open work items.
+
+- Present as a single atomic operation: "Create and close task: [description]".
+- The confirmation packet shows both the create and close as one proposed action.
+- Approval covers both operations — no separate confirm for the close.
+- If the SE describes a **future/planned** activity, do NOT create a task. Advise recording it after the activity is performed.
+- This rule applies to all SE task creation: task hygiene backfills, proof plan tasks, HoK activity records, and execution monitoring follow-ups.
+
 ### Confirmation language
 Ask for explicit approval in a separate step, for example:
 - "Please confirm this update is correct. Reply: `approve` to proceed or `revise` to change details."

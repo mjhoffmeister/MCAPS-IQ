@@ -15,6 +15,7 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 | **EDE**         | Enhanced Designated Engineer — a dedicated technical resource aligned to a Unified Support package and customer TPID. Tracked in vault `## Unified Coverage`, not CRM |
 | **HoK**         | Hands-on-Keyboard — SE-led hands-on work in customer development, test, or production environments to accelerate cloud consumption. Legal coverage required before execution. |
 | **Cusp Customer** | A customer where HoK next steps are uncertain — interested but not committed to environment access, or stalled technical progression with ambiguous follow-through. Requires leadership discussion. |
+| **SE Activity Record** | An SE task created and immediately closed in the same operation. SE tasks are activity tracking entries (proof delivered, HoK session executed, review conducted) — not open work items. `create_task` is always followed by `close_task` in the same confirmation packet. |
 | **Swarming**    | Cross-role collaboration on adjacent pipeline within the same account — working opportunities outside your direct assignment to bring full account value                |
 
 ## Opportunity Identifier Discipline
