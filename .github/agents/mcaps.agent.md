@@ -4,7 +4,7 @@ description: "AI-powered sales operations agent for MCAPS account teams. Strengt
 tools:
   # VS Code built-in
   - vscode
-  - memory
+  - vscode/memory
   - edit
   - read
   - execute
@@ -13,10 +13,14 @@ tools:
   - agent
   # MCP servers
   - workiq/*
-  - msx-crm/*
+  - msx/*
   - oil/*
   - excalidraw/*
 
+agents: [
+  m365-actions,
+  pbi-analyst
+]
 
 handoffs: 
   - label: M365 Write Operations

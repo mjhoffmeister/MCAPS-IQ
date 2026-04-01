@@ -1,4 +1,5 @@
 ---
+description: "M365 helper-script contract for calendar/mail normalization and meeting scoring. Use scripts/helpers tools instead of inline parsing for MCP JSON responses and WorkIQ query construction."
 applyTo: "**"
 ---
 # M365 Data Helper Scripts

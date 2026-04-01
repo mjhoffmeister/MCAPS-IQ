@@ -1,5 +1,65 @@
 # Copilot Instructions for MSX Helper MCP
 
+## Workspace Bootstrap
+
+This repository already has a mature agent layer. Keep this file focused on high-impact defaults and link to deeper docs instead of copying them.
+
+### Build and Validate
+
+- Install/bootstrap: `npm run setup`
+- Environment check: `npm run check`
+- Package auth (private registries): `npm run auth:packages`
+- Offline evals: `npm run eval`
+- Live evals: `npm run eval:live` (requires Azure auth + API key)
+- Docs local serve: `npm run docs:serve`
+- Context quality gates:
+
+```bash
+cd .github/eval
+npm ci
+node lint-descriptions.mjs
+node lint-instructions.mjs --cross
+node lint-context.mjs
+```
+
+### Architecture Map
+
+- Global behavior: `.github/copilot-instructions.md`
+- Domain rules: `.github/instructions/`
+- Skills: `.github/skills/`
+- Prompt files: `.github/prompts/`
+- Agents: `.github/agents/`
+- MCP server registry: `.vscode/mcp.json`
+- Eval harness: `evals/` and `.github/eval/`
+- Product docs: `site/docs/`
+
+See architecture references: `ARCHITECTURE.md`, `docs/architecture.md`, and `site/docs/architecture/`.
+
+### Critical Conventions
+
+- Prefer MCP tools over ad-hoc scripts for CRM/M365/PBI operations.
+- Treat CRM writes as gated actions: stage preview first, require explicit user confirmation before execution.
+- Scope CRM reads before retrieve; avoid unbounded milestone or opportunity queries.
+- Use targeted M365 delegation via `m365-actions`; reserve WorkIQ for broad multi-source discovery.
+- If `.github/instructions/**` or `.github/skills/**` changes, regenerate checksums:
+
+```bash
+node scripts/verify-instructions.js --generate
+```
+
+### Gotchas
+
+- This repo uses ESM (`"type": "module"`); avoid CommonJS-only config patterns.
+- Node `>=18` is supported; use Node 20+ when possible for smoother ESM/tooling behavior.
+- Private package access issues are usually fixed by `npm run auth:packages`.
+
+### Link-First References
+
+- Setup and operational flow: `README.md`
+- Contribution workflow and PR checks: `CONTRIBUTING.md`
+- Safety model: `SECURITY.md` and `site/docs/architecture/safety.md`
+- Prompt catalog and guided scenarios: `site/docs/prompts/` and `docs/scenario-prompts.md`
+
 ## Intent (Resolve First)
 
 The agent strengthens cross-role communication and strategic alignment for account teams. MSX is one medium — not the mission. For the full model, see `.github/instructions/intent.instructions.md`.

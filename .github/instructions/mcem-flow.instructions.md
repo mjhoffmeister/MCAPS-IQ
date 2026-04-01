@@ -14,10 +14,10 @@ description: "MCEM process spine: maps Stages 1-5 with ATU/STU/CSU accountabilit
 
 | Stage               | Objective                                           | Accountable Unit | Typical Active Roles      | Primary Skills                                                                                | Exit Evidence (VO)                                     |
 | ------------------- | --------------------------------------------------- | ---------------- | ------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| 1 Listen & Consult  | Qualify need and define measurable outcomes         | ATU              | Specialist, CSAM          | `pipeline-qualification`, `customer-outcome-scoping`                                      | Open qualified opportunity + initial `msp_salesplay` |
+| 1 Listen & Consult  | Qualify need and define measurable outcomes         | ATU              | Specialist, CSAM          | `pipeline-qualification`, `mcem-stage-identification`                                      | Open qualified opportunity + initial `msp_salesplay` |
 | 2 Inspire & Design  | Shape approach, validate value/design, and **position HoK** | STU              | Specialist, SE, CSA       | `proof-plan-orchestration`, `hok-readiness-check`, `architecture-feasibility-check`, `pipeline-hygiene-triage` | Play confirmed + BVA complete + success plan linked + HoK positioned |
 | 3 Empower & Achieve | Prove, commit, **execute HoK**, and finalize handoff readiness | STU              | Specialist, SE, CSA, CSAM | `commit-gate-enforcement`, `hok-readiness-check`, `handoff-readiness-validation`, `exit-criteria-validation`   | Agreement + committed milestones + dated outcomes + HoK legal coverage confirmed |
-| 4 Realize Value     | Execute delivery and protect architecture integrity | CSU              | CSAM, CSA                 | `milestone-health-review`, `execution-monitoring`, `delivery-accountability-mapping`    | Milestone delivery + customer health tracking          |
+| 4 Realize Value     | Execute delivery and protect architecture integrity | CSU              | CSAM, CSA                 | `milestone-health-review`, `execution-monitoring`, `role-orchestration`    | Milestone delivery + customer health tracking          |
 | 5 Manage & Optimize | Sustain outcomes and route expansion                | CSU              | CSAM, Specialist          | `adoption-excellence-review`, `value-realization-pack`, `expansion-signal-routing`      | Sustained value + expansion/next-cycle readiness       |
 
 ## Cross-Stage Skills
@@ -26,7 +26,7 @@ description: "MCEM process spine: maps Stages 1-5 with ATU/STU/CSU accountabilit
 - `role-orchestration`
 - `exit-criteria-validation`
 - `hok-readiness-check`
-- `non-linear-progression`
+- `commit-gate-enforcement`
 - `partner-motion-awareness`
 - `risk-surfacing`
 

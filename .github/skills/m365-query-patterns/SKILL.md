@@ -61,6 +61,14 @@ Always include at least 2 filters. Always include a date range.
 
 **Two-pass**: `SearchMessages` (top: 5-10) → `GetMessage` for specific IDs.
 
+### SearchMessagesQueryParameters Restrictions
+
+`SearchMessagesQueryParameters` uses OData `$filter`/`$search`/`$orderby`. Key restrictions:
+
+- **NEVER combine `$orderby` with `$search`.** Microsoft Graph rejects this with `The query parameter $orderby is not supported with $search`. Omit `orderby` and sort client-side.
+- **NEVER use `$filter` on nested complex-type properties** (`from/emailAddress/address`). Use KQL `SearchMessages` instead.
+- Only use `SearchMessagesQueryParameters` for simple top-level filters (`receivedDateTime`, `isRead`) when KQL is not an option.
+
 ### Attachment Safety
 
 1. `GetAttachments` first — check names and sizes.

@@ -6,11 +6,19 @@ tools:
   - edit
   - read
   - search
+  - agent
   - "teams/*"
   - "calendar/*"
   - "mail/*"
   - "sharepoint/*"
   - "word/*"
+  - todo
+
+agents: [
+  m365-actions,
+  mcaps
+]
+
 user-invocable: true
 ---
 # @m365-actions — Microsoft 365 Action Agent
@@ -154,6 +162,8 @@ When calling `mail:SearchMessages`:
 - Multi-word phrases must be quoted: `subject:"Quarterly Review"`.
 
 **Never use `mail:SearchMessagesQueryParameters` for sender, domain, or subject filtering.** That tool uses OData `$filter`, which does NOT support `endswith()`, `startswith()`, or `contains()` on nested complex-type properties like `from/emailAddress/address`. These cause `ErrorInvalidUrlQueryFilter` errors. Only use `SearchMessagesQueryParameters` for simple top-level property filters (e.g., `receivedDateTime`, `isRead`) when KQL is not an option.
+
+**NEVER pass `orderby` to `SearchMessagesQueryParameters` when `search` is also set.** The Microsoft Graph API does not support `$orderby` combined with `$search` — this produces the error `The query parameter $orderby is not supported with $search`. If you need sorted results from a search, omit `orderby` and sort client-side after retrieval.
 
 | Need | Tool | Query |
 |---|---|---|
