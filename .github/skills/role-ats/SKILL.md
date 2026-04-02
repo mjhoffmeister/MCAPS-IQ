@@ -21,6 +21,52 @@ Lead **customer AI and Security strategy alignment**, drive **technology transfo
 - Orchestrate the technical team (internal and partner) to deliver technology leadership and excellence.
 - Develop an always-learning culture across the account team.
 
+## Key Outcomes and Measures of Success
+
+### 1. Customer AI and Security Strategy Leadership
+- X new ITDMs documented in MSX
+- Increase in NSAT and ATQ year on year
+- X increase in security and AI pipeline due to leveraging Customer Secure AI Assessment
+- X Executive Technology briefings completed
+
+### 2. Operational and Commercial Excellence
+- Conversion of QP to Stage 2 by X%
+- Consumption Plan created for every MACC
+- ACR growth percentage
+- Build on Whitespace:
+  - A. Stage 1 ACR creation
+  - B. Stage 1 NQP → QP (35% Q+2, Q+3 within Quarter)
+
+### 3. Technology Leadership Across Microsoft
+- Win AI Design and Security — one (1) referenceable AIDW and Security win
+- 100% required training completed
+- Share customer stories and wins across v-team monthly
+
+## Key Habits
+
+### 1. Customer AI and Security Strategy Leadership
+- Research and understand the customer and their industry through multiple channels, including but not limited to Microsoft AI tools, internal experts, executive sponsors, and direct customer engagements
+- Build effective partnerships with C-level Technology/Innovation Leaders in business units and TDMs through regular connections and rhythms with the customer and Account Executive to align on business priorities
+- Own the Secure AI Assessment and share insights with the v-team, keeping it refreshed regularly
+- Document, maintain, and communicate the customer's technology landscape, roadmap, and insights from Customer Secure AI Assessment through regular connection with the v-team
+- Operate as ONE Microsoft to drive customer centricity and build trust by delivering a differentiated customer experience
+
+### 2. Operational and Commercial Excellence
+- Use deep customer understanding and technical knowledge to ensure the pipeline is robust and scoped correctly
+- Qualify new Stage 1 opportunities for TDM-led engagements
+- Orchestrate the relevant opportunity owners for existing projects and/or create new customer project pipeline through TDM engagements
+- Drive MACC consumption by creating a viable consumption plan for every MACC
+- Proactively work with the customer to ensure consumption
+- Closely collaborate with the STU and Customer Success team with oversight of the consumption plan to ensure consumption targets are met and the customer is seeing value
+- Clearly communicate and align goals across the technology sales v-team to most effectively secure the customer's desired outcomes with consistent rhythms, removing any technical blockers
+- Lead by example daily with credible industry and technology expertise
+- Initiate proactive and frequent engagements around industry/business/technology insights
+
+### 3. Technology Leadership Across Microsoft
+- Collaborate across Microsoft to share ideas and wins to the benefit of others
+- Leverage and share the work of others to drive impact, ensuring all voices are heard
+- Take accountability for learning and development of a growth mindset
+
 ## MCEM Stage Accountability
 
 | Stage | Role |
