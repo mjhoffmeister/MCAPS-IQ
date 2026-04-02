@@ -20,13 +20,13 @@ Defines the technical proof plan by scoping proof type (POC/Pilot/Demo/HoK), suc
 
 ## Flow
 
-1. Call `msx-crm:crm_get_record` on opportunity for solution play, stage, and customer context.
-2. Call `msx-crm:get_milestones` with `opportunityId` — check for existing proof milestones (POC/Pilot/Demo).
-3. If proof milestones exist, call `msx-crm:get_milestone_activities` to assess current task state.
+1. Call `msx:crm_get_record` on opportunity for solution play, stage, and customer context.
+2. Call `msx:get_milestones` with `opportunityId` — check for existing proof milestones (POC/Pilot/Demo).
+3. If proof milestones exist, call `msx:get_milestone_activities` to assess current task state.
 4. Define proof plan components (see below).
 5. Generate dry-run actions:
-   - `msx-crm:update_milestone` for scope/criteria updates on existing proof milestones
-   - `msx-crm:create_task` for proof execution tasks with owners and dates
+   - `msx:update_milestone` for scope/criteria updates on existing proof milestones
+   - `msx:create_task` for proof execution tasks with owners and dates (SE role: pair with immediate `close_task` — SE tasks are activity records, not open work items)
 
 ## Proof Plan Components
 
@@ -44,7 +44,7 @@ Defines the technical proof plan by scoping proof type (POC/Pilot/Demo/HoK), suc
 - If proof milestones already exist with tasks → validate completeness, update gaps
 - If no proof milestones → recommend creation with minimum viable structure
 - Proof scope should match solution play and customer stated needs
-- Route architecture concerns to CSA via `architecture-feasibility-check`
+- Route architecture concerns to CSA via `architecture-review`
 - **HoK proofs**: Verify legal coverage before creating execution tasks. If legal coverage is missing, block execution tasks and chain to `hok-readiness-check`. Classify environment tier (dev/test/prod) explicitly in the plan.
 
 ## Output Schema
@@ -52,4 +52,4 @@ Defines the technical proof plan by scoping proof type (POC/Pilot/Demo/HoK), suc
 - `proof_plan`: type, scope, success criteria, timeline, roles
 - `milestone_structure`: recommended milestones with tasks
 - `dry_run_actions`: milestone/task payloads
-- `next_action`: "Proof plan defined. CSA should run `architecture-feasibility-check` to validate technical executability — would you like to engage your CSA?" | For HoK: "HoK plan scoped. Run `hok-readiness-check` to verify legal coverage and environment access before execution."
+- `next_action`: "Proof plan defined. CSA should run `architecture-review` to validate technical executability — would you like to engage your CSA?" | For HoK: "HoK plan scoped. Run `hok-readiness-check` to verify legal coverage and environment access before execution."

@@ -32,7 +32,7 @@ scenarios:
       - AP-004
     expected_calls:
       - tool: "oil:get_customer_context"
-        before: "msx-crm:*"
+        before: "msx:*"
 
   - id: ap005-write-gate
     description: "Agent must confirm before CRM writes"

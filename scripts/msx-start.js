@@ -35,7 +35,7 @@ function preflightAzAuth() {
       timeout: 10_000,
     });
   } catch {
-    process.stderr.write("[msx-crm] Azure CLI is not authenticated. Run: az login\n");
+    process.stderr.write("[msx] Azure CLI is not authenticated. Run: az login\n");
   }
 }
 
@@ -66,7 +66,7 @@ const result = spawnSync(
 );
 
 if (result.error) {
-  process.stderr.write(`[msx-crm] Failed to start package: ${result.error.message}\n`);
+  process.stderr.write(`[msx] Failed to start package: ${result.error.message}\n`);
   process.exit(1);
 }
 

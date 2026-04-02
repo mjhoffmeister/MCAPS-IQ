@@ -376,7 +376,7 @@ scenarios:
       role: CSAM
       customer: Contoso
     expected_calls:
-      - tool: msx-crm:get_milestones
+      - tool: msx:get_milestones
         paramsContains: { customerKeyword: "Contoso", statusFilter: "active" }
 ```
 

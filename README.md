@@ -30,37 +30,32 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 - [ ] **Microsoft corp account** (e.g., `your-alias@microsoft.com`)
 - [ ] **GitHub Copilot License** (For Microsoft Internal: [https://aka.ms/copilot](https://aka.ms/copilot))
 - [ ] [VS Code](https://code.visualstudio.com/) with the [GitHub Copilot extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
+- [ ] [Git](https://git-scm.com/) — `git --version` to check (`gh` CLI is not a substitute)
 - [ ] [Node.js 18+](https://nodejs.org/)
 - [ ] [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [ ] [GitHub CLI (`gh`)](https://cli.github.com/) — required for private package auth
   - macOS: `brew install gh`
   - Windows: `winget install GitHub.cli`
 
-### Step 1: Clone the repo
+> **Heads-up:** If you install any CLI tools (Git, Node, `gh`, `az`) while VS Code is open, **close and reopen VS Code entirely**. VS Code terminals inherit the system PATH from launch — newly installed tools won't be visible until you restart.
+
+### Step 1: Clone and bootstrap
 
 ```bash
 git clone https://github.com/microsoft/mcaps-iq.git
 cd mcaps-iq
+npm install
 ```
 
-> **No local npm install required for MCP runtime.** The default servers in [.vscode/mcp.json](.vscode/mcp.json) run via npx or HTTP.
-
-### Optional: Install local tooling
-
-Use this only if you want repo-local eval/docs tooling or automatic global mcaps alias setup:
+`npm install` runs the interactive setup automatically — it checks prerequisites, configures GitHub Packages auth, sets up your Obsidian vault path, and registers the global `mcaps` command. MCP servers themselves run via npx/HTTP and don't require a local install.
 
 > [!IMPORTANT]
 > **Use your personal GitHub account** (e.g. `JohnDoe`) when prompted during install.
 > **Do NOT use your Enterprise Managed User (EMU) account** — the one ending in `_microsoft`.
 > EMU accounts cannot access GitHub Packages from external organizations.
 
-```bash
-npm install
-```
-
+> [!TIP]
 > **Prefer a GUI?** Open the repo in VS Code and run **"Setup: Optional Local Tooling"** from the Command Palette (`Cmd+Shift+P` → `Tasks: Run Task`).
-
-> **mcaps command registration.** Running optional local setup registers a global mcaps command on your system so you can launch Copilot CLI from any directory. See [Copilot CLI integration](site/docs/integrations/copilot-cli.md) for details.
 
 ### Step 2: Sign in to Azure
 
@@ -70,44 +65,25 @@ az login
 
 > You must be on the corporate VPN and use your Microsoft corp account.
 
-### Step 2a: Bootstrap GitHub Packages access
-
-Some MCP packages (like `@microsoft/msx-mcp-server`) are private on GitHub Packages. The setup script handles this automatically during `npm install`, or you can run it separately:
-
-```bash
-npm run auth:packages
-```
-
-The script will:
-1. Check if packages are already reachable
-2. If not, install GitHub CLI automatically (macOS/Windows) if missing
-3. Let you pick which GitHub account to authenticate with
-4. Write the auth token to `~/.npmrc` (your home directory — works across all projects)
-5. Verify package access
-
-> [!IMPORTANT]
-> **Use your personal GitHub account** (e.g. `JohnDoe`) when prompted.
-> **Do NOT use your Enterprise Managed User (EMU) account** — the one ending in `_microsoft`.
-> EMU accounts cannot access GitHub Packages from external organizations.
-
 > [!TIP]
-> **Still stuck?** Open Copilot Chat (`Cmd+Shift+I`) and ask: *"Help me debug my MCP package auth setup"*
+> **Package auth issues?** `npm install` handles GitHub Packages auth automatically. If you need to re-run it: `npm run auth:packages`
 
-### Step 3: Open in VS Code
+### Step 3: Open and start
 
 ```bash
 code .
 ```
 
-### Step 4: Start the tools
-
 1. Open `.vscode/mcp.json` in VS Code — you'll see a **"Start"** button above each server definition
-2. Click **Start** on `msx-crm` (required) and `workiq` (optional, for M365 searches)
+2. Click **Start** on `msx` (required) and `workiq` (optional, for M365 searches)
+
+> [!TIP]
+> **Don't see the Start buttons?** The CodeLens buttons require GitHub Copilot Chat **v0.25+** with **Agent mode** enabled. Make sure `mcp.json` is the active editor tab. If nothing appears, reload VS Code (`Cmd+Shift+P` → "Developer: Reload Window"), then reopen the file.
 
 > [!TIP]
 > If a server fails to start with a 401/403/404 error, run `npm run auth:packages` to fix package auth. If that doesn't help, open Copilot Chat and ask: *"Help me debug my MCP package auth setup"*
 
-### Step 5: Start chatting
+### Step 4: Start chatting
 
 Open the Copilot chat panel (`Cmd+Shift+I`) and type:
 

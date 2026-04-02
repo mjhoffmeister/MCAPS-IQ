@@ -104,7 +104,7 @@ Use your Microsoft corporate account. You must be on the corporate VPN.
 ### Start servers in VS Code
 
 1. Open `.vscode/mcp.json` — you'll see **Start** buttons above each server definition.
-2. Click **Start** on `msx-crm` (required).
+2. Click **Start** on `msx` (required).
 3. Click **Start** on `workiq` (optional, for M365 searches).
 
 Once started, each server shows a **Running** status with the number of available tools.

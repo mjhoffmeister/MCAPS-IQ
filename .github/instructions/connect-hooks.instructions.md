@@ -44,7 +44,7 @@ Connect hooks follow the vault-first storage pattern defined in `.github/instruc
 
 Before writing any Connect hook, the agent **must** verify that the authenticated user has a demonstrable connection to the claimed impact:
 
-1. **Resolve identity** — call `msx-crm:crm_whoami` to obtain the user's CRM `systemuserid` and alias.
+1. **Resolve identity** — call `msx:crm_whoami` to obtain the user's CRM `systemuserid` and alias.
 2. **Check attribution** — the user must satisfy **at least one** of:
    - **(a) CRM owner** — the user is the `_ownerid_value` on the milestone or opportunity being cited.
    - **(b) Forecast participant** — the user's name or alias appears in the opportunity's forecast comments (`msp_forecastnotes`).

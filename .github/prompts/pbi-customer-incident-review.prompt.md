@@ -69,7 +69,7 @@ Before pulling any data, ask the user to narrow the scope:
 | Customer type | `'DimCustomer'[IsS500]`, `'DimCustomer'[IsUnified]` | "Yes" |
 
 If user says **"all my assigned accounts"**:
-- Use `msx-crm:crm_whoami` to get alias
+- Use `msx:crm_whoami` to get alias
 - Use vault roster (`.docs/AccountReference.md`) to get TPID list
 - Or ask user for TPIDs / customer names directly
 
@@ -281,8 +281,8 @@ Assemble findings into a structured summary:
 ### Step 7 — CRM Correlation (Optional)
 
 If user wants deeper context, correlate incident data with CRM:
-- Use `msx-crm:get_my_active_opportunities` to check if affected customers have active pipeline
-- Use `msx-crm:get_milestones` to check if delivery milestones are at risk from incidents
+- Use `msx:get_my_active_opportunities` to check if affected customers have active pipeline
+- Use `msx:get_milestones` to check if delivery milestones are at risk from incidents
 - Use vault (`oil:get_customer_context`) for prior engagement notes on affected customers
 
 Surface any pipeline or delivery risk caused by active incidents.

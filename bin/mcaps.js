@@ -22,8 +22,9 @@ const args = process.argv.slice(2);
 const copilotArgs = ["--allow-all-tools", "--add-dir", ROOT];
 
 // If OBSIDIAN_VAULT env var is set, include the vault as an additional dir
-if (process.env.OBSIDIAN_VAULT) {
-  copilotArgs.push("--add-dir", process.env.OBSIDIAN_VAULT);
+const vaultDir = process.env.OBSIDIAN_VAULT || process.env.OBSIDIAN_VAULT_PATH;
+if (vaultDir) {
+  copilotArgs.push("--add-dir", vaultDir);
 }
 
 copilotArgs.push(...args);

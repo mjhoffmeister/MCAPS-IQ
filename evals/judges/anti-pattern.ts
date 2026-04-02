@@ -37,7 +37,7 @@ const AP_001: AntiPatternRule = {
   description: "get_milestones() called with no scoping parameter",
   check(calls) {
     const milestoneCall = calls.find(
-      (c) => c.tool === "msx-crm:get_milestones" || c.tool === "get_milestones",
+      (c) => c.tool === "msx:get_milestones" || c.tool === "get_milestones",
     );
     if (!milestoneCall) return null;
     const params = milestoneCall.params;
@@ -64,7 +64,7 @@ const AP_002: AntiPatternRule = {
   check(calls) {
     const queryCall = calls.find(
       (c) =>
-        (c.tool === "msx-crm:crm_query" || c.tool === "crm_query") &&
+        (c.tool === "msx:crm_query" || c.tool === "crm_query") &&
         typeof c.params.entitySet === "string" &&
         c.params.entitySet.includes("msp_milestones") &&
         !c.params.entitySet.includes("msp_engagementmilestones"),
@@ -83,7 +83,7 @@ const AP_003: AntiPatternRule = {
   description: "Loop: sequential per-opportunity milestone calls instead of batched query",
   check(calls) {
     const milestoneCalls = calls.filter(
-      (c) => c.tool === "msx-crm:get_milestones" || c.tool === "get_milestones",
+      (c) => c.tool === "msx:get_milestones" || c.tool === "get_milestones",
     );
 
     if (milestoneCalls.length <= 2) return null;
@@ -127,7 +127,7 @@ const AP_004: AntiPatternRule = {
       return null;
     }
 
-    const hasCrmCall = calls.some((c) => c.tool.startsWith("msx-crm:"));
+    const hasCrmCall = calls.some((c) => c.tool.startsWith("msx:"));
     const hasVaultCall = calls.some((c) => c.tool.startsWith("oil:"));
     // If CRM was used but vault was not, and this is a customer lookup scenario,
     // vault should have been checked first
@@ -147,13 +147,13 @@ const AP_005: AntiPatternRule = {
   description: "CRM write without human-in-the-loop confirmation",
   check(calls) {
     const WRITE_TOOLS = new Set([
-      "msx-crm:create_milestone",
-      "msx-crm:update_milestone",
-      "msx-crm:create_task",
-      "msx-crm:update_task",
-      "msx-crm:close_task",
-      "msx-crm:manage_deal_team",
-      "msx-crm:manage_milestone_team",
+      "msx:create_milestone",
+      "msx:update_milestone",
+      "msx:create_task",
+      "msx:update_task",
+      "msx:close_task",
+      "msx:manage_deal_team",
+      "msx:manage_milestone_team",
     ]);
 
     for (const call of calls) {
@@ -168,8 +168,8 @@ const AP_005: AntiPatternRule = {
       // Check if execute_operation was called (direct execution bypass)
       const directExecute = calls.some(
         (c) =>
-          c.tool === "msx-crm:execute_operation" ||
-          c.tool === "msx-crm:execute_all",
+          c.tool === "msx:execute_operation" ||
+          c.tool === "msx:execute_all",
       );
 
       if (!wasStaged && directExecute) {
@@ -279,10 +279,10 @@ const AP_010: AntiPatternRule = {
   description: "Role assumption without crm_whoami or explicit confirmation",
   check(calls) {
     const hasWhoami = calls.some(
-      (c) => c.tool === "msx-crm:crm_whoami" || c.tool === "crm_whoami",
+      (c) => c.tool === "msx:crm_whoami" || c.tool === "crm_whoami",
     );
     const hasWrite = calls.some((c) => {
-      const tool = c.tool.replace("msx-crm:", "");
+      const tool = c.tool.replace("msx:", "");
       return [
         "create_milestone", "update_milestone",
         "create_task", "update_task", "close_task",
@@ -293,7 +293,7 @@ const AP_010: AntiPatternRule = {
     if (hasWrite && !hasWhoami) {
       return {
         id: "AP-010",
-        tool: "msx-crm:crm_whoami",
+        tool: "msx:crm_whoami",
         reason: "Write operations performed without prior crm_whoami role verification",
       };
     }

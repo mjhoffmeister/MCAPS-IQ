@@ -22,6 +22,9 @@ The **[Obsidian Intelligence Layer (OIL)](https://github.com/JinLee794/Obsidian-
 ```
 
 2. When prompted, enter the absolute path to your Obsidian vault (for example, `/Users/yourname/Documents/MyVault`) — or set `OBSIDIAN_VAULT_PATH` in `.env`.
+
+    > **Entered the wrong path?** Run `npm run vault:reconfigure` to re-enter it, or edit `.env` directly.
+
 3. Click **Start** on `oil` in VS Code just like the other servers.
 
 OIL exposes domain-specific tools including `get_customer_context`, `search_vault`, `prepare_crm_prefetch`, `promote_findings`, and `check_vault_health`. See the upstream [OIL README](https://github.com/JinLee794/Obsidian-Intelligence-Layer#readme) for full tool coverage and configuration details.

@@ -162,7 +162,7 @@ Fill gaps: action items from transcript, context for decisions, contradictions w
 ### Step 4 — Update Related Notes
 
 1. **Customer file**: `oil:patch_note` → append meeting summary to `## Notes` on `Customers/<Name>.md`
-2. **New people**: List attendees without a `People/` note → offer to create via `/create-person`
+2. **New people**: List attendees without a `People/` note → offer to create via `vault-sync` Mode 3b (create from context)
 3. **Action items**: If referencing a project, `oil:patch_note` → append to project's `## Open Items`
 
 ---

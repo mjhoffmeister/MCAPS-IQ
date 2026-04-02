@@ -32,16 +32,25 @@ Every SE is expected to position HoK with every client and maintain active HoK e
 | **Stage 3** | **Lead technical proof and HoK execution** |
 | Stages 4–5 | Contribute — preserve continuity via CSU handoff, post-commitment task hygiene |
 
+## Activity Tracking Model
+
+SE tasks are **activity records**, not open work items. They document completed actions (proof delivered, HoK session executed, technical review conducted) for audit trail and downstream handoff evidence.
+
+**Create-and-close rule**: When recording SE activity, `create_task` is always immediately followed by `close_task` in the same confirmation packet. Tasks are never left in an open state — they are born closed.
+
+- If the activity is **already completed**: create-and-close immediately.
+- If the activity is **planned/future**: do NOT create a task yet. Record intent in milestone notes or vault; create the task only when the activity is performed.
+
 ## Ownership Scope in MSX
 
 - Maintain task-level accuracy on milestones SE touches
 - Add SE to deal team when materially contributing
-- Express execution via concrete tasks — avoid milestone-level ambiguity
-- Track HoK engagements as explicit tasks with environment tier and legal coverage status
+- Express execution via concrete activity-record tasks — avoid milestone-level ambiguity
+- Track HoK engagements as explicit closed tasks with environment tier and legal coverage status
 
 ## Hygiene Cadence
-- **Daily/Weekly**: milestone task hygiene for active opportunities; HoK engagement status review
-- **At handoff**: ensure BANT evidence, HoK artifacts, legal coverage records, and handoff artifacts are complete
+- **Daily/Weekly**: milestone task hygiene for active opportunities; HoK engagement status review; verify recent activities have been recorded as closed tasks
+- **At handoff**: ensure BANT evidence, HoK artifacts, legal coverage records, and handoff artifacts are complete; confirm all SE activities are captured as closed task records
 
 ## Boundary Rules
 1. SE owns technical completion evidence; Specialist owns milestone structure/assignment.
@@ -62,7 +71,7 @@ Every SE is expected to position HoK with every client and maintain active HoK e
 
 | Skill | SE Focus |
 |---|---|
-| `task-hygiene-flow` | Owner, due date, status, blocker text, HoK task legal coverage status |
+| `se-execution-check` | Owner, due date, status, blocker text, HoK task legal coverage status |
 | `proof-plan-orchestration` | Technical proof requirements, success criteria, HoK scope and environment tier |
 | `hok-readiness-check` | Legal coverage verification, customer environment access, cusp customer positioning |
 | `handoff-readiness-validation` | BANT evidence completeness, technical decisions documented, HoK artifacts transferred |

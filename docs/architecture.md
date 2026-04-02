@@ -7,7 +7,7 @@
 ```
 You (Copilot Chat)
   │
-  ├── asks about CRM data  ──→ msx-crm MCP server ──→ MSX Dynamics 365
+  ├── asks about CRM data  ──→ msx MCP server ──→ MSX Dynamics 365
   ├── asks about M365 data ──→ workiq MCP server  ──→ Teams / Outlook / SharePoint
   └── asks about notes     ──→ OIL (optional)     ──→ Your Obsidian Vault
 ```
@@ -59,14 +59,14 @@ These tools let Copilot interact with MSX CRM on your behalf:
 
 ## Role Cards & Atomic Skills
 
-The system uses **role cards** (identity and accountability rules) combined with **27 atomic skills** (focused domain playbooks). Role cards live in `.github/instructions/` and are loaded by keyword match; atomic skills live in `.github/skills/` and are loaded on demand.
+The system uses **role cards** (identity and accountability rules) combined with **atomic skills** (focused domain playbooks). All live in `.github/skills/` and are loaded on demand by keyword match — portable across VS Code, Copilot CLI, and github.com chat.
 
 **Role cards** (one per MCAPS role):
 
-- **[Specialist](../.github/instructions/role-card-specialist.instructions.md)** — pipeline creation, opportunity qualification, Stage 2-3 progression
-- **[Solution Engineer](../.github/instructions/role-card-se.instructions.md)** — technical proof, architecture reviews, task hygiene
-- **[Cloud Solution Architect](../.github/instructions/role-card-csa.instructions.md)** — execution readiness, architecture handoff, delivery ownership
-- **[Customer Success Account Manager](../.github/instructions/role-card-csam.instructions.md)** — milestone health, adoption, value realization, commit gates
+- **[Specialist](../.github/skills/role-specialist/SKILL.md)** — pipeline creation, opportunity qualification, Stage 2-3 progression
+- **[Solution Engineer](../.github/skills/role-se/SKILL.md)** — technical proof, architecture reviews, task hygiene
+- **[Cloud Solution Architect](../.github/skills/role-csa/SKILL.md)** — execution readiness, architecture handoff, delivery ownership
+- **[Customer Success Account Manager](../.github/skills/role-csam/SKILL.md)** — milestone health, adoption, value realization, commit gates
 
 **Atomic skills** (examples — see `.github/skills/` for all 27):
 
@@ -102,7 +102,7 @@ The file [.vscode/mcp.json](../.vscode/mcp.json) defines which MCP servers are a
 
 | Server      | Status            | Purpose                          | Tools It Provides                                                                                |
 | ----------- | ----------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `msx-crm` | **Enabled** | MSX CRM operations               | `crm_whoami`, `crm_query`, `list_opportunities`, `get_milestones`, `create_task`, etc. |
+| `msx` | **Enabled** | MSX CRM operations               | `crm_whoami`, `crm_query`, `list_opportunities`, `get_milestones`, `create_task`, etc. |
 | `workiq`  | **Enabled** | Microsoft 365 evidence retrieval | `ask_work_iq` (Teams, Outlook, SharePoint)                                                     |
 | `powerbi-remote` | **Enabled** | Power BI analytics | `DiscoverArtifacts`, `GetSemanticModelSchema`, `GenerateQuery`, `ExecuteQuery` |
 | `oil`     | Commented out     | Obsidian Intelligence Layer      | `get_customer_context`, `search_vault`, `prepare_crm_prefetch`, `promote_findings`, etc. |
@@ -113,4 +113,4 @@ You can add any MCP-compatible server to this file. See the [Customization guide
 
 ## Package-based MCP Servers
 
-`msx-crm` and `oil` are launched from published npm packages via `npx` (see `.vscode/mcp.json` and `scripts/*-start.js`). This keeps the repo lighter and avoids vendoring those server source trees locally.
+`msx` and `oil` are launched from published npm packages via `npx` (see `.vscode/mcp.json` and `scripts/*-start.js`). This keeps the repo lighter and avoids vendoring those server source trees locally.

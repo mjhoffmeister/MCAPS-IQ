@@ -29,31 +29,32 @@ Here's what ships out of the box and what each piece does:
 ```
 .github/
 ├── copilot-instructions.md          ← Global behavior: MCP routing, role detection, response style
-├── instructions/
-│   ├── intent.instructions.md       ← "Why does this agent exist?" — strategic intent
-│   ├── mcem-flow.instructions.md    ← MCEM process model, stages, exit criteria
-│   ├── shared-patterns.instructions.md ← Shared definitions and runtime contract
-│   ├── role-card-specialist.instructions.md  ← Specialist identity + accountability
-│   ├── role-card-se.instructions.md          ← Solution Engineer identity + accountability
-│   ├── role-card-csa.instructions.md         ← Cloud Solution Architect identity + accountability
-│   ├── role-card-csam.instructions.md        ← CSAM identity + accountability
+├── instructions/                    ← VS Code auto-load via applyTo (scoped to file paths)
 │   ├── msx-role-and-write-gate.instructions.md ← Confirmation gates before any CRM write
 │   ├── crm-entity-schema.instructions.md     ← CRM field names so Copilot builds correct queries
 │   ├── crm-query-strategy.instructions.md    ← CRM read query scoping strategy
 │   ├── connect-hooks.instructions.md         ← Evidence capture for Connect impact reporting
 │   ├── obsidian-vault.instructions.md        ← Vault integration conventions
-│   └── powerbi-mcp.instructions.md           ← Power BI auth, DAX discipline, prompt conventions
-├── skills/                          ← 27 atomic domain skills (loaded on demand)
+│   ├── m365-data-helpers.instructions.md     ← M365 helper-script contract
+│   └── wins-channel-post.instructions.md     ← Wins channel post formatting
+├── skills/                          ← Canonical domain knowledge (portable across all Copilot surfaces)
+│   ├── agent-intent/SKILL.md                 ← "Why does this agent exist?" — strategic intent
+│   ├── mcem-flow/SKILL.md                    ← MCEM process model, stages, exit criteria
+│   ├── shared-patterns/SKILL.md              ← Shared definitions and runtime contract
+│   ├── role-specialist/SKILL.md              ← Specialist identity + accountability
+│   ├── role-se/SKILL.md                      ← Solution Engineer identity + accountability
+│   ├── role-csa/SKILL.md                     ← Cloud Solution Architect identity + accountability
+│   ├── role-csam/SKILL.md                    ← CSAM identity + accountability
+│   ├── pbi-reference/SKILL.md                ← Power BI auth, DAX, subagent delegation
+│   ├── ghcp-octodash/SKILL.md                ← OctoDash per-subscription GHCP enrichment
 │   ├── pipeline-qualification/SKILL.md       ← Qualify new opportunities (Stages 1-2)
 │   ├── milestone-health-review/SKILL.md      ← Committed milestone health (Stages 4-5)
 │   ├── proof-plan-orchestration/SKILL.md     ← Technical proof management
 │   ├── risk-surfacing/SKILL.md               ← Proactive risk identification
 │   ├── handoff-readiness-validation/SKILL.md ← Cross-role handoff quality
 │   ├── mcem-stage-identification/SKILL.md    ← Identify current MCEM stage
-│   ├── workiq-query-scoping/SKILL.md         ← Scope M365 searches effectively
 │   ├── pbi-prompt-builder/SKILL.md           ← Interactive Power BI prompt builder
-│   ├── skill-authoring-best-practices/SKILL.md ← Guide for writing your own skills
-│   ├── ... (19 more atomic skills)           ← See directory for full list
+│   ├── ... (30+ more skills)                 ← See directory for full list
 │   └── _legacy/                              ← Archived monolithic role skills (reference only)
 ├── prompts/
 │   ├── meeting.prompt.md            ← Unified: prep before or process after (auto-detects)
@@ -62,7 +63,6 @@ Here's what ships out of the box and what each piece does:
 │   ├── portfolio-prioritization.prompt.md ← Rank accounts by GHCP growth potential
 │   ├── ghcp-activity-impact.prompt.md ← Correlate engagement with seat growth
 │   ├── project-status.prompt.md     ← Project status from vault + CRM validation
-│   ├── create-person.prompt.md      ← Create a People note from meeting context
 │   ├── sync-project-from-github.prompt.md ← Pull GitHub activity into vault
 │   ├── pbi-azure-all-in-one-review.prompt.md ← Azure ACR vs budget + pipeline ranking
 │   ├── pbi-ghcp-new-logo-incentive.prompt.md ← GHCP incentive eligibility tracker
@@ -156,7 +156,7 @@ After saving, type `/` in the VS Code Copilot chat panel to see it in the menu. 
 >
 > **Before adding any MCP server, verify ALL of the following:**
 >
-> - **Runs locally.** Prefer servers that execute entirely on your machine via `stdio` (like `msx-crm` and `workiq` in this repo). A local process never sends your data to a third party.
+> - **Runs locally.** Prefer servers that execute entirely on your machine via `stdio` (like `msx` and `workiq` in this repo). A local process never sends your data to a third party.
 > - **No network-facing servers.** Do NOT expose MCP servers over HTTP/SSE to the network. A network-listening MCP server is an open door to your CRM data for anyone who can reach the port.
 > - **Trusted source only.** Only install MCP servers from publishers you trust — your own org, Microsoft, or packages you have personally reviewed. Random community servers can exfiltrate data, inject prompts, or modify CRM records.
 > - **Review what it does.** Before running `npx some-unknown-package`, read its source or README. Understand what tools it registers and what data it accesses.

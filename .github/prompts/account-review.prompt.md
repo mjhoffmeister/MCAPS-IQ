@@ -14,7 +14,7 @@ Surface the full picture for tracked accounts by combining **PBI adoption metric
 | **MSXI Semantic Model** | `a0239518-1109-45a3-a3eb-1872dc10ac15` | GHCP seat data (Dim_Metrics) |
 | **OctoDash Semantic Model** | `ecdbfb59-7a8f-44fb-9102-727598416571` | Per-org/per-subscription |
 | **M365 Source** | `m365-actions` subagent | Email, Teams, Calendar |
-| **CRM Source** | `msx-crm` MCP tools | Opportunities, milestones |
+| **CRM Source** | `msx` MCP tools | Opportunities, milestones |
 | **Calendar Filter** | `RelativeFM = -1` | Last completed fiscal month |
 | **M365 Lookback** | 30 days | Engagement window |
 
@@ -224,7 +224,7 @@ Full M365 signal analysis. Uses Step 0C freshness and vault historical context.
 
 ## Section 4 — Pipeline Deep Dive
 
-Full CRM analysis. Calls `msx-crm` directly.
+Full CRM analysis. Calls `msx` directly.
 
 **Opportunities**: `list_opportunities({ customerKeyword, format: "summary", includeDealTeam: true })` per account.
 

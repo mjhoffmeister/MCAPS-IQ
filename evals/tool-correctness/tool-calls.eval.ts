@@ -77,9 +77,9 @@ describe("Tool Call Correctness", () => {
   describe("milestone-health-review — scoped query", () => {
     it("calls auth, vault, then scoped milestones in order", ({ task }) => {
       // Simulate the expected tool call sequence
-      crm.handle("msx-crm:crm_auth_status");
+      crm.handle("msx:crm_auth_status");
       oil.handle("oil:get_customer_context", { customer: "Contoso" });
-      crm.handle("msx-crm:get_milestones", {
+      crm.handle("msx:get_milestones", {
         customerKeyword: "Contoso",
         statusFilter: "active",
         includeTasks: true,
@@ -88,9 +88,9 @@ describe("Tool Call Correctness", () => {
       const result = judgeToolSequence(
         recorder.calls,
         [
-          { tool: "msx-crm:crm_auth_status", order: 1 },
+          { tool: "msx:crm_auth_status", order: 1 },
           { tool: "oil:get_customer_context", order: 2 },
-          { tool: "msx-crm:get_milestones", order: 3, paramsContains: { customerKeyword: "Contoso" } },
+          { tool: "msx:get_milestones", order: 3, paramsContains: { customerKeyword: "Contoso" } },
         ],
       );
 
@@ -106,24 +106,24 @@ describe("Tool Call Correctness", () => {
     });
 
     it("flags unscoped get_milestones as forbidden", () => {
-      crm.handle("msx-crm:crm_auth_status");
-      crm.handle("msx-crm:get_milestones", {}); // unscoped — bad!
+      crm.handle("msx:crm_auth_status");
+      crm.handle("msx:get_milestones", {}); // unscoped — bad!
 
       const result = judgeToolSequence(
         recorder.calls,
-        [{ tool: "msx-crm:crm_auth_status" }, { tool: "msx-crm:get_milestones" }],
-        [{ tool: "msx-crm:get_milestones", params: {} }],
+        [{ tool: "msx:crm_auth_status" }, { tool: "msx:get_milestones" }],
+        [{ tool: "msx:get_milestones", params: {} }],
       );
 
-      expect(result.missing).toContain("FORBIDDEN: msx-crm:get_milestones was called");
+      expect(result.missing).toContain("FORBIDDEN: msx:get_milestones was called");
     });
 
     it("matches paramsContains against the best candidate when tool appears multiple times", () => {
-      crm.handle("msx-crm:get_milestones", { customerKeyword: "Contoso" });
-      crm.handle("msx-crm:get_milestones", { statusFilter: "active" });
+      crm.handle("msx:get_milestones", { customerKeyword: "Contoso" });
+      crm.handle("msx:get_milestones", { statusFilter: "active" });
 
       const result = judgeToolSequence(recorder.calls, [
-        { tool: "msx-crm:get_milestones", paramsContains: { statusFilter: "active" } },
+        { tool: "msx:get_milestones", paramsContains: { statusFilter: "active" } },
       ]);
 
       expect(result.pass).toBe(true);
@@ -135,20 +135,20 @@ describe("Tool Call Correctness", () => {
     it("calls vault and auth in parallel, then CRM queries", ({ task }) => {
       // Phase 1: parallel
       oil.handle("oil:get_vault_context");
-      crm.handle("msx-crm:crm_auth_status");
+      crm.handle("msx:crm_auth_status");
 
       // Phase 2: CRM queries
-      crm.handle("msx-crm:get_my_active_opportunities");
-      crm.handle("msx-crm:get_milestones", {
+      crm.handle("msx:get_my_active_opportunities");
+      crm.handle("msx:get_milestones", {
         statusFilter: "active",
         includeTasks: true,
       });
 
       const result = judgeToolSequence(recorder.calls, [
         { tool: "oil:get_vault_context", phase: 1 },
-        { tool: "msx-crm:crm_auth_status", phase: 1 },
-        { tool: "msx-crm:get_my_active_opportunities", phase: 2 },
-        { tool: "msx-crm:get_milestones", phase: 2 },
+        { tool: "msx:crm_auth_status", phase: 1 },
+        { tool: "msx:get_my_active_opportunities", phase: 2 },
+        { tool: "msx:get_milestones", phase: 2 },
       ]);
 
       task.meta.evalScenarioId = "morning-brief-parallel";
@@ -165,30 +165,30 @@ describe("Tool Call Correctness", () => {
     it("vault context is fetched before any CRM call", () => {
       oil.handle("oil:get_vault_context");
       oil.handle("oil:get_customer_context", { customer: "Contoso" });
-      crm.handle("msx-crm:crm_query", {
+      crm.handle("msx:crm_query", {
         entitySet: "opportunities",
         filter: "contains(name,'Contoso')",
       });
 
-      expect(recorder.wasCalledBefore("oil:get_vault_context", "msx-crm:crm_query")).toBe(true);
+      expect(recorder.wasCalledBefore("oil:get_vault_context", "msx:crm_query")).toBe(true);
     });
 
     it("detects vault skip when CRM is called first", () => {
-      crm.handle("msx-crm:crm_query", { entitySet: "opportunities" });
+      crm.handle("msx:crm_query", { entitySet: "opportunities" });
       oil.handle("oil:get_vault_context");
 
-      expect(recorder.wasCalledBefore("oil:get_vault_context", "msx-crm:crm_query")).toBe(false);
+      expect(recorder.wasCalledBefore("oil:get_vault_context", "msx:crm_query")).toBe(false);
     });
   });
 
   describe("pipeline-hygiene-triage — auth then opportunities", () => {
     it("calls auth before opportunity retrieval", () => {
-      crm.handle("msx-crm:crm_auth_status");
-      crm.handle("msx-crm:get_my_active_opportunities");
+      crm.handle("msx:crm_auth_status");
+      crm.handle("msx:get_my_active_opportunities");
 
       const result = judgeToolSequence(recorder.calls, [
-        { tool: "msx-crm:crm_auth_status", order: 1 },
-        { tool: "msx-crm:get_my_active_opportunities", order: 2 },
+        { tool: "msx:crm_auth_status", order: 1 },
+        { tool: "msx:get_my_active_opportunities", order: 2 },
       ]);
 
       expect(result.pass).toBe(true);
@@ -197,8 +197,8 @@ describe("Tool Call Correctness", () => {
 
   describe("write operations — staging guard", () => {
     it("CRM write operations are staged, not directly executed", () => {
-      crm.handle("msx-crm:crm_whoami");
-      crm.handle("msx-crm:update_milestone", {
+      crm.handle("msx:crm_whoami");
+      crm.handle("msx:update_milestone", {
         milestoneId: "ms-111111-aaaa-bbbb-cccc-111111111111",
         payload: { msp_milestonestatus: 861980002 },
       });
@@ -208,7 +208,7 @@ describe("Tool Call Correctness", () => {
       expect(crm.stagedWrites[0].tool).toBe("update_milestone");
 
       // Recorder should show it was staged
-      const writeCall = recorder.callsTo("msx-crm:update_milestone");
+      const writeCall = recorder.callsTo("msx:update_milestone");
       expect(writeCall).toHaveLength(1);
       expect((writeCall[0].response as Record<string, unknown>).staged).toBe(true);
     });
@@ -225,7 +225,7 @@ describe("Tool Call Correctness", () => {
 
     it("no execute_operation or execute_all without prior staging", () => {
       // Directly calling execute without staging should be recorded
-      crm.handle("msx-crm:execute_operation", { operationId: "OP-1" });
+      crm.handle("msx:execute_operation", { operationId: "OP-1" });
 
       expect(crm.stagedWrites).toHaveLength(1);
       expect(crm.stagedWrites[0].description).toContain("MOCK");
@@ -287,7 +287,7 @@ describe("YAML-Driven Tool Correctness Scenarios", () => {
       // Simulate the expected tool calls
       for (const call of s.expected_calls) {
         const params = call.params_contains ?? {};
-        if (call.tool.startsWith("msx-crm:")) {
+        if (call.tool.startsWith("msx:")) {
           yamlCrm.handle(call.tool, params);
         } else if (call.tool.startsWith("oil:")) {
           yamlOil.handle(call.tool, params);

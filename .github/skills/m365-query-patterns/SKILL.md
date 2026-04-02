@@ -39,9 +39,25 @@ Efficient patterns for Calendar, Mail, and Teams MCP tools. For **broad multi-so
 
 **Cancel vs Delete**: `CancelEvent` notifies attendees (organizer). `DeleteEventById` silently removes (attendee).
 
-### OrderBy
+### OrderBy — `ListCalendarView`
 
-Use **PascalCase**: `Start`, `End`, `Subject` — NOT `start/dateTime`.
+**NEVER use `start/dateTime` in `orderby`.** The Graph SDK property names are PascalCase, not OData path syntax.
+
+| Intent | Correct | WRONG |
+|---|---|---|
+| Sort by start time | `Start` | `start/dateTime` ❌ |
+| Sort by end time | `End` | `end/dateTime` ❌ |
+| Sort by subject | `Subject` | `subject` ❌ |
+
+Valid `orderby` values (PascalCase only): `Start`, `End`, `Subject`, `IsAllDay`, `Importance`, `Sensitivity`, `CreatedDateTime`, `LastModifiedDateTime`.
+
+**Error signature** (indicates wrong casing/path):
+```
+Error: Invalid property name(s) in 'orderby' parameter: start/dateTime.
+Please use valid properties from this list: Start, End, Subject, ...
+```
+
+**Fix**: replace `start/dateTime` → `Start` (and append ` asc`/` desc` as needed).
 
 ---
 
@@ -60,6 +76,14 @@ Always include at least 2 filters. Always include a date range.
 | `isflagged:true` / `isread:false` | Flagged / unread |
 
 **Two-pass**: `SearchMessages` (top: 5-10) → `GetMessage` for specific IDs.
+
+### SearchMessagesQueryParameters Restrictions
+
+`SearchMessagesQueryParameters` uses OData `$filter`/`$search`/`$orderby`. Key restrictions:
+
+- **NEVER combine `$orderby` with `$search`.** Microsoft Graph rejects this with `The query parameter $orderby is not supported with $search`. Omit `orderby` and sort client-side.
+- **NEVER use `$filter` on nested complex-type properties** (`from/emailAddress/address`). Use KQL `SearchMessages` instead.
+- Only use `SearchMessagesQueryParameters` for simple top-level filters (`receivedDateTime`, `isRead`) when KQL is not an option.
 
 ### Attachment Safety
 

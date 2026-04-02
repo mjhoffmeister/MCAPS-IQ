@@ -50,7 +50,7 @@ pip install pypdfium2
 
 This guide covers PDF processing using Python libraries and command-line tools. For advanced features and JavaScript libraries, see [reference.md](reference.md). For PDF form filling, see [forms.md](forms.md).
 
-**Output directory**: Save generated/merged/split `.pdf` files to `.copilot/docs/` (see `shared-patterns.instructions.md` § Artifact Output Directory). Create the directory with `os.makedirs('.copilot/docs', exist_ok=True)` before writing.
+**Output directory**: Save generated/merged/split `.pdf` files to the vault `Deliverables/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
 
 > **Note:** `scripts/` paths are relative to this skill folder (`.github/skills/pdf/`).
 

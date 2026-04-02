@@ -11,10 +11,10 @@ scenarios:
       mediums: [crm, vault]
     expectedSkill: morning-brief
     expectedCalls:
-      - tool: "msx-crm:crm_auth_status"
+      - tool: "msx:crm_auth_status"
       - tool: "oil:get_vault_context"
-      - tool: "msx-crm:get_my_active_opportunities"
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_my_active_opportunities"
+      - tool: "msx:get_milestones"
         paramsContains:
           statusFilter: "active"
     forbiddenPatterns:
@@ -38,7 +38,7 @@ scenarios:
       - tool: "oil:get_customer_context"
         paramsContains:
           customer: "Contoso"
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_milestones"
     forbiddenPatterns:
       - AP-001
       - AP-003
@@ -118,7 +118,7 @@ scenarios:
     expectedCalls:
       - tool: "oil:search_vault"
         purpose: "Resolve abbreviation to canonical name"
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_milestones"
         paramsContains:
           customerKeyword: "Nielsen"
     forbiddenPatterns:

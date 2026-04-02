@@ -132,10 +132,10 @@ describe("Skill Routing Accuracy", () => {
   });
 
   describe("Task hygiene triggers", () => {
-    it('"stale tasks" routes to task-hygiene-flow', () => {
+    it('"stale tasks" routes to se-execution-check', () => {
       const match = routeUtterance("check for stale tasks", skills);
       if (skills.length === 0) return;
-      expect(match?.name).toBe("task-hygiene-flow");
+      expect(match?.name).toBe("se-execution-check");
     });
   });
 
@@ -148,10 +148,10 @@ describe("Skill Routing Accuracy", () => {
   });
 
   describe("Exit criteria triggers", () => {
-    it('"are we ready to advance" routes to exit-criteria-validation', () => {
+    it('"are we ready to advance" routes to mcem-diagnostics', () => {
       const match = routeUtterance("are we ready to advance?", skills);
       if (skills.length === 0) return;
-      expect(match?.name).toBe("exit-criteria-validation");
+      expect(match?.name).toBe("mcem-diagnostics");
     });
   });
 

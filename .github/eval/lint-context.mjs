@@ -17,8 +17,8 @@
  *   7. Simulated per-query cost (instructions matched by description + skills).
  *
  *   CHAIN INTEGRITY
- *   8. mcem-flow.instructions.md references skills that exist.
- *   9. Role-card cross-role skill tables reference skills that exist.
+ *   8. mcem-flow skill references skills that exist.
+ *   9. Role skill cross-role skill tables reference skills that exist.
  *  10. copilot-instructions.md Tier table accuracy.
  *
  * Exit codes:   0 = pass   1 = errors found
@@ -46,7 +46,7 @@ const ROOT = join(__dirname, '..', '..');
 const SKILLS_DIR = join(__dirname, '..', 'skills');
 const INSTRUCTIONS_DIR = join(__dirname, '..', 'instructions');
 const COPILOT_INSTRUCTIONS = join(ROOT, '.github', 'copilot-instructions.md');
-const MCEM_FLOW = join(INSTRUCTIONS_DIR, 'mcem-flow.instructions.md');
+const MCEM_FLOW = join(SKILLS_DIR, 'mcem-flow', 'SKILL.md');
 
 // ── config ───────────────────────────────────────────────────────
 const MAX_SKILL_BODY = parseInt(process.env.MAX_SKILL_BODY_TOKENS || '800', 10);
@@ -162,15 +162,18 @@ function checkMcemFlowRefs(skills) {
 
 function checkRoleCardRefs(skills) {
   const skillNames = new Set(skills.map(s => shortName(s.file)));
-  const roleCards = readdirSync(INSTRUCTIONS_DIR)
-    .filter(f => f.startsWith('role-card-') && f.endsWith('.instructions.md'));
+  const roleSkills = readdirSync(SKILLS_DIR, { withFileTypes: true })
+    .filter(d => d.isDirectory() && d.name.startsWith('role-'))
+    .map(d => d.name);
 
-  for (const rc of roleCards) {
-    const content = readFileSync(join(INSTRUCTIONS_DIR, rc), 'utf-8');
+  for (const rs of roleSkills) {
+    const skillPath = join(SKILLS_DIR, rs, 'SKILL.md');
+    if (!existsSync(skillPath)) continue;
+    const content = readFileSync(skillPath, 'utf-8');
     const refs = extractSkillRefs(content);
     for (const ref of refs) {
       if (ref.includes('-') && !skillNames.has(ref)) {
-        warn(shortName(rc), `References \`${ref}\` in cross-role lens but skill file not found`);
+        warn(rs, `References \`${ref}\` in cross-role lens but skill file not found`);
       }
     }
   }

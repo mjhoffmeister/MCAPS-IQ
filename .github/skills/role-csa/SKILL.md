@@ -38,10 +38,9 @@ Own the **customer technical success path** — ensure committed opportunities a
 | Skill | CSA Focus |
 |---|---|
 | `commit-gate-enforcement` | Architectural feasibility, technical delivery risk, environment prerequisites |
-| `execution-monitoring` | Risk state, dependencies, execution blockers, architecture guardrails |
-| `unified-constraint-check` | Technical feasibility constraints, Unified eligibility, accreditation gaps |
-| `exit-criteria-validation` | Delivery motion validated, success metrics have baseline + target |
-| `expansion-signal-routing` | Capture optimization insight; route to Specialist/ATU |
+| `se-execution-check` | Risk state, dependencies, execution blockers, architecture guardrails, Unified constraints |
+| `mcem-diagnostics` | Delivery motion validated, success metrics have baseline + target |
+| `stage-5-review` | Capture optimization insight; route to Specialist/ATU |
 | `account-landscape-awareness` | Adjacent pipeline for swarming, EDE coverage gaps |
 
 ## CSA vs CSAM Authority

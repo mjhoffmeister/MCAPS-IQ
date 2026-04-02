@@ -17,7 +17,7 @@ Rank your tracked accounts by expansion potential: **where should you spend time
 | **MSXI Semantic Model** | `a0239518-1109-45a3-a3eb-1872dc10ac15` | GHCP seat + pipeline data |
 | **OctoDash Semantic Model** | `ecdbfb59-7a8f-44fb-9102-727598416571` | Per-org granularity |
 | **Vault Source** | `AccountReference.md` + customer files | Account roster + engagement |
-| **CRM Source** | `msx-crm` tools | Pipeline coverage |
+| **CRM Source** | `msx` tools | Pipeline coverage |
 | **Calendar Filter** | `RelativeFM = -1` | Last completed fiscal month |
 
 ---
@@ -40,8 +40,8 @@ Delegate to `pbi-analyst`:
 ## Step 2 — CRM Pipeline Coverage
 
 For each account:
-- `msx-crm:list_opportunities({ customerKeyword: "<account>", format: "summary", includeDealTeam: true })` → pipeline stages, values, deal team.
-- `msx-crm:get_milestones({ customerKeyword: "<account>", format: "triage" })` → milestone health.
+- `msx:list_opportunities({ customerKeyword: "<account>", format: "summary", includeDealTeam: true })` → pipeline stages, values, deal team.
+- `msx:get_milestones({ customerKeyword: "<account>", format: "triage" })` → milestone health.
 - Extract: active opp count, total pipeline $, highest stage reached, blocked milestones.
 
 ## Step 3 — Engagement Recency from Vault

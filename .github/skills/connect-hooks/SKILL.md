@@ -42,7 +42,7 @@ When writing Connect hooks:
 
 Before writing any Connect hook, verify the authenticated user has a demonstrable connection:
 
-1. **Resolve identity** — `msx-crm:crm_whoami`.
+1. **Resolve identity** — `msx:crm_whoami`.
 2. **Check attribution** — user must satisfy at least one of:
    - **(a) CRM owner** — `_ownerid_value` on the milestone or opportunity
    - **(b) Forecast participant** — user's alias in `msp_forecastnotes`

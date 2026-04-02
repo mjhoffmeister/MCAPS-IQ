@@ -22,14 +22,14 @@ Before calling any CRM read tool that may return large result sets (especially `
 1. Identify current user via `crm_auth_status` (or `crm_whoami`).
 2. Fetch profile data using `crm_get_record` for `systemusers(<userId>)` with available identity fields (for example: name/title/email/business unit).
 3. Map the user to one of these role workflows:
-   - `Account Executive` → `.github/instructions/role-card-ae.instructions.md`
-   - `Specialist` → `.github/instructions/role-card-specialist.instructions.md`
-   - `Solution Engineer` → `.github/instructions/role-card-se.instructions.md`
-   - `Cloud Solution Architect` → `.github/instructions/role-card-csa.instructions.md`
-   - `Customer Success Account Manager` → `.github/instructions/role-card-csam.instructions.md`
-   - `Account Technology Strategist` → `.github/instructions/role-card-ats.instructions.md`
-   - `Industry Advisor` → `.github/instructions/role-card-ia.instructions.md`
-   - `ATU Sales Director` → `.github/instructions/role-card-atu-sd.instructions.md`
+   - `Account Executive` → `role-ae` skill
+   - `Specialist` → `role-specialist` skill
+   - `Solution Engineer` → `role-se` skill
+   - `Cloud Solution Architect` → `role-csa` skill
+   - `Customer Success Account Manager` → `role-csam` skill
+   - `Account Technology Strategist` → `role-ats` skill
+   - `Industry Advisor` → `role-ia` skill
+   - `ATU Sales Director` → `role-atu-sd` skill
 4. If mapping is ambiguous or multiple roles match:
    - Present top 1–2 likely role mappings with reasons.
    - Ask the user to confirm role before proceeding.
@@ -90,6 +90,16 @@ Before building the confirmation packet for milestone create/update operations:
 
 **Linkification**: Every opportunity, milestone, and task in the confirmation packet must be a clickable CRM link. Use `recordUrl` from `get_milestones` when available, otherwise construct from the entity logical name and GUID (see `crm-entity-schema.instructions.md` § CRM Record URL Pattern).
 
+### SE Activity Tracking: Create-and-Close (Mandatory for SE role)
+
+When the active role is **SE**, every `create_task` MUST be paired with an immediate `close_task` in the same confirmation packet. SE tasks are **activity records** (completed work), not open work items.
+
+- Present as a single atomic operation: "Create and close task: [description]".
+- The confirmation packet shows both the create and close as one proposed action.
+- Approval covers both operations — no separate confirm for the close.
+- If the SE describes a **future/planned** activity, do NOT create a task. Advise recording it after the activity is performed.
+- This rule applies to all SE task creation: task hygiene backfills, proof plan tasks, HoK activity records, and execution monitoring follow-ups.
+
 ### Confirmation language
 Ask for explicit approval in a separate step, for example:
 - "Please confirm this update is correct. Reply: `approve` to proceed or `revise` to change details."
@@ -112,3 +122,22 @@ When producing action recommendations or preflight checks, use this order:
 3. Proposed action plan
 4. Confirmation packet
 5. Await approval
+
+## 6) Post-Write Vault Capture (Task Operations)
+
+After any confirmed `create_task`, `update_task`, or `close_task` write completes:
+
+1. **Automatically chain** to the `vault-sync` skill (Mode 5: Task Sync post-write hook) — pass the write result plus confirmation-packet context (customer, milestone, opportunity names and GUIDs).
+2. No additional user confirmation — the vault log is a downstream record of the already-approved CRM write.
+3. If OIL is unavailable, skip silently. If vault write fails, warn the user and suggest `/task-sync` to reconcile later.
+4. For batch task operations (e.g., task-hygiene corrections), run vault capture once after all writes complete rather than per-task.
+
+## 7) Post-Write Vault Capture (Opportunity Operations)
+
+After any confirmed `update_milestone`, `create_milestone`, or `manage_deal_team` write completes:
+
+1. **Automatically chain** to the `vault-sync` skill (Mode 1: Opp Sync auto-capture) — pass the opportunity context from the confirmation packet (customer, opportunity GUID/number, deal team, milestones with ACR values).
+2. No additional user confirmation — the vault capture is a one-way CRM→vault sync of the already-approved data.
+3. If OIL is unavailable, skip silently. If vault write fails, warn the user and suggest `opp sync` to reconcile later.
+4. This captures deal team roster, opportunity notes, ACR values (`estimatedvalue`, `msp_consumptionconsumedrecurring`, milestone `msp_monthlyuse`), and pipeline metadata to the vault.
+5. **Direction rule**: CRM→vault only. The vault is a read-cache. To update CRM, the user must explicitly request a write through the write-gate.

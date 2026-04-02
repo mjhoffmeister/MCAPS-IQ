@@ -119,6 +119,41 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
 
 ---
 
+### :material-git: Git
+
+Git is required to clone the repository. It ships with most macOS dev setups (Xcode Command Line Tools) and is bundled with GitHub Desktop on Windows — but it is **not** always  pre-installed.
+
+!!! warning "GitHub CLI (`gh`) is not Git"
+    Having `gh` installed does **not** mean `git` is available. They are separate tools.
+
+=== "Check"
+
+    ```bash
+    git --version
+    # Should print git version 2.x.x or higher
+    ```
+
+=== "Install"
+
+    ```bash
+    # macOS (installs Xcode Command Line Tools which includes git)
+    xcode-select --install
+
+    # Or via Homebrew
+    brew install git
+    ```
+
+    ```powershell
+    # Windows (run in VS Code terminal)
+    winget install Git.Git --silent --accept-package-agreements --accept-source-agreements
+
+    # IMPORTANT: Close and reopen VS Code after installing Git.
+    # New terminals inside VS Code won't see PATH changes until you restart.
+    git --version
+    ```
+
+---
+
 ### :material-nodejs: Node.js 18+
 
 === "Check"
@@ -227,6 +262,11 @@ A browser window will open — sign in with your `@microsoft.com` account. After
 
 ---
 
+!!! tip "Restart VS Code after installing new CLI tools"
+    If you just installed Git, Node.js, GitHub CLI, or Azure CLI, **close and reopen VS Code entirely** (not just the terminal tab). VS Code terminals inherit the PATH from when VS Code launched — new installs won't be visible until you restart the application.
+
+---
+
 ## All Good?
 
 If every item above checks out, you're ready to install:
@@ -236,6 +276,7 @@ If every item above checks out, you're ready to install:
 ??? failure "Something missing?"
     | Problem | Fix |
     |---------|-----|
+    | Git not found | macOS: `xcode-select --install`; Windows: `winget install Git.Git` |
     | Node.js too old | Run `brew upgrade node` or download from nodejs.org |
     | No Copilot extension | Install from VS Code Marketplace |
     | No GitHub CLI | `brew install gh` on Mac, `winget install GitHub.cli` on Windows |
@@ -243,3 +284,4 @@ If every item above checks out, you're ready to install:
     | Can't access VPN | Contact your IT support |
     | No Copilot license | Ask your manager for GitHub Copilot Business access |
     | Package auth failing | Run `npm run auth:packages` or ask Copilot: *"Help me debug my MCP package auth setup"* |
+    | Command not found after install | Close and reopen VS Code entirely to pick up PATH changes |

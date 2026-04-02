@@ -61,7 +61,7 @@ What MCP tools do you have available for MSX?
 
 **What to watch for:**
 
-- [x] You should see a list of ~23 tools (if `msx-crm` is running)
+- [x] You should see a list of ~23 tools (if `msx` is running)
 - [x] Tools include `crm_whoami`, `crm_query`, `list_opportunities`, `get_milestones`, etc.
 - [x] If `workiq` is running, you'll also see `ask_work_iq`
 
@@ -138,7 +138,7 @@ This isn't about CRM data — it's about understanding the system. Copilot will 
 ## Troubleshooting Day 1
 
 ??? failure "Copilot says it can't access CRM"
-    1. Is `msx-crm` running? (check `.vscode/mcp.json`)
+    1. Is `msx` running? (check `.vscode/mcp.json`)
     2. Is `az login` current? (run it again if unsure)
     3. Are you on VPN?
 

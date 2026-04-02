@@ -24,6 +24,7 @@ Create a People note in the Obsidian vault. Given a name and any available conte
 tags:
   - people
 aliases: []
+icon: LiUser
 email:        # Work email if known
 title:        # Job title
 company:      # Organization name

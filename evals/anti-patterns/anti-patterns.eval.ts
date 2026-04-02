@@ -46,7 +46,7 @@ beforeEach(() => {
 describe("Anti-Pattern Detection", () => {
   describe("AP-001: unscoped get_milestones", () => {
     it("catches get_milestones with no scoping parameter", ({ task }) => {
-      crm.handle("msx-crm:get_milestones", {});
+      crm.handle("msx:get_milestones", {});
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-001"]));
 
@@ -62,14 +62,14 @@ describe("Anti-Pattern Detection", () => {
     });
 
     it("passes when get_milestones has customerKeyword", () => {
-      crm.handle("msx-crm:get_milestones", { customerKeyword: "Contoso" });
+      crm.handle("msx:get_milestones", { customerKeyword: "Contoso" });
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-001"]));
       expect(result.pass).toBe(true);
     });
 
     it("passes when get_milestones has statusFilter", () => {
-      crm.handle("msx-crm:get_milestones", { statusFilter: "active" });
+      crm.handle("msx:get_milestones", { statusFilter: "active" });
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-001"]));
       expect(result.pass).toBe(true);
@@ -78,7 +78,7 @@ describe("Anti-Pattern Detection", () => {
 
   describe("AP-002: wrong entity set for milestones", () => {
     it("catches msp_milestones instead of msp_engagementmilestones", () => {
-      crm.handle("msx-crm:crm_query", {
+      crm.handle("msx:crm_query", {
         entitySet: "msp_milestones",
         filter: "contains(msp_name,'Landing Zone')",
       });
@@ -89,7 +89,7 @@ describe("Anti-Pattern Detection", () => {
     });
 
     it("passes with correct entity set", () => {
-      crm.handle("msx-crm:crm_query", {
+      crm.handle("msx:crm_query", {
         entitySet: "msp_engagementmilestones",
         filter: "contains(msp_name,'Landing Zone')",
       });
@@ -101,9 +101,9 @@ describe("Anti-Pattern Detection", () => {
 
   describe("AP-003: N+1 milestone loop", () => {
     it("catches more than 2 sequential get_milestones calls", () => {
-      crm.handle("msx-crm:get_milestones", { opportunityId: "opp-1" });
-      crm.handle("msx-crm:get_milestones", { opportunityId: "opp-2" });
-      crm.handle("msx-crm:get_milestones", { opportunityId: "opp-3" });
+      crm.handle("msx:get_milestones", { opportunityId: "opp-1" });
+      crm.handle("msx:get_milestones", { opportunityId: "opp-2" });
+      crm.handle("msx:get_milestones", { opportunityId: "opp-3" });
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-003"]));
       expect(result.pass).toBe(false);
@@ -111,16 +111,16 @@ describe("Anti-Pattern Detection", () => {
     });
 
     it("passes when repeated calls are scoped differently", () => {
-      crm.handle("msx-crm:get_milestones", { customerKeyword: "Contoso" });
-      crm.handle("msx-crm:get_milestones", { opportunityId: "opp-1" });
-      crm.handle("msx-crm:get_milestones", { statusFilter: "active" });
+      crm.handle("msx:get_milestones", { customerKeyword: "Contoso" });
+      crm.handle("msx:get_milestones", { opportunityId: "opp-1" });
+      crm.handle("msx:get_milestones", { statusFilter: "active" });
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-003"]));
       expect(result.pass).toBe(true);
     });
 
     it("passes with a single batched call", () => {
-      crm.handle("msx-crm:get_milestones", { customerKeyword: "Contoso" });
+      crm.handle("msx:get_milestones", { customerKeyword: "Contoso" });
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-003"]));
       expect(result.pass).toBe(true);
@@ -129,8 +129,8 @@ describe("Anti-Pattern Detection", () => {
 
   describe("AP-004: vault skip", () => {
     it("catches CRM calls without vault consultation", ({ task }) => {
-      crm.handle("msx-crm:crm_auth_status");
-      crm.handle("msx-crm:get_my_active_opportunities");
+      crm.handle("msx:crm_auth_status");
+      crm.handle("msx:get_my_active_opportunities");
       // No vault calls!
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-004"]));
@@ -148,15 +148,15 @@ describe("Anti-Pattern Detection", () => {
     it("passes when vault is consulted before CRM", () => {
       oil.handle("oil:get_vault_context");
       oil.handle("oil:get_customer_context", { customer: "Contoso" });
-      crm.handle("msx-crm:get_my_active_opportunities");
+      crm.handle("msx:get_my_active_opportunities");
 
       const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-004"]));
       expect(result.pass).toBe(true);
     });
 
     it("passes when scenario mediums explicitly exclude vault", () => {
-      crm.handle("msx-crm:crm_auth_status");
-      crm.handle("msx-crm:get_my_active_opportunities");
+      crm.handle("msx:crm_auth_status");
+      crm.handle("msx:get_my_active_opportunities");
 
       const result = judgeAntiPatterns(
         recorder.calls,
@@ -169,8 +169,8 @@ describe("Anti-Pattern Detection", () => {
 
   describe("AP-005: write without staging", () => {
     it("allows writes that go through staging (mock default)", () => {
-      crm.handle("msx-crm:crm_whoami");
-      crm.handle("msx-crm:update_milestone", {
+      crm.handle("msx:crm_whoami");
+      crm.handle("msx:update_milestone", {
         milestoneId: "ms-111",
         payload: { msp_milestonestatus: 861980002 },
       });
@@ -183,7 +183,7 @@ describe("Anti-Pattern Detection", () => {
 
   describe("AP-006: guessed property names", () => {
     it("catches wrong property name in query filter", () => {
-      crm.handle("msx-crm:crm_query", {
+      crm.handle("msx:crm_query", {
         entitySet: "opportunities",
         filter: "msp_stage eq '3'",
       });
@@ -194,7 +194,7 @@ describe("Anti-Pattern Detection", () => {
     });
 
     it("passes with correct property name", () => {
-      crm.handle("msx-crm:crm_query", {
+      crm.handle("msx:crm_query", {
         entitySet: "opportunities",
         filter: "msp_activesalesstage eq '3'",
       });
@@ -206,7 +206,7 @@ describe("Anti-Pattern Detection", () => {
 
   describe("AP-007: disallowed entity set", () => {
     it("catches query to unlisted entity set", () => {
-      crm.handle("msx-crm:crm_query", {
+      crm.handle("msx:crm_query", {
         entitySet: "invoices",
         filter: "",
       });
@@ -217,7 +217,7 @@ describe("Anti-Pattern Detection", () => {
     });
 
     it("passes with allowed entity set", () => {
-      crm.handle("msx-crm:crm_query", {
+      crm.handle("msx:crm_query", {
         entitySet: "accounts",
         filter: "name eq 'Contoso'",
       });
@@ -253,7 +253,7 @@ describe("Anti-Pattern Detection", () => {
 
   describe("AP-010: role assumption without whoami", () => {
     it("catches write ops without prior crm_whoami", () => {
-      crm.handle("msx-crm:create_milestone", {
+      crm.handle("msx:create_milestone", {
         name: "New Milestone",
         opportunityId: "opp-1",
       });
@@ -264,8 +264,8 @@ describe("Anti-Pattern Detection", () => {
     });
 
     it("passes when crm_whoami precedes writes", () => {
-      crm.handle("msx-crm:crm_whoami");
-      crm.handle("msx-crm:create_milestone", {
+      crm.handle("msx:crm_whoami");
+      crm.handle("msx:create_milestone", {
         name: "New Milestone",
         opportunityId: "opp-1",
       });
@@ -278,11 +278,11 @@ describe("Anti-Pattern Detection", () => {
   describe("Combined — full trace validation", () => {
     it("good trace passes all patterns", () => {
       // Well-formed flow: whoami → vault → scoped CRM
-      crm.handle("msx-crm:crm_whoami");
-      crm.handle("msx-crm:crm_auth_status");
+      crm.handle("msx:crm_whoami");
+      crm.handle("msx:crm_auth_status");
       oil.handle("oil:get_vault_context");
       oil.handle("oil:get_customer_context", { customer: "Contoso" });
-      crm.handle("msx-crm:get_milestones", {
+      crm.handle("msx:get_milestones", {
         customerKeyword: "Contoso",
         statusFilter: "active",
       });
@@ -295,7 +295,7 @@ describe("Anti-Pattern Detection", () => {
 
     it("bad trace catches multiple violations", () => {
       // Bad flow: no whoami, no vault, unscoped milestones
-      crm.handle("msx-crm:get_milestones", {});
+      crm.handle("msx:get_milestones", {});
 
       const result = judgeAntiPatterns(recorder.calls, ALL_ANTI_PATTERNS);
       expect(result.pass).toBe(false);
