@@ -34,6 +34,7 @@ import {
 } from "node:fs";
 import { resolve, join, dirname, relative, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveVaultRoot, assertWithinVault } from "./lib/secure-path.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -124,11 +125,13 @@ function walkFiles(dir) {
  * @returns {{ created: string[], existed: string[] }}
  */
 export function scaffoldVault(vaultPath, opts = {}) {
+  const vaultRoot = resolveVaultRoot(vaultPath);
   const created = [];
   const existed = [];
 
   for (const folder of VAULT_FOLDERS) {
-    const target = join(vaultPath, folder);
+    const target = join(vaultRoot, folder);
+    assertWithinVault(target, vaultRoot);
     if (existsSync(target)) {
       existed.push(folder);
     } else {
@@ -153,13 +156,15 @@ export function scaffoldVault(vaultPath, opts = {}) {
  * @returns {{ copied: string[], skipped: string[], unchanged: string[] }}
  */
 export function syncSidekick(vaultPath, opts = {}) {
+  const vaultRoot = resolveVaultRoot(vaultPath);
   const copied = [];
   const skipped = [];
   const unchanged = [];
 
   for (const { src, dest } of SYNC_MAP) {
     const srcDir = join(ROOT, src);
-    const destDir = join(vaultPath, dest);
+    const destDir = join(vaultRoot, dest);
+    assertWithinVault(destDir, vaultRoot);
 
     if (!existsSync(srcDir)) {
       skipped.push(`${src} (source missing)`);
@@ -210,17 +215,20 @@ if (isCLI) {
   const scaffoldOnly = args.includes("--scaffold-only");
 
   const explicit = args.find((a) => !a.startsWith("--"));
-  const vaultPath = resolveVaultPath(explicit);
+  const rawVaultPath = resolveVaultPath(explicit);
 
-  if (!vaultPath) {
+  if (!rawVaultPath) {
     console.log("\n  No vault path found. Set OBSIDIAN_VAULT in your environment,");
     console.log("  or pass it explicitly: node scripts/setup-vault.js /path/to/vault\n");
     process.exit(1);
   }
 
-  if (!existsSync(vaultPath)) {
-    warn(`Vault path does not exist: ${vaultPath}`);
-    warn("Create the vault in Obsidian first, then re-run.\n");
+  let vaultPath;
+  try {
+    vaultPath = resolveVaultRoot(rawVaultPath);
+  } catch (err) {
+    warn(`Vault path rejected: ${err.message}`);
+    warn("Ensure the path exists and is a valid directory.\n");
     process.exit(1);
   }
 

@@ -182,6 +182,21 @@ function checkOnly() {
   }
   console.log("    Private GitHub Packages bootstrap: npm run auth:packages");
 
+  // Check Agency CLI status
+  heading("Checking Agency CLI");
+  const agencyCheck = tryRun("agency --help");
+  if (agencyCheck) {
+    ok("Agency CLI is installed.");
+  } else {
+    warn("Agency CLI is not installed.");
+    if (isWindows) {
+      warn('  Install: iex "& { $(irm aka.ms/InstallTool.ps1)} agency"');
+    } else {
+      warn("  Install: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency");
+    }
+    warn("  Details: https://aka.ms/agency");
+  }
+
   if (prereqsOk) {
     heading("Runtime environment is ready ✔");
   } else {
@@ -382,6 +397,70 @@ async function configureEnv({ force = false } = {}) {
   }
 }
 
+// ── Agency CLI installation ─────────────────────────────────────
+async function installAgencyCli() {
+  heading("Agency CLI");
+
+  // Check if agency is already installed
+  const agencyVersion = tryRun("agency --help");
+  if (agencyVersion) {
+    ok("Agency CLI is already installed.");
+    return;
+  }
+
+  warn("Agency CLI is not installed.");
+
+  // Skip prompt in non-interactive environments
+  if (!process.stdin.isTTY) {
+    warn("Non-interactive shell — skipping Agency CLI prompt.");
+    warn("Install manually: https://aka.ms/InstallTool.sh (macOS) or https://aka.ms/InstallTool.ps1 (Windows)");
+    warn("Details: https://aka.ms/agency");
+    return;
+  }
+
+  const answer = await ask("  Would you like to install Agency CLI? (yes/no): ");
+  if (answer.toLowerCase() !== "yes" && answer.toLowerCase() !== "y") {
+    warn("Skipped — you can install Agency CLI later.");
+    if (isWindows) {
+      warn('  Windows: iex "& { $(irm aka.ms/InstallTool.ps1)} agency"');
+    } else {
+      warn("  macOS/Linux: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency");
+    }
+    warn("  Details: https://aka.ms/agency");
+    return;
+  }
+
+  console.log("  Installing Agency CLI...\n");
+
+  try {
+    if (isWindows) {
+      run(
+        'powershell -NoProfile -Command "iex \\"& { $(irm aka.ms/InstallTool.ps1)} agency\\"; $env:Path = [System.Environment]::GetEnvironmentVariable(\\"Path\\", \\"Machine\\") + \\";\\\" + [System.Environment]::GetEnvironmentVariable(\\"Path\\", \\"User\\")"',
+        ROOT
+      );
+    } else {
+      run("curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency && exec $SHELL -l", ROOT);
+    }
+
+    // Verify installation
+    const verifyResult = tryRun("agency --help");
+    if (verifyResult) {
+      ok("Agency CLI installed and verified successfully.");
+    } else {
+      warn("Agency CLI install completed, but 'agency --help' did not succeed.");
+      warn("You may need to restart your terminal or refresh your PATH.");
+    }
+  } catch (err) {
+    warn(`Agency CLI installation failed: ${err.message}`);
+    if (isWindows) {
+      warn('  Retry manually: iex "& { $(irm aka.ms/InstallTool.ps1)} agency"');
+    } else {
+      warn("  Retry manually: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency");
+    }
+    warn("  Details: https://aka.ms/agency");
+  }
+}
+
 // ── main ────────────────────────────────────────────────────────────
 const checkMode = process.argv.includes("--check");
 const reconfigureVault = process.argv.includes("--reconfigure-vault");
@@ -437,6 +516,9 @@ if (checkMode) {
       warn("You can retry later with: npm run auth:packages");
       warn("Or open Copilot Chat (Cmd+Shift+I) and ask: 'Help me debug my MCP package auth setup'");
     }
+
+    // ── Agency CLI ────────────────────────────────────────────
+    await installAgencyCli();
 
     await configureEnv();
 
