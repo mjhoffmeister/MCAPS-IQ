@@ -44,7 +44,7 @@ Defines the technical proof plan by scoping proof type (POC/Pilot/Demo/HoK), suc
 - If proof milestones already exist with tasks → validate completeness, update gaps
 - If no proof milestones → recommend creation with minimum viable structure
 - Proof scope should match solution play and customer stated needs
-- Route architecture concerns to CSA via `architecture-feasibility-check`
+- Route architecture concerns to CSA via `architecture-review`
 - **HoK proofs**: Verify legal coverage before creating execution tasks. If legal coverage is missing, block execution tasks and chain to `hok-readiness-check`. Classify environment tier (dev/test/prod) explicitly in the plan.
 
 ## Output Schema
@@ -52,4 +52,4 @@ Defines the technical proof plan by scoping proof type (POC/Pilot/Demo/HoK), suc
 - `proof_plan`: type, scope, success criteria, timeline, roles
 - `milestone_structure`: recommended milestones with tasks
 - `dry_run_actions`: milestone/task payloads
-- `next_action`: "Proof plan defined. CSA should run `architecture-feasibility-check` to validate technical executability — would you like to engage your CSA?" | For HoK: "HoK plan scoped. Run `hok-readiness-check` to verify legal coverage and environment access before execution."
+- `next_action`: "Proof plan defined. CSA should run `architecture-review` to validate technical executability — would you like to engage your CSA?" | For HoK: "HoK plan scoped. Run `hok-readiness-check` to verify legal coverage and environment access before execution."

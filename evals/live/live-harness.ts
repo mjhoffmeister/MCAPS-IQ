@@ -592,9 +592,8 @@ export async function assembleSystemPrompt(
     parts.push("You are an AI assistant for MCAPS account teams.");
   }
 
-  // Relevant instruction files
+  // Relevant instruction files (kept instructions with valuable applyTo scoping)
   const PRIORITY_INSTRUCTIONS = [
-    "shared-patterns.instructions.md",
     "crm-query-strategy.instructions.md",
     "msx-role-and-write-gate.instructions.md",
   ];
@@ -605,6 +604,17 @@ export async function assembleSystemPrompt(
       parts.push(`\n--- ${file} ---\n${content}`);
     } catch {
       // Instruction file not found — skip
+    }
+  }
+
+  // Core skills always loaded (previously instruction files, now canonical in skills)
+  const PRIORITY_SKILLS = ["shared-patterns"];
+  for (const skill of PRIORITY_SKILLS) {
+    try {
+      const content = await readFile(join(SKILLS_DIR, skill, "SKILL.md"), "utf-8");
+      parts.push(`\n--- SKILL: ${skill} ---\n${content}`);
+    } catch {
+      // Skill not found
     }
   }
 

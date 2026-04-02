@@ -89,3 +89,23 @@ When a write-intent tool returns a staged operation:
 - Re-state identifiers before executing write-intent operations.
 - Prefer smallest possible change set.
 - After each write, return a concise result summary and follow-up verification read.
+
+## 5) Post-Write Vault Capture (Automatic for Task Operations)
+
+After any confirmed `create_task`, `update_task`, or `close_task` write completes successfully:
+
+1. **Chain to `vault-sync` skill** (Mode 5: Task Sync post-write hook) — pass the write result and confirmation packet context (customer, milestone, opportunity).
+2. The vault capture is a **silent side-effect** — no additional user confirmation needed. The user already approved the CRM write; the vault log is a downstream record.
+3. If vault (OIL) is unavailable, skip silently — CRM is the system of record. Log a note: *"Vault unavailable — run `/task-sync` later to backfill."*
+4. If the vault write fails, warn: *"⚠️ Task recorded in CRM but vault capture failed. Run `/task-sync` to reconcile."*
+
+This ensures every SE task operation produces a durable activity trail in the customer's milestone note without extra manual steps.
+
+## 6) Post-Write Vault Capture (Automatic for Opportunity Operations)
+
+After any confirmed `update_milestone`, `create_milestone`, or `manage_deal_team` write completes successfully:
+
+1. **Chain to `vault-sync` skill** (Mode 1: Opp Sync auto-capture) — pass the opportunity context from the confirmation packet (customer, opportunity GUID/number, and any deal team or milestone data retrieved during the workflow).
+2. The vault capture is a **silent side-effect** — no additional user confirmation needed. This is a one-way CRM→vault sync.
+3. If vault (OIL) is unavailable, skip silently. If vault write fails, warn: *"⚠️ CRM write succeeded but vault opportunity capture failed. Run `opp sync` to reconcile."*
+4. **Direction rule**: This skill reads CRM and writes to vault. It never writes back to CRM. The user must explicitly request CRM updates through the write-gate.

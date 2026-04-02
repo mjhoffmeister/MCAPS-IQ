@@ -65,7 +65,6 @@ Type `/` in the VS Code Copilot chat panel to see available commands. Each one d
 
 | Command | What It Does |
 |---------|-------------|
-| `/create-person` | Create a People note in the vault from meeting or conversation context |
 | `/sync-project-from-github` | Pull GitHub repo activity into a vault project note |
 
 ---

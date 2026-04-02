@@ -47,7 +47,7 @@ Own **pipeline creation and progression** through MCEM Stages 2–3 for the solu
 | `pipeline-hygiene-triage` | Stage staleness, field completeness, pipeline quality signals |
 | `handoff-readiness-validation` | Completeness of handoff artifact: why bought, success criteria, scope, next actions |
 | `commit-gate-enforcement` | Validate that CSA/CSAM readiness signals exist before recommending commitment |
-| `partner-motion-awareness` | Impact on pipeline structure and co-sell alignment |
+| `shared-patterns` § Partner Motion | Impact on pipeline structure and co-sell alignment |
 | `account-landscape-awareness` | Full account pipeline visibility, EDE alignment, Unified package coverage |
 
 ## Cross-Role Communication

@@ -18,6 +18,8 @@ import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
 import { ensureGithubPackagesAuth } from "./github-packages-auth.js";
+import { persistVaultToShellProfile } from "./setup-vault-env.js";
+import { scaffoldVault, syncSidekick } from "./setup-vault.js";
 
 // ── repo root (scripts/ lives one level below) ──────────────────────
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -343,6 +345,21 @@ async function configureEnv() {
   const content = existsSync(envPath) ? readFileSync(envPath, "utf-8") : "";
   writeFileSync(envPath, content + envLine, "utf-8");
   ok(`Saved to .env: OBSIDIAN_VAULT_PATH=${vaultPath}`);
+
+  // Persist to shell profile so it's available system-wide
+  try {
+    const result = persistVaultToShellProfile(vaultPath);
+    if (result.updated) {
+      ok(`Exported OBSIDIAN_VAULT to ${result.shell} profile: ${result.profilePath}`);
+      console.log("    New terminals will have OBSIDIAN_VAULT and OBSIDIAN_VAULT_PATH set.");
+      console.log(`    Activate now:  source ${result.profilePath}`);
+    } else {
+      ok(`Shell profile already up to date (${result.profilePath})`);
+    }
+  } catch (err) {
+    warn(`Could not update shell profile: ${err.message}`);
+    warn("Set OBSIDIAN_VAULT manually in your shell profile for system-wide access.");
+  }
 }
 
 // ── main ────────────────────────────────────────────────────────────
@@ -397,6 +414,38 @@ if (checkMode) {
     }
 
     await configureEnv();
+
+    // ── Vault scaffold + sidekick sync ──────────────────────────
+    const vaultDir =
+      process.env.OBSIDIAN_VAULT ||
+      process.env.OBSIDIAN_VAULT_PATH ||
+      parseEnvFile(join(ROOT, ".env")).OBSIDIAN_VAULT_PATH;
+
+    if (vaultDir && existsSync(vaultDir)) {
+      heading("Vault scaffold + sidekick sync");
+      try {
+        const { created } = scaffoldVault(vaultDir);
+        if (created.length > 0) {
+          ok(`Created ${created.length} vault folder(s).`);
+        } else {
+          ok("Vault folders already in place.");
+        }
+
+        const { copied } = syncSidekick(vaultDir);
+        if (copied.length > 0) {
+          ok(`Synced ${copied.length} file(s) to sidekick/.`);
+        } else {
+          ok("Sidekick already up to date.");
+        }
+      } catch (err) {
+        warn(`Vault setup failed: ${err.message}`);
+        warn("Run manually later: npm run vault:init");
+      }
+    } else if (vaultDir) {
+      warn(`Vault path set but does not exist: ${vaultDir}`);
+      warn("Create the vault in Obsidian, then run: npm run vault:init");
+    }
+
     const aliasOk = registerAlias();
     heading("All done ✔");
 

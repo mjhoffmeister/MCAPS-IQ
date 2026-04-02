@@ -5,6 +5,14 @@ description: "Power BI conventions and context bridge: auth pre-check, semantic 
 
 # Power BI — Conventions & Context Bridge
 
+## Medium Registration
+
+Power BI is a **read-only analytics medium** alongside CRM, Vault, and WorkIQ. It provides aggregated metrics, ACR telemetry, incentive baselines, and scorecard data that live outside CRM transaction records.
+
+| Medium | Server | Probe | If unavailable |
+|---|---|---|---|
+| **Power BI** | `powerbi-remote` | `ExecuteQuery` with `EVALUATE TOPN(1, 'Dim_Calendar')` against the target semantic model | Skip PBI steps; note "Power BI data unavailable this session" |
+
 ## Auth Pre-Check
 
 Before any PBI data query, probe:
@@ -39,6 +47,10 @@ EVALUATE TOPN(1, 'Dim_Calendar')
 | Business rules | Prompt logic | Eligibility, thresholds |
 | CRM correlation | MSX-CRM | Opportunity stage, milestones |
 | Output | Synthesized report | Cross-medium data |
+
+## Context Budget Problem
+
+Power BI prompts pull 5–10 DAX query results that accumulate 15,000–40,000+ tokens of raw tabular data in context. When users then ask for CRM correlation, WorkIQ check, or skill-based analysis, the context window is already saturated — leaving no room for downstream tool calls and reasoning.
 
 ## Subagent Delegation
 

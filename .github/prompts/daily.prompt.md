@@ -18,6 +18,7 @@ Run my morning routine based on my MCAPS role. Check what needs attention, flag 
 
 ### Solution Engineer daily
 - Run **task-hygiene-flow**: check task records for stale, orphaned, or ownerless items.
+- Run **vault-sync** Mode 5: Task Sync (batch): reconcile CRM task activity with vault milestone notes so the activity log is current.
 - Run **execution-monitoring**: scan committed milestones for constraint breaches or blockers.
 - Run **unified-constraint-check**: flag dispatch/eligibility gaps.
 - Output: a categorized list — "Fix now", "Follow up", "On track".

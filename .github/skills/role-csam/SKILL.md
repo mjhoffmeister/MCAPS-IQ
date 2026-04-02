@@ -40,8 +40,8 @@ Ensure customers **realize value and sustain outcomes** by operationalizing succ
 | `commit-gate-enforcement` | Customer orchestration, timeline commitments, success plan alignment |
 | `delivery-accountability-mapping` | Flag when CSAM is treated as delivery owner without decision rights |
 | `milestone-health-review` | Customer impact, recovery plans, outcome clarity |
-| `unified-constraint-check` | Eligibility/dispatch readiness, customer timeline impact |
-| `expansion-signal-routing` | Timing/prioritization alignment before Specialist creates new pipeline |
+| `se-execution-check` | Eligibility/dispatch readiness, customer timeline impact |
+| `stage-5-review` | Timing/prioritization alignment before Specialist creates new pipeline |
 
 ## Handoff Checklist (Specialist/SE/CSA → CSAM)
 - [ ] Customer outcomes & success measures are explicit

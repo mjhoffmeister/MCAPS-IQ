@@ -71,7 +71,7 @@ SE tasks are **activity records**, not open work items. They document completed 
 
 | Skill | SE Focus |
 |---|---|
-| `task-hygiene-flow` | Owner, due date, status, blocker text, HoK task legal coverage status |
+| `se-execution-check` | Owner, due date, status, blocker text, HoK task legal coverage status |
 | `proof-plan-orchestration` | Technical proof requirements, success criteria, HoK scope and environment tier |
 | `hok-readiness-check` | Legal coverage verification, customer environment access, cusp customer positioning |
 | `handoff-readiness-validation` | BANT evidence completeness, technical decisions documented, HoK artifacts transferred |

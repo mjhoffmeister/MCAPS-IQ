@@ -68,7 +68,7 @@ scenarios:
         order: 2
 
   - id: task-hygiene-scoped
-    skill: task-hygiene-flow
+    skill: se-execution-check
     fixture: pipelineHealth
     context:
       mediums: [crm]

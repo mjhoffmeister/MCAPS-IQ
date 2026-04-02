@@ -1,6 +1,6 @@
 ---
 name: risk-surfacing
-description: 'Deal-risk radar: synthesizes field data, vault notes, and calendar signals to flag relationship decay, silent stakeholders, and looming threats. Proactive early-warning system, not a document compiler. Chains with pipeline-hygiene-triage and handoff-readiness-validation for weekly pipeline review; chains with mcem-stage-identification and exit-criteria-validation for full deal triage. Triggers: deal risk, risk radar, threat flag, warning signal, silent stakeholder, relationship decay, early warning, flag risks, what risks.'
+description: 'Deal-risk radar: synthesizes field data, vault notes, and calendar signals to flag relationship decay, silent stakeholders, and looming threats. Proactive early-warning system, not a document compiler. Chains with pipeline-hygiene-triage and handoff-readiness-validation for weekly pipeline review; chains with mcem-diagnostics for full deal triage. Triggers: deal risk, risk radar, threat flag, warning signal, silent stakeholder, relationship decay, early warning, flag risks, what risks.'
 argument-hint: 'Provide opportunityId or accountId to scope the risk scan'
 ---
 

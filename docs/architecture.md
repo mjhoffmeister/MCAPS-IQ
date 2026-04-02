@@ -59,14 +59,14 @@ These tools let Copilot interact with MSX CRM on your behalf:
 
 ## Role Cards & Atomic Skills
 
-The system uses **role cards** (identity and accountability rules) combined with **27 atomic skills** (focused domain playbooks). Role cards live in `.github/instructions/` and are loaded by keyword match; atomic skills live in `.github/skills/` and are loaded on demand.
+The system uses **role cards** (identity and accountability rules) combined with **atomic skills** (focused domain playbooks). All live in `.github/skills/` and are loaded on demand by keyword match — portable across VS Code, Copilot CLI, and github.com chat.
 
 **Role cards** (one per MCAPS role):
 
-- **[Specialist](../.github/instructions/role-card-specialist.instructions.md)** — pipeline creation, opportunity qualification, Stage 2-3 progression
-- **[Solution Engineer](../.github/instructions/role-card-se.instructions.md)** — technical proof, architecture reviews, task hygiene
-- **[Cloud Solution Architect](../.github/instructions/role-card-csa.instructions.md)** — execution readiness, architecture handoff, delivery ownership
-- **[Customer Success Account Manager](../.github/instructions/role-card-csam.instructions.md)** — milestone health, adoption, value realization, commit gates
+- **[Specialist](../.github/skills/role-specialist/SKILL.md)** — pipeline creation, opportunity qualification, Stage 2-3 progression
+- **[Solution Engineer](../.github/skills/role-se/SKILL.md)** — technical proof, architecture reviews, task hygiene
+- **[Cloud Solution Architect](../.github/skills/role-csa/SKILL.md)** — execution readiness, architecture handoff, delivery ownership
+- **[Customer Success Account Manager](../.github/skills/role-csam/SKILL.md)** — milestone health, adoption, value realization, commit gates
 
 **Atomic skills** (examples — see `.github/skills/` for all 27):
 

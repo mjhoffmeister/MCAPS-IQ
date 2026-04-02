@@ -159,7 +159,7 @@ description: "<one-line description of what this prompt does>"
 | Model has no relevant tables for a question | Drop the question; explain what the model *can* answer |
 | `GenerateQuery` produces invalid DAX | Retry with broader `schemaSelection`; if still fails, hand-write DAX using schema |
 | `ExecuteQuery` returns empty results | Check filters — may be scoping too narrowly. Show the user and ask for guidance |
-| User wants cross-medium data (PBI + CRM) | Add CRM steps to the workflow (account roster, opp state); reference `shared-patterns.instructions.md` |
+| User wants cross-medium data (PBI + CRM) | Add CRM steps to the workflow (account roster, opp state); reference `shared-patterns` skill |
 | User wants to use vault for account scoping | Add vault read step; reference `obsidian-vault.instructions.md` |
 | Multiple semantic models needed | Create one prompt per model, or a multi-step prompt with separate queries per model |
 

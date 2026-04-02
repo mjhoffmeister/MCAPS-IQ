@@ -45,7 +45,6 @@ Slash commands available in `@mcaps`. Type `/` in chat to see the full list.
 
 | Command | What It Does | Example |
 |---|---|---|
-| `/create-person` | Create a People note in the vault from context | `/create-person John Smith from Contoso` |
 | `/sync-project-from-github` | Pull GitHub repo activity into a vault project note | `/sync-project-from-github` |
 
 ## Power BI Reports

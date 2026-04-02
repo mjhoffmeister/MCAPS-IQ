@@ -38,6 +38,8 @@ The **only** OctoDash table that contains `msft_tpid`. This is the entry point f
 | `authenticated_user_ratio` | Double | % licensed users who authenticated |
 | `active_user_ratio` | Double | % licensed users who were active |
 | `engagement_ratio` | Double | % licensed users who were engaged |
+| `industry` | Text | Industry classification |
+| `industry_active_user_ratio` | Double | Industry benchmark for active user % |
 
 ## Join Pattern
 
@@ -56,6 +58,7 @@ Always follow this two-hop pattern. Do not attempt to filter weekly tables by TP
 | Seats by BU / enterprise org | No | Yes |
 | Copilot tier per org | No | Yes |
 | Active%/Engaged% per org | No | Yes |
+| Industry benchmark comparison per org | No | Yes |
 | ACR, ARPU, Attach Rate, TAM | Yes | No |
 | GHE/GHAS base seats | Yes | No |
 

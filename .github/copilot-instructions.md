@@ -62,7 +62,7 @@ node scripts/verify-instructions.js --generate
 
 ## Intent (Resolve First)
 
-The agent strengthens cross-role communication and strategic alignment for account teams. MSX is one medium — not the mission. For the full model, see `.github/instructions/intent.instructions.md`.
+The agent strengthens cross-role communication and strategic alignment for account teams. MSX is one medium — not the mission. For the full model, see the `agent-intent` skill.
 
 **Operational checklist — every request:**
 1. **Resolve order**: Intent → Role → Medium → Action → Risk check.
@@ -92,7 +92,7 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 
 **Role mapping (mandatory before guidance or write-intent planning):**
 - Capture the user's MSX role up front: Specialist, SE, CSA, or CSAM. If not confirmed, present options. If inferable from `crm_whoami`, present and confirm.
-- MCEM stages → `mcem-flow.instructions.md`. Shared patterns → `shared-patterns.instructions.md`.
+- MCEM stages → `mcem-flow` skill. Shared patterns → `shared-patterns` skill.
 
 **CRM query discipline:**
 - Use GUID (`opportunityid`) for tool parameters; display `msp_opportunitynumber` as `Opp #`. Never guess property names — verify via `crm-entity-schema.instructions.md`.
@@ -104,7 +104,7 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 - The parent agent does **not** call M365 MCP tools directly. It delegates via `runSubagent(agentName: "m365-actions")` and consumes the result.
 - **WorkIQ is only for broad multi-source discovery** (meetings + chats + email + files in a single sweep). If you can name the source type (email, Teams, calendar), delegate to `m365-actions` instead.
 - If `m365-actions` returns incomplete or errors, retry with adjusted parameters — do **not** fall back to WorkIQ for targeted ops.
-- See `shared-patterns.instructions.md` § M365 Communication Layer for query patterns and fallback discipline.
+- See `shared-patterns` skill § M365 Communication Layer for query patterns and fallback discipline.
 
 **Vault (OIL)**: Customer context and durable memory. Operate statelessly if unavailable. **Connect Hooks**: `connect-hooks.instructions.md`.
 
@@ -137,7 +137,7 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 - **Subagent-only prompts** (not top-level triggers — invoked by parent prompts via delegation):
   - `pbi-ghcp-seats-analysis` — used by `account-review.prompt.md` Section 2 (Seat Analysis) when delegating to `pbi-analyst`
 - **Delegation pattern**: Resolve the TPID / customer scope (via CRM or user input), then delegate to `pbi-analyst` with the prompt name, semantic model ID, and scope filters. Consume the returned report for downstream CRM correlation, vault persistence, or risk surfacing.
-- See `pbi-context-bridge.instructions.md` for subagent delegation protocol and `powerbi-mcp.instructions.md` for DAX conventions.
+- See `pbi-reference` skill for subagent delegation protocol and DAX conventions.
 
 ## Response Expectations
 
@@ -149,4 +149,13 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 
 **Morning brief**: Trigger with "morning brief", "start my day", or "catch me up" to run the speed-optimized daily briefing workflow.
 
-**Skill loading**: Auto-loaded by description match. If a chained skill is missing, read from `.github/skills/{name}/SKILL.md`. Execute multiple skills sequentially; reuse tool outputs. Chains → `shared-patterns.instructions.md`.
+**Vault sync** (unified skill — `vault-sync`): All CRM→vault sync and hygiene operations are handled by the `vault-sync` skill with five modes:
+- **Opp sync**: "sync opportunity", "opp sync", "capture deal team", "pipeline to vault", "save opportunity" — syncs deal team, ACR values, notes, People correlation. Also runs as post-write hook after milestone/deal-team CRM writes (write-gate § 5-6 SKILL / § 6-7 instructions).
+- **Milestone sync**: "milestone sync", "sync milestones", "refresh milestones", "milestone vault sync" — deep per-milestone rebuild of all CRM fields + lifecycle transitions.
+- **People sync**: "sync people", "people sync", "deal team people", "link deal team", "who is on my deals" — batch CRM sync. Also "create person", "add person", "new people note" — ad-hoc creation from meeting/conversation context with WorkIQ enrichment.
+- **Customer hygiene**: "customer hygiene", "clean up customer", "consolidate insights", "tidy customer notes", "create customer note" — canonical structure, dataview queries, Agent Insights consolidation (≤15 entries).
+- **Task sync**: "sync tasks", "task sync", "update task log", "SE activity log" — task activity log rows in milestone notes. Also runs as post-write hook after task operations.
+
+All modes are one-way CRM→vault. All use parallel batch processing across customers.
+
+**Skill loading**: Auto-loaded by description match. If a chained skill is missing, read from `.github/skills/{name}/SKILL.md`. Execute multiple skills sequentially; reuse tool outputs. Chains → `shared-patterns` skill.

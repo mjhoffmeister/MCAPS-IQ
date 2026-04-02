@@ -77,7 +77,7 @@ The vault is optional. Without it, the agent operates statelessly (CRM-only). If
 3. **Use Copilot instructions** — the agent's behavior is shaped by instruction files. See these examples for how persistence is wired into agent workflows:
    - [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) — Tier 0 always-loaded rules, including the Knowledge Layer section
    - [`.github/instructions/obsidian-vault.instructions.md`](../.github/instructions/obsidian-vault.instructions.md) — how vault reads/writes integrate with CRM workflows (VAULT-PREFETCH, VAULT-PROMOTE, etc.)
-   - [`.github/instructions/intent.instructions.md`](../.github/instructions/intent.instructions.md) — how the agent reasons across multiple mediums (CRM, M365, vault)
+   - [`.github/skills/agent-intent/SKILL.md`](../.github/skills/agent-intent/SKILL.md) — how the agent reasons across multiple mediums (CRM, M365, vault)
 
 ### Reliability Constraints
 

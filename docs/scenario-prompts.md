@@ -84,7 +84,7 @@ These are realistic "day in the life" prompts that chain **multiple skills** in 
 >
 > `Before my Contoso governance meeting Thursday, tell me: what stage are we really in, what's the milestone health, and prepare a customer evidence pack for the last 30 days.`
 >
-> *Chains: mcem-stage-identification → milestone-health-review → customer-evidence-pack*
+> *Chains: mcem-diagnostics → milestone-health-review*
 
 > **Commit-or-loopback decision (CSAM/CSA)**
 >
@@ -96,19 +96,19 @@ These are realistic "day in the life" prompts that chain **multiple skills** in 
 >
 > `The Northwind deal feels stuck. What stage is it actually in, are exit criteria met, what are the risks, and who should own the next action?`
 >
-> *Chains: mcem-stage-identification → exit-criteria-validation → risk-surfacing → role-orchestration*
+> *Chains: mcem-diagnostics → risk-surfacing*
 
 > **Post-proof handoff (CSA → CSAM)**
 >
 > `I'm a CSA. The Contoso proof just completed successfully. Check architecture feasibility, create the handoff note, and validate that the Specialist handoff is clean.`
 >
-> *Chains: architecture-feasibility-check → architecture-execution-handoff → handoff-readiness-validation*
+> *Chains: architecture-review → handoff-readiness-validation*
 
 > **Adoption + expansion review (CSAM)**
 >
 > `Review adoption health for Fabrikam, check if value is being realized on committed milestones, and flag any expansion signals that should go to the Specialist.`
 >
-> *Chains: adoption-excellence-review → value-realization-pack → expansion-signal-routing*
+> *Uses: stage-5-review skill*
 
 > **Power BI portfolio review**
 >
@@ -120,4 +120,4 @@ These are realistic "day in the life" prompts that chain **multiple skills** in 
 >
 > `I'm an SE. Check my task hygiene, show me any execution blockers on committed milestones, and tell me if there are Unified constraints I should flag today.`
 >
-> *Chains: task-hygiene-flow → execution-monitoring → unified-constraint-check*
+> *Uses: se-execution-check skill*

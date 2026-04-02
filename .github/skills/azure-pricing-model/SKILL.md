@@ -258,7 +258,7 @@ Invoke the `processing-spreadsheets` skill to generate the actual `.xlsx` file:
    - Percentage columns: `0.0%` format.
    - Conditional formatting: highlight cells where RI savings > 30% in green.
    - Auto-filter on all header rows.
-3. Save to `.copilot/docs/` (see `shared-patterns.instructions.md` § Artifact Output Directory), or the user's specified path.
+3. Save to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory), or the user's specified path.
 
 ## Decision Logic
 
@@ -320,7 +320,7 @@ Generated: `{filename}.xlsx` with sheets: Cost Summary, Detailed Breakdown, Assu
 - `total_annual_ri_3yr`: best-case annual figure
 - `optimization_levers`: list of per-service recommendations
 - `assumptions_flagged`: count of high-sensitivity assumptions
-- `next_action`: "Review assumptions with the customer. Chain with `proof-plan-orchestration` to attach cost model to proof milestones, or `value-realization-pack` to track actual vs estimated spend post-deployment."
+- `next_action`: "Review assumptions with the customer. Chain with `proof-plan-orchestration` to attach cost model to proof milestones, or `stage-5-review` to track actual vs estimated spend post-deployment."
 - `connect_hook_hint`: Impact Area: Customer Value — "Structured Azure pricing model for {solution} covering {n} services — {savings_pct}% potential savings via reserved commitments identified"
 
 ## Chaining
@@ -329,7 +329,7 @@ Generated: `{filename}.xlsx` with sheets: Cost Summary, Detailed Breakdown, Assu
 |---|---|---|
 | `proof-plan-orchestration` → **this skill** | Inbound | Proof plan scoped → cost model needed for budget approval |
 | **this skill** → `processing-spreadsheets` | Outbound | Always — produces the .xlsx artifact |
-| **this skill** → `value-realization-pack` | Outbound | Post-deployment — compare estimated vs actual spend |
+| **this skill** → `stage-5-review` | Outbound | Post-deployment — compare estimated vs actual spend |
 | `account-landscape-awareness` → **this skill** | Inbound | Account review surfaces cost optimization opportunities |
 | `customer-outcome-scoping` → **this skill** | Inbound | KPI definition includes cost targets → need pricing baseline |
 

@@ -1,6 +1,6 @@
 ---
 name: pipeline-qualification
-description: 'Inbound-signal qualifier: scores a new customer signal for commercial fit, solution-play alignment, and priority match, then scaffolds a draft opportunity with initial milestones. Triggers: qualify signal, new opportunity, inbound lead, commercial fit, create pipeline, scaffold opportunity, net-new deal. DO NOT USE FOR: routing upsell or expansion signals from existing delivery — use expansion-signal-routing.'
+description: 'Inbound-signal qualifier: scores a new customer signal for commercial fit, solution-play alignment, and priority match, then scaffolds a draft opportunity with initial milestones. Triggers: qualify signal, new opportunity, inbound lead, commercial fit, create pipeline, scaffold opportunity, net-new deal. DO NOT USE FOR: routing upsell or expansion signals from existing delivery — use stage-5-review.'
 argument-hint: 'Provide account TPID or GUID and the inbound customer signal description'
 ---
 
