@@ -29,6 +29,7 @@ Before calling any CRM read tool that may return large result sets (especially `
    - `Customer Success Account Manager` → `.github/instructions/role-card-csam.instructions.md`
    - `Account Technology Strategist` → `.github/instructions/role-card-ats.instructions.md`
    - `Industry Advisor` → `.github/instructions/role-card-ia.instructions.md`
+   - `ATU Sales Director` → `.github/instructions/role-card-atu-sd.instructions.md`
 4. If mapping is ambiguous or multiple roles match:
    - Present top 1–2 likely role mappings with reasons.
    - Ask the user to confirm role before proceeding.
@@ -50,13 +51,13 @@ Before proposing or executing **any** write-intent action, check this matrix. If
 
 | Action | Allowed Roles | Blocked Roles (must redirect) |
 |---|---|---|
-| `create_milestone` | **Specialist** | AE, IA, SE, CSA, CSAM, ATS — redirect to Specialist |
+| `create_milestone` | **Specialist** | AE, IA, SD, SE, CSA, CSAM, ATS — redirect to Specialist |
 | `update_milestone` (structure: name, date, monthlyUse, workload, commitment) | **Specialist**, **CSAM** (Stage 4-5 only) | SE, CSA, ATS — redirect to Specialist/CSAM |
 | `update_milestone` (status only: On Track/At Risk/Blocked) | **Specialist**, **CSAM**, **CSA** | SE, ATS — can flag but redirect status update to milestone owner |
 | `create_task` | **All roles** (on milestones they touch) | — |
 | `update_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
 | `close_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
-| Opportunity field updates (stage, close date, revenue) | **Specialist** | AE, IA, SE, CSA, CSAM, ATS — redirect to Specialist |
+| Opportunity field updates (stage, close date, revenue) | **Specialist** | AE, IA, SD, SE, CSA, CSAM, ATS — redirect to Specialist |
 | Deal team membership | **Specialist**, **self-add by any role** | — |
 
 **Enforcement rule**: When the agent detects a gap (e.g., "this milestone has no tasks"), the recommendation must respect the matrix:

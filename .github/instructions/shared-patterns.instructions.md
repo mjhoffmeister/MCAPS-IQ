@@ -27,7 +27,7 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 
 | MCEM Unit                   | Agent Roles                                              | Stage Accountability                  |
 | --------------------------- | -------------------------------------------------------- | ------------------------------------- |
-| ATU (Account Team Unit)     | **Account Executive (AE)**, **Account Technology Strategist (ATS)**, **Industry Advisor (IA)** | Stage 1 lead, co-orchestrates Stage 2 |
+| ATU (Account Team Unit)     | **Account Executive (AE)**, **Account Technology Strategist (ATS)**, **Industry Advisor (IA)**, **ATU Sales Director (SD)** | Stage 1 lead, co-orchestrates Stage 2 |
 | STU (Specialist Team Unit)  | **Specialist**, **Solution Engineer (SE)**   | Stages 2–3 accountable               |
 | CSU (Customer Success Unit) | **CSAM**, **Cloud Solution Architect (CSA)** | Stages 4–5 accountable               |
 | Partners                    | Referenced contextually                                  | Varies by segment and motion          |
