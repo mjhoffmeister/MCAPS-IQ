@@ -34,6 +34,10 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci --ignore-scripts
+      - name: Audit dependencies for vulnerabilities
+        run: npm audit --audit-level moderate
+      - name: Security lint
+        run: npx eslint bin/ scripts/lib/
       - run: npm run eval
         env:
           NODE_ENV: test

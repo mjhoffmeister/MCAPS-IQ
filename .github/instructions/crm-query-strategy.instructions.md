@@ -94,6 +94,19 @@ Preferred tool for milestone queries needing filtering. See `crm-entity-schema.i
 - Multi-opportunity: OData `or` in `$filter` (`_msp_opportunityid_value eq '<GUID1>' or _msp_opportunityid_value eq '<GUID2>'`)
 - Status filtering: `msp_milestonestatus eq 861980000` (On Track), `ne 861980003` (exclude Completed)
 
+### OData Value Escaping
+
+**Always escape user-supplied values** before interpolating into `$filter` expressions. Use the helpers in `scripts/lib/odata-sanitize.js`:
+
+- `escapeODataString(value)` — escapes single quotes per OData 4.0 spec (`'` → `''`)
+- `buildContainsFilter(field, value)` — safe `contains(field,'value')` with field-name validation
+- `buildEqFilter(field, value)` — safe `field eq 'value'` (string) or `field eq N` (number)
+- `buildNeFilter(field, value)` — safe `field ne` variant
+
+Example: A customer named `O'Brien Healthcare` must become `contains(name,'O''Brien Healthcare')`, not `contains(name,'O'Brien Healthcare')` which breaks the query and can inject OData operators.
+
+When constructing `crm_query` filter strings in agent instructions, skills, or prompt templates, treat **all** values from user input, vault notes, or M365 responses as untrusted and escape them.
+
 ## Step 4 — get_milestones (Full-Featured Tool)
 
 `get_milestones` is the primary milestone retrieval tool. It supports:
