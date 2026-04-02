@@ -149,12 +149,13 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 
 **Morning brief**: Trigger with "morning brief", "start my day", or "catch me up" to run the speed-optimized daily briefing workflow.
 
-**Vault sync** (unified skill — `vault-sync`): All CRM→vault sync and hygiene operations are handled by the `vault-sync` skill with five modes:
+**Vault sync** (unified skill — `vault-sync`): All CRM→vault sync and hygiene operations are handled by the `vault-sync` skill with six modes:
 - **Opp sync**: "sync opportunity", "opp sync", "capture deal team", "pipeline to vault", "save opportunity" — syncs deal team, ACR values, notes, People correlation. Also runs as post-write hook after milestone/deal-team CRM writes (write-gate § 5-6 SKILL / § 6-7 instructions).
 - **Milestone sync**: "milestone sync", "sync milestones", "refresh milestones", "milestone vault sync" — deep per-milestone rebuild of all CRM fields + lifecycle transitions.
 - **People sync**: "sync people", "people sync", "deal team people", "link deal team", "who is on my deals" — batch CRM sync. Also "create person", "add person", "new people note" — ad-hoc creation from meeting/conversation context with WorkIQ enrichment.
 - **Customer hygiene**: "customer hygiene", "clean up customer", "consolidate insights", "tidy customer notes", "create customer note" — canonical structure, dataview queries, Agent Insights consolidation (≤15 entries).
 - **Task sync**: "sync tasks", "task sync", "update task log", "SE activity log" — task activity log rows in milestone notes. Also runs as post-write hook after task operations.
+- **Project sync**: "create project", "new project", "scaffold project", "start project" — creates new project notes from context using the Project Note Template. Also "fix projects", "project hygiene", "project cleanup" — standardizes existing project notes (frontmatter, sections, meeting dataview queries).
 
 All modes are one-way CRM→vault. All use parallel batch processing across customers.
 

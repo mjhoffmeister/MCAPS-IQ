@@ -9,7 +9,19 @@ Run my morning routine based on my MCAPS role. Check what needs attention, flag 
 ## Steps
 
 1. **Identify role** — first read `Reference/MyRoleDescriptions.md` from the Obsidian vault (`oil:search_vault` for "My Role"). If found, use that. If vault is unavailable, fall back to `crm_whoami`. Skip if already known this session.
-2. **Run role-specific checks** (execute the appropriate chain below):
+2. **Prepare meeting notes for today** — retrieve today's calendar and ensure a vault meeting note exists for each meeting.
+   - **Calendar retrieval** — try `m365-actions` first, fall back to WorkIQ if unavailable:
+     - **Primary**: Delegate to `m365-actions` → `calendar:ListCalendarView` (start/end = today, UTC bounds).
+     - **Fallback** (m365 MCP unavailable or errors): Use `ask_work_iq` directly from the parent agent:
+       > "List all my meetings for today ({YYYY-MM-DD}). For each: title, start time, end time, attendees, organizer, customer/project if identifiable."
+       Parse the WorkIQ response to build the same meeting list. Note: WorkIQ results may lack calendar metadata (response status, recurrence) — treat all returned meetings as accepted.
+   - For each meeting on the calendar:
+     a. `oil:search_vault({ query: "<Meeting Title>", filter_folder: "Meetings" })` — check if a note already exists for today's date + title.
+     b. **No note found** → run meeting **Prep mode** (per `meeting.prompt.md`): gather vault customer context, recent M365 activity via WorkIQ, CRM pipeline state, then create `Meetings/<YYYY-MM-DD> - <Meeting Title>.md` via `oil:create_note` with pre-meeting context, carried-forward actions, suggested agenda, and attendees.
+     c. **Note exists** → refresh: re-check carried-forward action items from prior meetings and update the Pre-Meeting Context section via `oil:atomic_replace` if stale.
+   - Skip declined meetings and all-day events without agendas.
+   - Output line in the summary: "N meeting notes prepared for today (M new, K refreshed)."
+3. **Run role-specific checks** (execute the appropriate chain below):
 
 ### Specialist daily
 - Run **pipeline-hygiene-triage**: flag stale opps, missing fields, close-date slippage.
@@ -33,7 +45,8 @@ Run my morning routine based on my MCAPS role. Check what needs attention, flag 
 - Run **risk-surfacing**: flag relationship decay or silent stakeholders.
 - Output: "Customer-safe bullets" (shareable) + "Internal actions" (my to-do list).
 
-3. **Present results** as a short, scannable summary:
+4. **Present results** as a short, scannable summary:
+   - **Today's meetings** — count and links to vault notes. Flag any meeting missing customer context.
    - **Top 3 actions** — numbered, with the actual prompt to run if I want to drill deeper.
    - **All clear items** — one line: "N milestones/opps on track, no action needed."
    - **Risks** — any early warnings, one sentence each.

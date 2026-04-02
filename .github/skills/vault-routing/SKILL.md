@@ -1,6 +1,6 @@
 ---
 name: vault-routing
-description: "Obsidian vault integration — local knowledge layer, customer roster, durable storage, CRM prefetch context, Connect hook routing. Triggers: vault reads, customer defaults, durable memory, Obsidian notes, OIL tools, customer roster, vault-first storage, cross-medium context assembly, vault prefetch, vault promote, vault correlate, vault lookup, local knowledge store, vault file retrieval, prefetch data, customer notes file."
+description: "Obsidian vault integration — local knowledge layer, customer roster, durable storage, CRM prefetch context, Connect hook routing. Triggers: vault reads, customer defaults, durable memory, Obsidian notes, OIL tools, customer roster, vault-first storage, cross-medium context assembly, vault prefetch, vault promote, vault correlate, vault lookup, local knowledge store, vault file retrieval, prefetch data, customer notes file, create project, new project note, project creation."
 ---
 
 # Obsidian Vault — Operational Contract
@@ -52,6 +52,7 @@ All vault entries for CRM entities MUST use these standard icons and include MSX
 |--------|------|-------|
 | Opportunity | 🎯 | Headings, table rows, frontmatter references |
 | Milestone | 📋 | Headings, table rows, frontmatter references |
+| Project | 🔧 | Headings, table rows, frontmatter references |
 | Task | ✅ / 🔄 / ➕ / ❌ / ⏸️ | State-based (see vault-sync skill Mode 5 icon table) |
 | Deal Team member | 👤 | Table rows |
 | ACR / Revenue | 💰 | Section headings, value callouts |
@@ -67,6 +68,7 @@ All vault notes created by agent skills MUST include an `icon` frontmatter prope
 |-----------|-------------|-------------|
 | Opportunity | `LiTarget` | Crosshair/target |
 | Milestone | `LiFlag` | Flag |
+| Project | `LiWrench` | Wrench |
 | Task log (milestone note with tasks) | `LiClipboardList` | Clipboard list |
 | Person / People | `LiUser` | User silhouette |
 | Customer | `LiBuilding2` | Building |
@@ -188,3 +190,17 @@ Before querying Teams, Outlook, CRM, or WorkIQ for data, exhaust the vault using
 - Treating cached vault status as live CRM truth.
 - Persisting unvalidated assumptions.
 - Creating customer files for one-off transient lookups.
+
+## Vault Entity Templates
+
+All vault note templates live in the `vault-sync` skill at `.github/skills/vault-sync/references/`. When creating new vault notes, use these templates — do not synthesize markdown structure inline.
+
+| Entity | Template | Skill Mode |
+|--------|----------|------------|
+| Customer | [`vault-sync/references/customer-note.template.md`](../vault-sync/references/customer-note.template.md) | vault-sync Mode 4 (Customer Hygiene) |
+| Opportunity | [`vault-sync/references/opportunity-note.template.md`](../vault-sync/references/opportunity-note.template.md) | vault-sync Mode 1 (Opp Sync) |
+| Milestone | [`vault-sync/references/milestone-note.template.md`](../vault-sync/references/milestone-note.template.md) | vault-sync Mode 2 (Milestone Sync) |
+| People | [`vault-sync/references/people-note.template.md`](../vault-sync/references/people-note.template.md) | vault-sync Mode 3 (People Sync) |
+| Project | [`vault-sync/references/project-note.template.md`](../vault-sync/references/project-note.template.md) | vault-sync Mode 6 (Project Sync) |
+
+Placeholders use `{CRM_FIELD}` syntax. Sections marked `<!-- end-crm-sync -->` or `<!-- end-managed -->` are never overwritten on subsequent syncs.

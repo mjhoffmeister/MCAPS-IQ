@@ -1,12 +1,12 @@
 ---
 name: vault-sync
-description: "Unified CRM→vault sync and hygiene skill. Five modes: opportunity sync, milestone sync, people sync (batch CRM + ad-hoc create from context), customer hygiene, and task sync. Direction is always CRM→vault (one-way). Handles post-workflow auto-capture, on-demand batch sync, People note correlation, Agent Insights consolidation, and task activity logging. All modes use parallel batch processing across customers. Triggers: sync opportunity, opp sync, capture deal team, pipeline to vault, save opportunity, milestone sync, sync milestones, refresh milestones, milestone vault sync, milestone status sync, milestone to vault, sync people, people sync, deal team people, link deal team, update people notes, who is on my deals, people directory sync, create person, add person, new people note, customer hygiene, clean up customer, consolidate insights, tidy customer notes, customer cleanup, refresh customer, create customer note, sync tasks, task sync, update task log, SE activity log, task vault capture, task activity log, sync task to vault, record task in vault, task log, what tasks did I do, milestone task history, post-write vault capture, vault capture opportunity, capture opp data, opportunity vault sync, deal team to vault, opportunity notes, opportunity ACR."
+description: "Unified CRM→vault sync and hygiene skill. Six modes: opportunity sync, milestone sync, people sync (batch CRM + ad-hoc create from context), customer hygiene, task sync, and project sync (create + hygiene). Direction is always CRM→vault (one-way). Handles post-workflow auto-capture, on-demand batch sync, People note correlation, Agent Insights consolidation, task activity logging, and project note creation and standardization. All modes use parallel batch processing across customers. Templates for all entity types live in references/. Triggers: sync opportunity, opp sync, capture deal team, pipeline to vault, save opportunity, milestone sync, sync milestones, refresh milestones, milestone vault sync, milestone status sync, milestone to vault, sync people, people sync, deal team people, link deal team, update people notes, who is on my deals, people directory sync, create person, add person, new people note, customer hygiene, clean up customer, consolidate insights, tidy customer notes, customer cleanup, refresh customer, create customer note, sync tasks, task sync, update task log, SE activity log, task vault capture, task activity log, sync task to vault, record task in vault, task log, what tasks did I do, milestone task history, post-write vault capture, vault capture opportunity, capture opp data, opportunity vault sync, deal team to vault, opportunity notes, opportunity ACR, create project, new project, new project note, scaffold project, start project, project creation, fix projects, fixup projects, project hygiene, project sync, standardize projects, project cleanup, fix project notes, project template, missing meetings dataview."
 argument-hint: "Scope by customer name, opportunity number, or 'all' for full portfolio sweep"
 ---
 
 ## Purpose
 
-Maintains durable, per-entity context in the Obsidian vault that mirrors CRM state: opportunity pipelines, milestone metadata, deal team composition, People directory, customer structure, and task activity logs. Gives any role a local reference without re-querying CRM every time.
+Maintains durable, per-entity context in the Obsidian vault that mirrors CRM state: opportunity pipelines, milestone metadata, deal team composition, People directory, customer structure, task activity logs, and project notes. Gives any role a local reference without re-querying CRM every time.
 
 **Direction: CRM → vault only.** The vault is a read-cache of CRM truth. To update CRM, the user must explicitly request a write through the write-gate.
 
@@ -23,6 +23,7 @@ Maintains durable, per-entity context in the Obsidian vault that mirrors CRM sta
 | **People Sync** | sync people, people sync, deal team people, link deal team, who is on my deals, create person, add person, new people note | People/ notes: batch from CRM (3a) or ad-hoc from context (3b) |
 | **Customer Hygiene** | customer hygiene, clean up customer, consolidate insights, tidy customer notes, create customer note | Customer root notes: structure, dataview queries, Agent Insights consolidation |
 | **Task Sync** | sync tasks, task sync, update task log, SE activity log, task activity log | Task activity log rows in milestone notes |
+| **Project Sync** | create project, new project, new project note, scaffold project, start project, project creation, fix projects, fixup projects, project hygiene, project sync, standardize projects, project cleanup, fix project notes, missing meetings dataview | Project note creation from context + hygiene for existing notes |
 
 **Auto-capture modes** (silent, no user trigger needed):
 - **Opportunity auto-capture**: Chains from write-gate after `update_milestone`, `create_milestone`, `manage_deal_team`.
@@ -386,6 +387,144 @@ Called after confirmed `create_task`, `update_task`, or `close_task`. No user tr
 
 ---
 
+## Mode 6: Project Sync
+
+Creates new project notes and maintains existing ones. Two sub-modes: **create** (scaffold a new project from user context, conversation, or meeting output) and **hygiene** (scan existing notes for missing frontmatter, sections, and dataview queries).
+
+### Sub-Mode 6a: Project Creation
+
+Scaffolds a new `Projects/<ProjectName>.md` note from user context (customer, type, stakeholders, success criteria) using the Project Note Template.
+
+**Triggers**: "create project", "new project", "new project note", "scaffold project", "start project", "project creation".
+
+**Steps**:
+
+1. **Resolve scope** — Extract from user input or conversation context: project name, customer, type (poc/demo/engagement/internal/discovery), stakeholders, opportunity link, tech stack, description.
+
+2. **Check for duplicates**: `oil:search_vault({ query: "<project name>", filter_tags: ["project"], filter_folder: "Projects" })`. If found, show existing note and ask whether to update it instead.
+
+3. **Resolve customer link**: If customer is mentioned, `oil:get_customer_context({ customer })` to resolve vault folder name for `[[wiki-link]]` in frontmatter and `## Related`.
+
+4. **Resolve opportunity link**: If opportunity is mentioned, `oil:search_vault({ query: "<opp name or number>", filter_folder: "Customers" })` to resolve `[[Opportunity Name]]` for frontmatter.
+
+5. **Write the note**: `oil:create_note({ path: "Projects/<ProjectName>.md" })` with the Project Note Template. Substitute all `{PLACEHOLDER}` values from resolved context. Leave unresolved fields as `null`.
+
+6. **Cross-link**: If customer note exists, use `oil:atomic_append` to add a `[[Projects/<ProjectName>]]` backlink under `## Related` or `## Agent Insights` in the customer note (only if not already present).
+
+7. **Summary**:
+   ```
+   Created: Projects/<ProjectName>.md
+   Customer: <name> | Type: <type> | Status: active
+   ```
+
+**Rules**:
+- **No duplicates**: Search by name before creating.
+- **Minimum viable note**: Only `tags`, `icon`, `sticker`, `status`, and `created` are required in frontmatter. All other fields are optional at creation time.
+- **Meta Bind block**: Always include the INPUT fields block from the template below the H1 heading.
+- **User sections**: `## Notes` is always included but left empty for user authoring.
+
+### Sub-Mode 6b: Project Hygiene
+
+Scans existing project notes (`Projects/` folder) for missing or inconsistent frontmatter, missing canonical sections, stale status fields, and missing meeting dataview queries. Brings legacy and ad-hoc project notes into alignment with the Project Note Template.
+
+### Scope
+
+- One project at a time, or "all" → sweep `Projects/` folder recursively.
+- **Vault-only** reads + writes. No CRM calls.
+- **Safe**: Never deletes user-authored content (`## Notes`, content below `<!-- end-managed -->`). Never overwrites existing section content — only adds missing sections and patches frontmatter.
+
+### Steps
+
+1. **Discover projects — parallel**: `oil:search_vault({ query: "project", filter_tags: ["project"], filter_folder: "Projects", limit: 50 })`. Then `oil:get_note_metadata` for all found notes in a parallel batch.
+
+2. **Classify** (CPU-only): For each project note, check:
+
+   **Frontmatter gaps**:
+   | Field | Required | Default if missing |
+   |-------|----------|--------------------|
+   | `tags` | `[project]` | Add `project` tag |
+   | `sticker` | Yes | `lucide//wrench` |
+   | `icon` | Yes | `LiWrench` |
+   | `customer` | No | `null` |
+   | `status` | Yes | Infer: `_LegacyCompleted/` → `completed`, else `active` |
+   | `type` | Yes | `engagement` |
+   | `priority` | Yes | `medium` |
+   | `target_date` | No | `null` |
+   | `created` | Yes | Use `created_at` from file metadata |
+   | `opportunity` | No | `null` |
+   | `partner` | No | `null` |
+   | `stakeholders` | Yes | `[]` |
+   | `tech_stack` | Yes | `[]` |
+   | `parent_project` | No | `null` |
+   | `repo` | No | `null` |
+   | `msft_team` | Yes | `{ stu: [], atu: [], csu: [] }` |
+
+   **Section gaps**: Check headings list against canonical sections:
+   - `## Meeting Log` — **critical**: most common missing section. Must contain the dataview query. (Equivalent: `## Meetings`)
+   - `## Open Items` — active tasks/follow-ups. (Equivalent: `## Action Items`)
+   - `## Success Criteria` — measurable outcomes for the project.
+   - `## Architecture / Approach` — technical design or engagement approach.
+   - `## Stakeholders` — table format (Role / Name / Notes).
+   - `## Timeline & Milestones` — date-indexed milestone table.
+   - `## Related` — should contain `[[customer]]` backlink if `customer` frontmatter is set.
+   - `## Notes` — user-authored, just ensure it exists.
+   - `## Context` or `## Customer Need` — either name is acceptable.
+
+   **Meeting dataview check**: If `## Meeting Log` (or `## Meetings`) exists, read its content. Classify:
+   - `has_dataview`: Contains ` ```dataview ` block → OK.
+   - `manual_links_only`: Contains only `[[wiki-links]]` or plain text → needs dataview added above manual links.
+   - `empty`: Section exists but no content → needs dataview inserted.
+   - `missing`: No `## Meetings` section at all → needs section + dataview.
+
+   **Status check**: Notes under `_LegacyCompleted/` with `status: active` → flag as mismatch.
+
+3. **Read full content — parallel**: For all notes needing fixes, `oil:read_note_section` for relevant sections (parallel batch).
+
+4. **Apply fixes — parallel**: All writes in one batch via `oil:atomic_replace`:
+
+   **4a. Frontmatter patch**: Merge missing fields into existing frontmatter. Never remove existing fields. Never overwrite existing non-null values.
+
+   **4b. Missing sections**: Append missing canonical sections in template order (Context → Success Criteria → Architecture / Approach → Stakeholders → Timeline & Milestones → Meeting Log → Open Items → Related → Notes). If `## Meeting Log` is missing, insert before `## Related` (or before `## Notes` if no Related).
+
+   **4c. Meeting dataview insertion**: Standard query:
+   ```
+   ```dataview
+   TABLE WITHOUT ID
+     link(file.link, file.name) AS "📅 Meeting",
+     date AS "Date",
+     summary AS "Summary",
+     status AS "Status"
+   FROM "Meetings"
+   WHERE project = this.file.name
+      OR contains(project, this.file.name)
+      OR contains(flatten(file.outlinks), this.file.link)
+   SORT date DESC
+   ```
+   ```
+   If manual meeting links exist, preserve them below the dataview under a `### Manual References` sub-heading.
+
+   **4d. Status alignment**: `_LegacyCompleted/` + `status: active` → set `status: completed`.
+
+   **4e. Related backlinks**: If `customer` is set and `## Related` exists but doesn't contain `[[{customer}]]`, prepend it.
+
+5. **Summary**:
+   ```
+   | 📁 Project | Customer | Frontmatter Fixes | Sections Added | Meetings DV | Status Fix | Errors |
+   ```
+
+### Decision Logic
+
+- **Never rename files or move projects** — only patch content in place.
+- **Never overwrite existing section content** except frontmatter fields and meeting dataview insertion into empty/missing sections.
+- **Manual meeting links are preserved** — the dataview is added above them, not instead of them.
+- **Existing `## Meeting Log` heading**: Treat as equivalent to `## Meetings` — don't add a duplicate. Prefer `## Meeting Log` when creating new sections.
+- **Existing `## Open Items` heading**: Treat as equivalent to `## Action Items` — don't add a duplicate. Prefer `## Open Items` when creating new sections.
+- **Meta Bind INPUT fields**: If the block of `INPUT[...]` fields exists below the H1, preserve it. When creating new project notes, include the Meta Bind block from the template.
+- **Projects without `customer`**: Valid (internal projects). Skip Related backlink check.
+- **Sub-folder projects** (e.g., `Projects/SYK - Project Orpheus/`): Process the main `.md` file, not sub-files.
+
+---
+
 ## Shared: People Correlation
 
 Used by Opp Sync and auto-capture modes. **MANDATORY — do not skip.**
@@ -408,6 +547,7 @@ Templates live in `references/` as standalone `.md` files. Customize them to cha
 
 | Template | File | Used By |
 |----------|------|---------|
+| Project Note | [`references/project-note.template.md`](references/project-note.template.md) | Mode 6 (Project Sync: creation + hygiene) |
 | Opportunity Note | [`references/opportunity-note.template.md`](references/opportunity-note.template.md) | Mode 1 (Opp Sync) |
 | Milestone Note | [`references/milestone-note.template.md`](references/milestone-note.template.md) | Mode 2 (Milestone Sync) |
 | People Note | [`references/people-note.template.md`](references/people-note.template.md) | Mode 3 (People Sync) |
@@ -525,3 +665,4 @@ Use `oil:get_customer_context` for dynamic resolution when mapping is missing.
 - **morning-brief** → this skill (Mode 1 auto-capture, post-brief stale refresh)
 - **account-review** → this skill (Mode 1 auto-capture, post-review persist)
 - **Any CRM-reading workflow** → this skill (Mode 1 auto-capture, when vault is stale)
+- **customer-hygiene** → this skill (Mode 6 project hygiene, when customer-scoped project cleanup requested)

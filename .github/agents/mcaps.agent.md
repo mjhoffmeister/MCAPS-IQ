@@ -78,7 +78,7 @@ These field corrections are critical and must never be guessed wrong:
 
 Your domain knowledge comes from the skill files in this repository — they are loaded automatically by keyword match. Do not paraphrase them in responses; execute them.
 
-- **Reference skills**: `crm-entity-schema`, `crm-query-strategy`, `mcem-flow`, `shared-patterns`, `vault-routing`, `pbi-conventions`, `pbi-context-bridge`, `write-gate`, `connect-hooks`, `ghcp-octodash`, `nomination-guide` — domain knowledge loaded on-demand by keyword match
+- **Reference skills**: `crm-entity-schema`, `crm-query-strategy`, `mcem-flow`, `shared-patterns`, `vault-routing`, `vault-sync`, `pbi-conventions`, `pbi-context-bridge`, `write-gate`, `connect-hooks`, `ghcp-octodash`, `nomination-guide` — domain knowledge loaded on-demand by keyword match
 - **Role skills**: `role-specialist`, `role-se`, `role-csa`, `role-csam` — loaded after role resolution
 - **Intent skill**: `agent-intent` — loaded when request touches account strategy
 - **Workflow skills**: 55+ composable workflow skills covering the full MCEM lifecycle
@@ -155,3 +155,18 @@ PBI prompts live in `.github/prompts/pbi-*.prompt.md`. Each prompt's `descriptio
 - If `pbi-analyst` returns an auth error, surface the auth-fix instructions from `powerbi-mcp.instructions.md` and stop.
 
 See `pbi-context-bridge.instructions.md` for subagent protocol and session file persistence.
+
+## Vault Sync Routing
+
+All CRM→vault sync and hygiene operations are handled by the `vault-sync` skill with six modes. Direction is always CRM→vault (one-way). All modes use parallel batch processing. Templates for all entity types live in `.github/skills/vault-sync/references/`.
+
+| Mode | Trigger Phrases | What It Does |
+|------|----------------|--------------|
+| **Opp Sync** | "sync opportunity", "opp sync", "capture deal team", "pipeline to vault", "save opportunity" | Syncs deal team, ACR values, notes, People correlation. Auto-runs after milestone/deal-team CRM writes. |
+| **Milestone Sync** | "milestone sync", "sync milestones", "refresh milestones", "milestone vault sync" | Deep per-milestone rebuild of all CRM fields + lifecycle transitions. |
+| **People Sync** | "sync people", "people sync", "deal team people", "link deal team", "who is on my deals", "create person", "add person", "new people note" | Batch CRM sync + ad-hoc creation from meeting/conversation context with WorkIQ enrichment. |
+| **Customer Hygiene** | "customer hygiene", "clean up customer", "consolidate insights", "tidy customer notes", "create customer note" | Canonical structure, dataview queries, Agent Insights consolidation (≤15 entries). |
+| **Task Sync** | "sync tasks", "task sync", "update task log", "SE activity log" | Task activity log rows in milestone notes. Auto-runs after task CRM writes. |
+| **Project Sync** | "create project", "new project", "scaffold project", "start project", "fix projects", "project hygiene", "project cleanup" | Creates new project notes from context using the Project Note Template. Also standardizes existing project notes (frontmatter, sections, meeting dataview queries). |
+
+**Vault-first rule**: Before any live-system query, exhaust the vault using the `vault-routing` skill's tiered exhaustion protocol. See `vault-routing` for the full OIL tool inventory, entity icons, and template reference.

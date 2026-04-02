@@ -41,7 +41,23 @@ Runs in both modes.
 
 Heavy skill-chain execution. Produces governance-ready output + internal action list.
 
-### Role-Specific Skill Chains
+### Step 1 — Prepare Meeting Notes for the Week
+
+Retrieve this week's calendar and ensure a vault meeting note exists for each meeting.
+
+1. **Calendar retrieval** — try `m365-actions` first, fall back to WorkIQ if unavailable:
+   - **Primary**: Delegate to `m365-actions` → `calendar:ListCalendarView` for Monday–Friday (UTC bounds).
+   - **Fallback** (m365 MCP unavailable or errors): Use `ask_work_iq` directly from the parent agent:
+     > "List all my meetings from {Monday YYYY-MM-DD} to {Friday YYYY-MM-DD}. For each: title, date, start time, end time, attendees, organizer, customer/project if identifiable."
+     Parse the WorkIQ response to build the meeting list. Note: WorkIQ results may lack calendar metadata (response status, recurrence) — treat all returned meetings as accepted.
+2. For each meeting this week:
+   a. `oil:search_vault({ query: "<Meeting Title>", filter_folder: "Meetings" })` — check if a vault note already exists for the date + title.
+   b. **No note found** → run meeting **Prep mode** (per `meeting.prompt.md`): gather vault customer context, recent M365 activity via WorkIQ, CRM pipeline state, then create `Meetings/<YYYY-MM-DD> - <Meeting Title>.md` via `oil:create_note` with pre-meeting context, carried-forward actions, suggested agenda, and attendees.
+   c. **Note exists** → refresh: re-check carried-forward action items and update Pre-Meeting Context via `oil:atomic_replace` if stale.
+3. Skip declined meetings and all-day events without agendas.
+4. Output: "N meeting notes prepared for this week (M new, K refreshed). Next meeting: {title} on {day}."
+
+### Step 2 — Role-Specific Skill Chains
 
 Execute the chain for the user's confirmed role:
 
@@ -82,9 +98,26 @@ Aggregation + retrospective. Produces a formatted digest saved to vault.
 
 Target: current work week (Monday–Friday). Use Step 0's vault data.
 
-### Step 2 — M365 Activity
+### Step 2 — Reconcile Meeting Notes
 
-Use `ask_work_iq` for meetings, emails, chats not captured in vault:
+Ensure vault notes exist for every meeting that occurred this week.
+
+1. **Calendar retrieval** — try `m365-actions` first, fall back to WorkIQ if unavailable:
+   - **Primary**: Delegate to `m365-actions` → `calendar:ListCalendarView` for Monday–Friday (UTC bounds).
+   - **Fallback** (m365 MCP unavailable or errors): Use `ask_work_iq` directly from the parent agent:
+     > "List all my meetings from {Monday YYYY-MM-DD} to {Friday YYYY-MM-DD}. For each: title, date, start time, end time, attendees, organizer, customer/project if identifiable."
+     Parse the WorkIQ response. Note: WorkIQ may lack response-status metadata — treat all returned meetings as accepted.
+2. For each past meeting (already occurred):
+   a. `oil:search_vault({ query: "<Meeting Title>", filter_folder: "Meetings" })` — check if a vault note exists.
+   b. **No note found** → flag as **uncaptured**. Attempt auto-recovery: use `ask_work_iq` to pull transcript/recap, then create a meeting note in **Process mode** (per `meeting.prompt.md`) with available data.
+   c. **Note exists but status: open** → check for unresolved action items, flag as carry-forward.
+3. For each future meeting (remaining this week):
+   a. Same as Monday-mode meeting prep — create or refresh vault notes.
+4. Output: "N meetings this week: M with vault notes, K uncaptured (J auto-recovered), L remaining with prep notes."
+
+### Step 3 — M365 Activity
+
+Use `ask_work_iq` for emails and chats not captured in vault (meetings already reconciled in Step 2):
 
 **Query 1 — Meetings:**
 > "List all meetings I attended this week ({Monday} to {Friday}). For each: date, attendees, customer/project, one-line summary."
@@ -97,7 +130,7 @@ Use `ask_work_iq` for meetings, emails, chats not captured in vault:
 - Email/chat decisions → **action items**
 - Customers with zero M365 touchpoints → **engagement gap signal**
 
-### Step 3 — Write Digest
+### Step 4 — Write Digest
 
 Save to `Weekly/<YYYY>-W<XX>.md` via `oil:write_note`:
 
