@@ -5,7 +5,7 @@ applyTo: "mcp/msx/**"
 
 # CRM Query Strategy (Scope-Before-Retrieve)
 
-**Never call `msx-crm:get_milestones` without a scoping parameter.** The tool now rejects unscoped calls — `mine` no longer defaults to `true`. Always provide at least one of: `customerKeyword`, `opportunityKeyword`, `opportunityId`, `opportunityIds`, `milestoneNumber`, `milestoneId`, `ownerId`, or explicit `mine: true`.
+**Never call `msx:get_milestones` without a scoping parameter.** The tool now rejects unscoped calls — `mine` no longer defaults to `true`. Always provide at least one of: `customerKeyword`, `opportunityKeyword`, `opportunityId`, `opportunityIds`, `milestoneNumber`, `milestoneId`, `ownerId`, or explicit `mine: true`.
 
 ## Step 0 — SESSION CACHE CHECK + VAULT-PREFETCH
 
@@ -72,13 +72,13 @@ Ask clarifying questions:
 ## Step 2 — Composite and Batch Tools First
 
 Prefer composite tools over chaining primitives:
-- **`msx-crm:get_milestones({ customerKeyword: "Contoso" })`** — resolves customer name → accounts → opportunities → milestones in one call. Add `statusFilter: 'active'` and/or `includeTasks: true` for filtered results with inline tasks. This is the preferred tool for customer-scoped milestone queries.
-- **`msx-crm:get_milestones({ opportunityKeyword: "Azure Migration" })`** — resolves opportunity name → milestones in one call. No need to call `list_opportunities` first.
-- `msx-crm:get_milestones({ opportunityIds: [...], statusFilter: 'active', format: 'summary' })` — batch mode with status filtering and compact output.
-- `msx-crm:find_milestones_needing_tasks({ customerKeywords: [...] })` — specialized: finds milestones *without* tasks.
-- `msx-crm:list_opportunities({ customerKeyword: "...", includeDealTeam: true, format: "full" })` — opportunity-level view with stage/estimated close/deal-team enrichment.
-- `msx-crm:list_opportunities({ opportunityKeyword: "..." })` or `msx-crm:list_opportunities({ opportunityIds: [...] })` — use these when customer keyword/account mapping is weak.
-- `msx-crm:get_milestone_activities({ milestoneIds: [...] })` — batch task retrieval grouped by milestone (or use `get_milestones` with `includeTasks: true`).
+- **`msx:get_milestones({ customerKeyword: "Contoso" })`** — resolves customer name → accounts → opportunities → milestones in one call. Add `statusFilter: 'active'` and/or `includeTasks: true` for filtered results with inline tasks. This is the preferred tool for customer-scoped milestone queries.
+- **`msx:get_milestones({ opportunityKeyword: "Azure Migration" })`** — resolves opportunity name → milestones in one call. No need to call `list_opportunities` first.
+- `msx:get_milestones({ opportunityIds: [...], statusFilter: 'active', format: 'summary' })` — batch mode with status filtering and compact output.
+- `msx:find_milestones_needing_tasks({ customerKeywords: [...] })` — specialized: finds milestones *without* tasks.
+- `msx:list_opportunities({ customerKeyword: "...", includeDealTeam: true, format: "full" })` — opportunity-level view with stage/estimated close/deal-team enrichment.
+- `msx:list_opportunities({ opportunityKeyword: "..." })` or `msx:list_opportunities({ opportunityIds: [...] })` — use these when customer keyword/account mapping is weak.
+- `msx:get_milestone_activities({ milestoneIds: [...] })` — batch task retrieval grouped by milestone (or use `get_milestones` with `includeTasks: true`).
 
 ## Step 3 — crm_query for Filtered Lookups
 
@@ -119,9 +119,9 @@ Use `crm_query` only for queries that `get_milestones` cannot express (e.g., cus
 ## Step 5 — Drill Down Incrementally
 
 For "which milestones need tasks":
-1. Prefer `msx-crm:find_milestones_needing_tasks` for full chain.
-2. Or `msx-crm:crm_query` with `entitySet: "msp_engagementmilestones"` and filters.
-3. `msx-crm:get_milestone_activities({ milestoneIds: [...] })` for batch task detail.
+1. Prefer `msx:find_milestones_needing_tasks` for full chain.
+2. Or `msx:crm_query` with `entitySet: "msp_engagementmilestones"` and filters.
+3. `msx:get_milestone_activities({ milestoneIds: [...] })` for batch task detail.
 4. Do not call `get_milestone_activities` one milestone at a time in a loop.
 
 ## Good vs Bad Patterns

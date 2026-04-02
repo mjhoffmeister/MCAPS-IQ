@@ -80,7 +80,7 @@ At session start, probe: CRM (`crm_whoami`), Vault (`get_vault_context`), WorkIQ
 
 ## Default Behavior
 
-- Prefer MCP tools over local scripts. Use `msx-crm` from `.vscode/mcp.json` for read/write operations.
+- Prefer MCP tools over local scripts. Use `msx` from `.vscode/mcp.json` for read/write operations.
 - If an MCP tool fails, retry with corrected parameters first. Local diagnostics only when explicitly requested.
 - Derive missing identifiers via MCP read tools (e.g., `crm_whoami`) — do not create ad-hoc scripts.
 

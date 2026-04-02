@@ -27,8 +27,8 @@ Retrieves and structures Azure service pricing into a normalized, Excel-exportab
 |---|---|---|---|
 | `pricing_get` | `pricing` (Azure MCP) | Structured retail pricing retrieval — PAYG, RI, Spot, Dev/Test, Savings Plan | **Primary** — preferred when available |
 | `fetch_webpage` | built-in | Web fallback for Azure pricing pages | **Fallback** — when Pricing MCP unavailable |
-| `crm_get_record` | `msx-crm` | Opportunity details, solution play, estimated ACR | Optional — for opportunity-grounded sizing |
-| `get_milestones` | `msx-crm` | Milestone/task data for SKU and quantity extraction | Optional — for opportunity-grounded sizing |
+| `crm_get_record` | `msx` | Opportunity details, solution play, estimated ACR | Optional — for opportunity-grounded sizing |
+| `get_milestones` | `msx` | Milestone/task data for SKU and quantity extraction | Optional — for opportunity-grounded sizing |
 | `get_customer_context` | `oil` | Vault context — prior budgets, architecture decisions, spend baselines | Optional — enriches estimates |
 
 ## Medium Availability Probe
@@ -38,7 +38,7 @@ Before executing the flow, probe which pricing mediums are reachable:
 | Medium | Probe | If unavailable |
 |---|---|---|
 | **Azure Pricing MCP** | `pricing:pricing_get` with `{ service: "Virtual Machines", sku: "Standard_D2s_v5", region: "eastus" }` — confirm structured pricing returns | Fall back to `fetch_webpage` for pricing pages; flag `pricing_source: web_scrape` |
-| **CRM** | `msx-crm:crm_auth_status` | Skip opportunity/milestone sizing; require explicit service list |
+| **CRM** | `msx:crm_auth_status` | Skip opportunity/milestone sizing; require explicit service list |
 | **Vault** | `oil:get_vault_context()` | Skip vault-prefetch; operate CRM-only or explicit list |
 
 Cache probe results. When the Azure Pricing MCP is available, it is the **primary and preferred** pricing source — it returns structured, machine-readable retail pricing with PAYG, RI, Spot, Dev/Test, and Savings Plan data in a single call per SKU.
@@ -53,7 +53,7 @@ Determine which Azure services need pricing. Use one of these entry points:
 |---|---|---|
 | **Explicit list** | User provides service names directly | User says "price out AKS, Cosmos DB, and Azure OpenAI" |
 | **Architecture description** | Parse solution description → extract service names | User describes a solution or shares an architecture doc |
-| **From opportunity** | `msx-crm:crm_get_record` on opportunityId → solution play + `msx-crm:get_milestones` → extract service/SKU signals from milestone comments and monthly usage fields | User provides an opportunityId |
+| **From opportunity** | `msx:crm_get_record` on opportunityId → solution play + `msx:get_milestones` → extract service/SKU signals from milestone comments and monthly usage fields | User provides an opportunityId |
 | **From proof plan** | Chain from `proof-plan-orchestration` output → extract environment/service requirements | Post-proof cost modeling |
 
 For each identified service, normalize to the canonical Azure service name (e.g., "Kubernetes" → "Azure Kubernetes Service", "SQL" → "Azure SQL Database").
@@ -62,8 +62,8 @@ For each identified service, normalize to the canonical Azure service name (e.g.
 
 When scoping from an opportunity, extract sizing signals to produce grounded estimates rather than generic tier assumptions:
 
-1. `msx-crm:crm_get_record` on opportunityId — read `estimatedvalue`, solution play, and description.
-2. `msx-crm:get_milestones({ opportunityId, includeTasks: true })` — for each milestone:
+1. `msx:crm_get_record` on opportunityId — read `estimatedvalue`, solution play, and description.
+2. `msx:get_milestones({ opportunityId, includeTasks: true })` — for each milestone:
    - Parse `msp_monthlyuse` for consumption/usage targets (maps to quantity estimates).
    - Read milestone comments for SKU mentions, environment specs, or sizing notes.
    - Read task descriptions for infrastructure requirements (e.g., "provision 3-node AKS cluster", "set up D4s_v5 VMs").
@@ -122,7 +122,7 @@ Use `fetch_webpage` against Azure pricing pages:
    - Discount/EA agreement context
 
 2. **CRM context** (if opportunityId provided and not already gathered in Phase 1):
-   - `msx-crm:crm_get_record` — opportunity value, solution play, estimated ACR
+   - `msx:crm_get_record` — opportunity value, solution play, estimated ACR
    - Cross-reference `estimatedvalue` against the pricing total as a sanity check
 
 3. **Azure CLI** (if authenticated and user has existing deployments):

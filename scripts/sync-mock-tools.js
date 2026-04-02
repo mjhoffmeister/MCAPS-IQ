@@ -44,9 +44,9 @@ function getServerConfigs() {
 
   if (existsSync(msxStart)) {
     servers.push({
-      name: "msx-crm",
+      name: "msx",
       prefix: "msx_crm__",
-      mcpPrefix: "msx-crm:",
+      mcpPrefix: "msx:",
       command: "node",
       args: [msxStart],
     });

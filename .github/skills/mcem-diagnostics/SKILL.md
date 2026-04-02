@@ -23,8 +23,8 @@ Both modes run by default. If user only asks "which stage" without mentioning ex
 
 ## Flow
 
-1. Call `msx-crm:crm_get_record` on opportunity for stage, solution play, success plan, `activestageid`.
-2. Call `msx-crm:get_milestones` with `opportunityId` for milestone state.
+1. Call `msx:crm_get_record` on opportunity for stage, solution play, success plan, `activestageid`.
+2. Call `msx:get_milestones` with `opportunityId` for milestone state.
 3. **Stage identification** — compare CRM artifacts against MCEM exit criteria:
 
 | Transition | Evidence Required |

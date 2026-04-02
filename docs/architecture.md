@@ -7,7 +7,7 @@
 ```
 You (Copilot Chat)
   │
-  ├── asks about CRM data  ──→ msx-crm MCP server ──→ MSX Dynamics 365
+  ├── asks about CRM data  ──→ msx MCP server ──→ MSX Dynamics 365
   ├── asks about M365 data ──→ workiq MCP server  ──→ Teams / Outlook / SharePoint
   └── asks about notes     ──→ OIL (optional)     ──→ Your Obsidian Vault
 ```
@@ -102,7 +102,7 @@ The file [.vscode/mcp.json](../.vscode/mcp.json) defines which MCP servers are a
 
 | Server      | Status            | Purpose                          | Tools It Provides                                                                                |
 | ----------- | ----------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `msx-crm` | **Enabled** | MSX CRM operations               | `crm_whoami`, `crm_query`, `list_opportunities`, `get_milestones`, `create_task`, etc. |
+| `msx` | **Enabled** | MSX CRM operations               | `crm_whoami`, `crm_query`, `list_opportunities`, `get_milestones`, `create_task`, etc. |
 | `workiq`  | **Enabled** | Microsoft 365 evidence retrieval | `ask_work_iq` (Teams, Outlook, SharePoint)                                                     |
 | `powerbi-remote` | **Enabled** | Power BI analytics | `DiscoverArtifacts`, `GetSemanticModelSchema`, `GenerateQuery`, `ExecuteQuery` |
 | `oil`     | Commented out     | Obsidian Intelligence Layer      | `get_customer_context`, `search_vault`, `prepare_crm_prefetch`, `promote_findings`, etc. |
@@ -113,4 +113,4 @@ You can add any MCP-compatible server to this file. See the [Customization guide
 
 ## Package-based MCP Servers
 
-`msx-crm` and `oil` are launched from published npm packages via `npx` (see `.vscode/mcp.json` and `scripts/*-start.js`). This keeps the repo lighter and avoids vendoring those server source trees locally.
+`msx` and `oil` are launched from published npm packages via `npx` (see `.vscode/mcp.json` and `scripts/*-start.js`). This keeps the repo lighter and avoids vendoring those server source trees locally.

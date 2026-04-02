@@ -20,10 +20,10 @@ Qualifies incoming customer signals into actionable Stage 2 pipeline by validati
 
 ## Flow
 
-1. Call `msx-crm:crm_auth_status`.
-2. Resolve account scope — if TPID: call `msx-crm:list_accounts_by_tpid`; if GUID known: skip.
-3. Call `msx-crm:get_my_active_opportunities` to check for existing opportunities (avoid duplicates).
-4. For existing opportunities, call `msx-crm:get_milestones` with `opportunityIds` to classify milestone state across all opportunities in one call.
+1. Call `msx:crm_auth_status`.
+2. Resolve account scope — if TPID: call `msx:list_accounts_by_tpid`; if GUID known: skip.
+3. Call `msx:get_my_active_opportunities` to check for existing opportunities (avoid duplicates).
+4. For existing opportunities, call `msx:get_milestones` with `opportunityIds` to classify milestone state across all opportunities in one call.
 5. Apply qualification criteria (see below).
 6. If qualified, output draft opportunity + minimum milestone set as recommendations.
 

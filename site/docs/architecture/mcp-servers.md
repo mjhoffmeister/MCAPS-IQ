@@ -17,7 +17,7 @@ MCP (Model Context Protocol) servers are the bridges between Copilot and your da
 
 | Server | Status | Purpose | # Tools |
 |--------|--------|---------|---------|
-| `msx-crm` | **Enabled** | MSX CRM operations | ~23 |
+| `msx` | **Enabled** | MSX CRM operations | ~23 |
 | `workiq` | **Enabled** | M365 evidence retrieval | 2 |
 | `powerbi-remote` | **Enabled** | Power BI analytics | 4 |
 | `oil` | Commented out | Obsidian vault integration | 22 |

@@ -45,7 +45,7 @@ EVALUATE TOPN(1, 'Dim_Calendar')
 | Account roster | Vault or CRM | TPID list to filter queries |
 | Telemetry | Power BI | ACR, seats, usage metrics |
 | Business rules | Prompt logic | Eligibility, thresholds |
-| CRM correlation | MSX-CRM | Opportunity stage, milestones |
+| CRM correlation | msx | Opportunity stage, milestones |
 | Output | Synthesized report | Cross-medium data |
 
 ## Context Budget Problem

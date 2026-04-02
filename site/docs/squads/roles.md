@@ -74,7 +74,7 @@ This agent is your data engine. It pulls from Power BI dashboards, CRM pipeline 
     - "Identify systemic blockers across my segment's pipeline"
     - "Rank my accounts by growth potential vs. current investment"
 
-**What this agent accesses:** Power BI (`powerbi-remote`), MSX CRM (`msx-crm`), WorkIQ / M365 (`workiq`, `m365`)
+**What this agent accesses:** Power BI (`powerbi-remote`), MSX CRM (`msx`), WorkIQ / M365 (`workiq`, `m365`)
 
 ---
 

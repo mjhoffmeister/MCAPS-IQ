@@ -44,8 +44,8 @@ If the user hasn't provided a TPID, ask:
 
 Resolution paths:
 - **TPID provided** → use directly as `<TPID>` in all queries
-- **Customer name** → resolve via `msx-crm:list_accounts_by_tpid` or DAX lookup on `'DimCustomer'[CustomerName]`
-- **"Resolve from CRM"** → use `msx-crm:crm_whoami` + `msx-crm:list_accounts_by_tpid` to find the account
+- **Customer name** → resolve via `msx:list_accounts_by_tpid` or DAX lookup on `'DimCustomer'[CustomerName]`
+- **"Resolve from CRM"** → use `msx:crm_whoami` + `msx:list_accounts_by_tpid` to find the account
 
 Set `<TPID_FILTER>` to: `'DimCustomer'[ParentTPID] = <TPID> || 'DimCustomer'[ChildTPID] = <TPID>`
 
@@ -296,8 +296,8 @@ Based on the data above, provide a one-paragraph risk assessment:
 ### Step 8 — CRM Correlation (Optional, Automatic if CRM Available)
 
 If CRM is reachable this session, enrich the report:
-1. `msx-crm:list_accounts_by_tpid` with the TPID → get account name, active opportunities
-2. `msx-crm:get_milestones` for active opportunities → check if delivery milestones are at risk from incidents
+1. `msx:list_accounts_by_tpid` with the TPID → get account name, active opportunities
+2. `msx:get_milestones` for active opportunities → check if delivery milestones are at risk from incidents
 3. Surface any **pipeline or delivery risk** caused by active support issues
 
 Add a section:

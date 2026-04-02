@@ -44,7 +44,7 @@ Ask the user (skip items they've already provided):
 
 3. **Account scope** — Where do TPIDs/account identifiers come from?
    - A vault file (e.g., `.docs/AccountReference.md`)
-   - CRM (`msx-crm:get_my_active_opportunities`)
+   - CRM (`msx:get_my_active_opportunities`)
    - User will provide inline
    - Not applicable (model-wide query)
 

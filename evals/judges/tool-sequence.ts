@@ -30,7 +30,7 @@ interface ForbiddenCall {
 
 /**
  * Match tool names with wildcard support.
- * "msx-crm:*" matches any tool starting with "msx-crm:".
+ * "msx:*" matches any tool starting with "msx:".
  */
 function toolMatches(pattern: string, actual: string): boolean {
   if (pattern.endsWith(":*")) {

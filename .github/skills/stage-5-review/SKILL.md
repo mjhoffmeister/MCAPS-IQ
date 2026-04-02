@@ -24,10 +24,10 @@ Run all three modes by default, or specify a single mode when scoped:
 
 ## Flow
 
-0. **Resolve identity** — call `msx-crm:crm_whoami` to obtain `systemuserid`, name, alias. Used in step 5b for Connect attribution verification.
-1. Call `msx-crm:crm_get_record` on opportunity for stage, success plan, and solution play.
-2. Call `msx-crm:get_milestones` with `opportunityId`, `keyword: 'adoption'`, `includeTasks: true` — isolate value/adoption milestones with inline task evidence.
-3. Call `msx-crm:get_milestone_activities` for milestones lacking execution cadence evidence (targeted only).
+0. **Resolve identity** — call `msx:crm_whoami` to obtain `systemuserid`, name, alias. Used in step 5b for Connect attribution verification.
+1. Call `msx:crm_get_record` on opportunity for stage, success plan, and solution play.
+2. Call `msx:get_milestones` with `opportunityId`, `keyword: 'adoption'`, `includeTasks: true` — isolate value/adoption milestones with inline task evidence.
+3. Call `msx:get_milestone_activities` for milestones lacking execution cadence evidence (targeted only).
 4. **Adoption assessment** — evaluate per milestone:
 
 | Signal | Healthy | Unhealthy |
@@ -51,7 +51,7 @@ Run all three modes by default, or specify a single mode when scoped:
    - **5b. Attribution cross-reference** — for each finding that could surface as Connect evidence, verify the authenticated user (from step 0) appears as owner, task assignee, or named contributor. Outcomes where ownership is ambiguous **must** be flagged `attribution: unverified`.
 
 6. **Expansion signal scan** — check for growth signals:
-   - Call `msx-crm:get_my_active_opportunities` to check for existing expansion opportunities (avoid duplicates).
+   - Call `msx:get_my_active_opportunities` to check for existing expansion opportunities (avoid duplicates).
 
 | Signal Type | Example | Route |
 |---|---|---|
@@ -61,10 +61,10 @@ Run all three modes by default, or specify a single mode when scoped:
 | Renewal with scope change | Renewal includes new workloads or services | Specialist — linked opportunity |
 
 7. Generate dry-run corrections across all modes:
-   - `msx-crm:create_task` for missing stakeholder tasks and signal routing
-   - `msx-crm:update_task` for date/description corrections
-   - `msx-crm:close_task` for completed actions
-   - `msx-crm:update_milestone` for measurable comments/metric updates
+   - `msx:create_task` for missing stakeholder tasks and signal routing
+   - `msx:update_task` for date/description corrections
+   - `msx:close_task` for completed actions
+   - `msx:update_milestone` for measurable comments/metric updates
 
 ## Decision Logic
 

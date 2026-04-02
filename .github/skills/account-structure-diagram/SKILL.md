@@ -24,11 +24,11 @@ Generates an Excalidraw diagram that visually represents a customer's account st
 
 1. **Scope** — Identify the customer. Use one of:
    - `oil:get_customer_context({ customer })` for vault-first prefetch (account IDs, known opportunity GUIDs).
-   - `msx-crm:list_accounts_by_tpid({ tpid })` if TPID is provided.
-   - `msx-crm:get_my_active_opportunities({ customerKeyword })` to discover opportunities by name.
+   - `msx:list_accounts_by_tpid({ tpid })` if TPID is provided.
+   - `msx:get_my_active_opportunities({ customerKeyword })` to discover opportunities by name.
 
 2. **Gather structural data** — For each opportunity in scope:
-   - `msx-crm:get_milestones({ opportunityIds: [...], includeTasks: true })` — batch milestones with inline tasks, status, commitment, owners, dates. Or use `customerKeyword` for customer-scoped retrieval in one call.
+   - `msx:get_milestones({ opportunityIds: [...], includeTasks: true })` — batch milestones with inline tasks, status, commitment, owners, dates. Or use `customerKeyword` for customer-scoped retrieval in one call.
    - `oil:get_vault_context()` — stakeholder map, risk flags, relationship notes (skip if unavailable).
 
 3. **Classify MCEM stage** — For each opportunity, determine functional stage using `mcem-stage-identification` Decision Logic (or reuse if already in context). Tag each opportunity node with its stage.

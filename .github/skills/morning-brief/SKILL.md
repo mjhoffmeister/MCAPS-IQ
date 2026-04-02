@@ -35,7 +35,7 @@ Launch all three probes at once. These have no dependencies on each other.
 | Lane | Tool Call | Purpose |
 |---|---|---|
 | **Vault** | `oil:get_vault_context()` | Confirm vault online, get shape + scale |
-| **CRM** | `msx-crm:crm_auth_status` | Confirm CRM reachable |
+| **CRM** | `msx:crm_auth_status` | Confirm CRM reachable |
 | **WorkIQ** | `workiq:accept_eula` (if needed) | Confirm M365 queryable |
 
 Record which mediums are available. If a medium fails, mark it `unavailable` and continue.
@@ -47,7 +47,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 | Lane | Depends on | Tool Calls | What it produces |
 |---|---|---|---|
 | **A: Vault Context** | Vault available | `oil:get_customer_context({ customer })` per active customer (or `oil:query_notes({ query: "action items OR risk OR blocked", limit: 20 })` for unscoped) | Customer context, known opp GUIDs, open action items, risk flags, stale notes |
-| **B: CRM Pipeline** | CRM available | `msx-crm:get_my_active_opportunities({ maxResults: 75 })` → `msx-crm:get_milestones({ opportunityIds: [...], statusFilter: 'active', format: 'summary', includeTasks: true })` | Pipeline snapshot, milestone health, overdue tasks |
+| **B: CRM Pipeline** | CRM available | `msx:get_my_active_opportunities({ maxResults: 75 })` → `msx:get_milestones({ opportunityIds: [...], statusFilter: 'active', format: 'summary', includeTasks: true })` | Pipeline snapshot, milestone health, overdue tasks |
 | **C: Today's Calendar** | WorkIQ available | `workiq:ask_work_iq` — "What meetings do I have today? Include attendees, time, and any attached agendas or pre-reads." | Today's meeting schedule with context |
 | **D: Recent Signals** | WorkIQ available | `workiq:ask_work_iq` — "What emails or Teams messages in the last 24 hours were flagged, urgent, or mention [customer names from Lane A]?" | Urgent comms requiring morning attention |
 

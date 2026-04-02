@@ -73,7 +73,7 @@ const AP_004: AntiPatternRule = {
     // Skip check if scenario explicitly excludes vault
     if (context?.mediums && !context.mediums.includes("vault")) return null;
     
-    const hasCrmCall = calls.some((c) => c.tool.startsWith("msx-crm:"));
+    const hasCrmCall = calls.some((c) => c.tool.startsWith("msx:"));
     const hasVaultCall = calls.some((c) => c.tool.startsWith("oil:"));
     if (hasCrmCall && !hasVaultCall) {
       return { id: "AP-004", tool: "oil:get_vault_context", reason: "..." };
@@ -96,7 +96,7 @@ const AP_004: AntiPatternRule = {
 // AP-003 — improved detection
 check(calls) {
   const milestoneCalls = calls.filter(c => 
-    c.tool === "msx-crm:get_milestones" || c.tool === "get_milestones"
+    c.tool === "msx:get_milestones" || c.tool === "get_milestones"
   );
   if (milestoneCalls.length <= 2) return null;
   

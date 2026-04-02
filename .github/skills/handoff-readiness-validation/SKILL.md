@@ -20,14 +20,14 @@ Ensures clean STU→CSU handoff by validating that committed milestones have exp
 
 ## Flow
 
-1. Call `msx-crm:get_milestones` with `opportunityId` — isolate committed or commitment-candidate milestones.
-2. For each milestone, call `msx-crm:get_milestone_activities` to verify task hygiene:
+1. Call `msx:get_milestones` with `opportunityId` — isolate committed or commitment-candidate milestones.
+2. For each milestone, call `msx:get_milestone_activities` to verify task hygiene:
    - Owner is CSU-aligned (CSAM or CSA), not still STU
    - Due dates are realistic and set
    - Measurable outcome signal exists (`msp_monthlyuse` or task completion criteria)
-3. Call `msx-crm:crm_get_record` on opportunity for stage alignment and success plan linkage.
+3. Call `msx:crm_get_record` on opportunity for stage alignment and success plan linkage.
 4. Validate handoff artifact completeness (see checklist below).
-5. If gaps found, generate dry-run `msx-crm:create_task` payloads for remediation.
+5. If gaps found, generate dry-run `msx:create_task` payloads for remediation.
 
 ## Handoff Checklist
 

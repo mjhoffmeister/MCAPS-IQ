@@ -150,7 +150,7 @@ sequenceDiagram
     participant M as "@mcaps (main)"
     participant P as "@pbi-analyst"
     participant A as "@m365-actions"
-    participant CRM as msx-crm
+    participant CRM as msx
     participant PBI as powerbi-remote
     participant T as teams MCP
 
@@ -185,7 +185,7 @@ sequenceDiagram
 
 | Agent | Status | Tools | When to Use | Token Impact |
 |---|---|---|---|---|
-| **@mcaps** | Existing | msx-crm, oil, workiq, teams, mail, calendar | Main orchestrator for all CRM/vault workflows | — |
+| **@mcaps** | Existing | msx, oil, workiq, teams, mail, calendar | Main orchestrator for all CRM/vault workflows | — |
 | **@m365-actions** | Existing | teams, mail, calendar | Send messages, emails, create events | Low (fire-and-forget) |
 | **@pbi-analyst** | Recommended | powerbi-remote, editFiles | Any Power BI DAX query or report rendering | **High** — keeps 15–80K tokens out of main context |
 
@@ -254,8 +254,8 @@ graph LR
 
 | Change | Server | Impact |
 |---|---|---|
-| `format: "compact"` for `list_opportunities` | msx-crm | Returns only: id, name, stage, close date, revenue, health |
-| `maxResults` for `get_my_active_opportunities` | msx-crm | Caps portfolio scans for users with 50+ opportunities |
+| `format: "compact"` for `list_opportunities` | msx | Returns only: id, name, stage, close date, revenue, health |
+| `maxResults` for `get_my_active_opportunities` | msx | Caps portfolio scans for users with 50+ opportunities |
 | `maxResults` for `search_vault` (default 10) | oil | Caps large vault searches |
 | `summaryOnly` flag for `get_customer_context` | oil | Returns only GUIDs + team roster, no engagement history |
 

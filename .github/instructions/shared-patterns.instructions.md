@@ -35,8 +35,8 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 
 ## Runtime Contract
 
-- **Read tools are live**: `msx-crm:crm_auth_status`, `msx-crm:crm_whoami`, `msx-crm:get_my_active_opportunities`, `msx-crm:list_accounts_by_tpid`, `msx-crm:list_opportunities`, `msx-crm:get_milestones`, `msx-crm:get_milestone_activities`, `msx-crm:crm_get_record`, `msx-crm:crm_query`, `msx-crm:get_task_status_options`.
-- **Write-intent tools are dry-run**: `msx-crm:create_task`, `msx-crm:update_task`, `msx-crm:close_task`, `msx-crm:update_milestone` return `mock: true` preview payloads.
+- **Read tools are live**: `msx:crm_auth_status`, `msx:crm_whoami`, `msx:get_my_active_opportunities`, `msx:list_accounts_by_tpid`, `msx:list_opportunities`, `msx:get_milestones`, `msx:get_milestone_activities`, `msx:crm_get_record`, `msx:crm_query`, `msx:get_task_status_options`.
+- **Write-intent tools are dry-run**: `msx:create_task`, `msx:update_task`, `msx:close_task`, `msx:update_milestone` return `mock: true` preview payloads.
 - **No approval-execution tools exposed yet**: treat write outputs as recommended operations pending future staged execution.
 - Follow `msx-role-and-write-gate.instructions.md` for mandatory human confirmation before any write-intent operation.
 
@@ -45,10 +45,10 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 Collect scope in minimal calls before per-milestone workflows:
 
 0. **VAULT-PREFETCH** — call `oil:get_customer_context({ customer })` for opportunity GUIDs and context. Skip if OIL unavailable. See `obsidian-vault.instructions.md`.
-1. **Prefer `get_milestones` with name resolution** — `msx-crm:get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` resolves customer → accounts → opportunities → milestones in one call. Add `includeTasks: true` to embed tasks inline.
-2. **If vault provided GUIDs** — `msx-crm:get_milestones({ opportunityId })` or `msx-crm:get_milestones({ opportunityIds: [...] })` for batch.
-3. `msx-crm:get_milestone_activities(milestoneId)` — only for specific milestones needing deep investigation (or use `includeTasks: true` above).
-4. `msx-crm:crm_query` — for ad-hoc OData needs not covered by `get_milestones`. See `crm-query-strategy.instructions.md`.
+1. **Prefer `get_milestones` with name resolution** — `msx:get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` resolves customer → accounts → opportunities → milestones in one call. Add `includeTasks: true` to embed tasks inline.
+2. **If vault provided GUIDs** — `msx:get_milestones({ opportunityId })` or `msx:get_milestones({ opportunityIds: [...] })` for batch.
+3. `msx:get_milestone_activities(milestoneId)` — only for specific milestones needing deep investigation (or use `includeTasks: true` above).
+4. `msx:crm_query` — for ad-hoc OData needs not covered by `get_milestones`. See `crm-query-strategy.instructions.md`.
 
 ## M365 Communication Layer
 
@@ -126,7 +126,7 @@ When any workflow needs to identify the CSA or CSAM for an account or opportunit
    - `## V-Team Roles (from CRM)` → `### CSAM` and `### CSA` subsections (alias lists by solution area)
    - The vault contacts note reflects email-confirmed and V-Team-confirmed assignments. Do NOT override vault-confirmed roles with CRM deal team inferences. A person marked "SSP" in the vault is an SSP regardless of how many CRM opportunities they appear on.
 2. **Vault handoff tracker** — check `Reference/Committed-Milestone-Handoff-Tracker.md` for known CSA/CSAM assignments previously confirmed by the user. This covers accounts where the CSAM was provided out-of-band.
-3. **CRM deal team** (supplementary, not primary) — `msx-crm:manage_deal_team({ action: "list", opportunityId })` → resolve member titles via `msx-crm:crm_query` on `systemusers` (select `fullname,title,internalemailaddress`). Match titles containing "Cloud Solution Architect" or "CSA" for CSA; "Customer Success" or "CSAM" for CSAM. If the specific opportunity's deal team has no match, check **other opportunities on the same account** — CSAs/CSAMs are often on sibling opps. **Critical**: CRM deal team membership alone is not sufficient to infer role — deal teams include SSPs, Specialists, SEs, and other roles.
+3. **CRM deal team** (supplementary, not primary) — `msx:manage_deal_team({ action: "list", opportunityId })` → resolve member titles via `msx:crm_query` on `systemusers` (select `fullname,title,internalemailaddress`). Match titles containing "Cloud Solution Architect" or "CSA" for CSA; "Customer Success" or "CSAM" for CSAM. If the specific opportunity's deal team has no match, check **other opportunities on the same account** — CSAs/CSAMs are often on sibling opps. **Critical**: CRM deal team membership alone is not sufficient to infer role — deal teams include SSPs, Specialists, SEs, and other roles.
 4. **PBI fallback** — delegate to `pbi-analyst` subagent with the **WhoIsTheCSAM** report:
    - Report ID: `8be168b9-0ba6-415a-bba8-8cbfa2a9e381`
    - Dataset: `SSDMSelfServeOpenAccess`

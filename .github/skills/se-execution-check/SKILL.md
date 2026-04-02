@@ -24,9 +24,9 @@ All three modes run by default for full SE morning prep. Specify a single mode w
 
 ## Flow
 
-1. Call `msx-crm:crm_auth_status`.
-2. Call `msx-crm:get_my_active_opportunities` — single call for all active opportunities.
-3. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 2), `statusFilter: 'active'`, `format: 'triage'`, `includeTasks: true` — one call returns milestones pre-classified by urgency with inline tasks.
+1. Call `msx:crm_auth_status`.
+2. Call `msx:get_my_active_opportunities` — single call for all active opportunities.
+3. Call `msx:get_milestones` with `opportunityIds` (batch from step 2), `statusFilter: 'active'`, `format: 'triage'`, `includeTasks: true` — one call returns milestones pre-classified by urgency with inline tasks.
 4. Run all applicable modes against the same data:
 
 ### Task Hygiene
@@ -69,10 +69,10 @@ All three modes run by default for full SE morning prep. Specify a single mode w
 | Full readiness confirmed | Low | Document for tracking |
 
 5. Generate dry-run corrections across all modes:
-   - `msx-crm:create_task` for missing tasks, escalations, readiness actions
-   - `msx-crm:update_task` for stale fields
-   - `msx-crm:close_task` for completed actions
-   - `msx-crm:update_milestone` for risk/status/comments
+   - `msx:create_task` for missing tasks, escalations, readiness actions
+   - `msx:update_task` for stale fields
+   - `msx:close_task` for completed actions
+   - `msx:update_milestone` for risk/status/comments
 
 ## Decision Logic
 

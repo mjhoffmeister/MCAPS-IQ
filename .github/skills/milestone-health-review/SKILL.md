@@ -20,13 +20,13 @@ Produces a structured health report for active milestones within CSAM scope, fla
 
 ## Flow
 
-1. Call `msx-crm:crm_auth_status`.
-2. Call `msx-crm:get_my_active_opportunities` — single call for all active opportunities.
-3. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 2), `statusFilter: 'active'`, `format: 'triage'`, and `includeTasks: true` — one call returns all milestones pre-classified into urgency buckets (overdue, due_soon, blocked, on_track) with inline tasks. If scoped to a single customer, use `customerKeyword` instead.
+1. Call `msx:crm_auth_status`.
+2. Call `msx:get_my_active_opportunities` — single call for all active opportunities.
+3. Call `msx:get_milestones` with `opportunityIds` (batch from step 2), `statusFilter: 'active'`, `format: 'triage'`, and `includeTasks: true` — one call returns all milestones pre-classified into urgency buckets (overdue, due_soon, blocked, on_track) with inline tasks. If scoped to a single customer, use `customerKeyword` instead.
 4. Classify health state per milestone.
 6. Generate dry-run corrections:
-   - `msx-crm:update_milestone` for date/status/comments
-   - `msx-crm:create_task` for mitigation actions
+   - `msx:update_milestone` for date/status/comments
+   - `msx:create_task` for mitigation actions
 
 ## Health Classification
 
@@ -80,7 +80,7 @@ After standard health review steps 1-4:
 
 | Source | Provides | Label in output |
 |---|---|---|
-| CRM (msx-crm) | Milestone status, dates, owners, risk state | `crm_execution_state` |
+| CRM (msx) | Milestone status, dates, owners, risk state | `crm_execution_state` |
 | M365 (WorkIQ) | Meeting notes, email threads, chat decisions | `m365_customer_signals` |
 | Vault (OIL) | Prior notes, stakeholder context, historical decisions | `vault_correlation` |
 

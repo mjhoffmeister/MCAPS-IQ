@@ -15,7 +15,7 @@ tags:
 ```
 You (Copilot Chat)
   │
-  ├── asks about CRM data  ──→ msx-crm MCP server ──→ MSX Dynamics 365
+  ├── asks about CRM data  ──→ msx MCP server ──→ MSX Dynamics 365
   ├── asks about M365 data ──→ workiq MCP server   ──→ Teams / Outlook / SharePoint
   ├── asks about notes     ──→ OIL (optional)      ──→ Your Obsidian Vault
   └── asks about analytics ──→ powerbi-remote       ──→ Power BI Semantic Models

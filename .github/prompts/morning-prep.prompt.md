@@ -1,5 +1,5 @@
 ---
-description: "Automated morning prep — populates today's daily note and creates meeting prep skeletons using WorkIQ, OIL, and MSX-CRM. Designed for non-interactive copilot CLI execution."
+description: "Automated morning prep — populates today's daily note and creates meeting prep skeletons using WorkIQ, OIL, and msx. Designed for non-interactive copilot CLI execution."
 ---
 
 # Morning Prep — {{TODAY}}
@@ -25,7 +25,7 @@ For each meeting:
 1. **Match attendees/title to vault entities** — use OIL tools (`search_vault`, `get_customer_context`) to identify which Customer and Project each meeting relates to.
 2. If a customer or project can't be identified, note it as "Unlinked" so Jin can triage manually.
 
-## Step 3: Pull MSX-CRM context for linked meetings
+## Step 3: Pull msx context for linked meetings
 
 For each meeting that maps to a known customer:
 1. Use `list_opportunities({ customerKeyword: "<customer>", format: "full", includeDealTeam: true })` to get active opportunities with stage/estimated close/deal-team context.
@@ -72,7 +72,7 @@ date: {{TODAY}}
 
 ## MSX Alerts
 
-{Any milestones due this week, blocked items, or opportunities needing attention — pulled from MSX-CRM}
+{Any milestones due this week, blocked items, or opportunities needing attention — pulled from msx}
 
 ## Notes
 

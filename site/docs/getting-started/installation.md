@@ -38,7 +38,7 @@ cd mcaps-iq
     code .
     ```
 
-    Then open `.vscode/mcp.json` and click **Start** on `msx-crm` (and `workiq` if needed).
+    Then open `.vscode/mcp.json` and click **Start** on `msx` (and `workiq` if needed).
     The default servers run via `npx`/HTTP, so no local server source install is required.
 
 === "Optional local tooling"

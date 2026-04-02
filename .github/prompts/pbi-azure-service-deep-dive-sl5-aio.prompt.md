@@ -223,7 +223,7 @@ Before pulling any data, gather scope from the user. Since this prompt queries *
 | Pricing Level | `'DimPricingLevelHierarchy'[AZ_PricingLevel]` | "Pay As You Go", "Enterprise Agreement" |
 
 If user says **"all my assigned accounts"**:
-- Use `msx-crm:crm_whoami` to get alias
+- Use `msx:crm_whoami` to get alias
 - Query Portfolio model's `CustomerAssignByRole` filtered by alias to get TPID list
 - Use that TPID list for both models
 

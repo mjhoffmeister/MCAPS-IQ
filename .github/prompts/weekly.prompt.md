@@ -30,7 +30,7 @@ Runs in both modes.
 4. **Stale refresh** — For stale accounts, use `ask_work_iq` with scoped queries:
    > "Summarize email threads, Teams messages, and meetings with {customer name} from {last_validated date} to today. Highlight decisions, asks, or commitments."
    Merge via `oil:patch_note`, update `last_validated`.
-5. **CRM scoped** — Only after vault context, query `msx-crm` using vault-provided IDs. Never unscoped.
+5. **CRM scoped** — Only after vault context, query `msx` using vault-provided IDs. Never unscoped.
    - `list_opportunities({ customerKeyword: "<customer>", format: "full", includeDealTeam: true })` → pipeline state with Stage, Est Close, Deal Team.
    - `find_milestones_needing_tasks({ customerKeywords: ["<customers>"] })` → milestone hygiene.
 6. **Write-back** — Persist fresh findings to vault.

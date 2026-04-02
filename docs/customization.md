@@ -156,7 +156,7 @@ After saving, type `/` in the VS Code Copilot chat panel to see it in the menu. 
 >
 > **Before adding any MCP server, verify ALL of the following:**
 >
-> - **Runs locally.** Prefer servers that execute entirely on your machine via `stdio` (like `msx-crm` and `workiq` in this repo). A local process never sends your data to a third party.
+> - **Runs locally.** Prefer servers that execute entirely on your machine via `stdio` (like `msx` and `workiq` in this repo). A local process never sends your data to a third party.
 > - **No network-facing servers.** Do NOT expose MCP servers over HTTP/SSE to the network. A network-listening MCP server is an open door to your CRM data for anyone who can reach the port.
 > - **Trusted source only.** Only install MCP servers from publishers you trust — your own org, Microsoft, or packages you have personally reviewed. Random community servers can exfiltrate data, inject prompts, or modify CRM records.
 > - **Review what it does.** Before running `npx some-unknown-package`, read its source or README. Understand what tools it registers and what data it accesses.

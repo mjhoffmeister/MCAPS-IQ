@@ -12,13 +12,13 @@ This document describes how the three MCP servers — **MSX CRM**, **WorkIQ**, a
 - [MCP Routing Model (Recommended)](#mcp-routing-model-recommended)
   - [Routing rules](#routing-rules)
 - [Role-Skill Binding + Context Stack Transparency](#role-skill-binding--context-stack-transparency)
-- [MSX CRM Read Path](#msx-crm-read-path)
+- [MSX CRM Read Path](#msx-read-path)
   - [Primary Read Tools](#primary-read-tools)
-- [MSX CRM Update Path](#msx-crm-update-path)
+- [MSX CRM Update Path](#msx-update-path)
   - [Update-Oriented Tools](#update-oriented-tools)
 - [Planned Approval-Based Write Flow](#planned-approval-based-write-flow)
 - [Key Implementation Files](#key-implementation-files)
-  - [MSX CRM Server (package)](#msx-crm-server-package)
+  - [MSX CRM Server (package)](#msx-server-package)
   - [OIL Server (package) — optional](#oil-server-package--optional)
 - [Cross-Source Workflow (CRM + WorkIQ + Vault)](#cross-source-workflow-crm--workiq--vault)
   - [Steps](#steps)
@@ -31,7 +31,7 @@ This document describes how the three MCP servers — **MSX CRM**, **WorkIQ**, a
 flowchart TB
   U["User / Copilot Chat"] --> Agent["Copilot Agent\n(.github/ instructions + skills)"]
 
-  Agent --> MSX["msx-crm MCP Server\n(npx @microsoft/msx-mcp-server)"]
+  Agent --> MSX["msx MCP Server\n(npx @microsoft/msx-mcp-server)"]
   Agent --> WIQ["workiq MCP Server\n(ask_work_iq)"]
   Agent -.->|optional| OIL["OIL MCP Server\n(npx @jinlee794/obsidian-intelligence-layer)"]
 
@@ -54,7 +54,7 @@ flowchart TB
 
 | Server | Domain | Data Direction | What it provides |
 |---|---|---|---|
-| **msx-crm** | CRM system of record | Read / Write (staged) | Opportunities, milestones, tasks, owners, pipeline state |
+| **msx** | CRM system of record | Read / Write (staged) | Opportunities, milestones, tasks, owners, pipeline state |
 | **workiq** | M365 collaboration evidence | Read only | Teams chats, meeting transcripts, emails, SharePoint docs |
 | **OIL** *(optional)* | Durable knowledge layer | Read / Write (gated) | Customer context, relationship graphs, meeting history, agent insights, CRM identifier bridge |
 
@@ -95,7 +95,7 @@ flowchart LR
   Role -->|no| Resolve["Resolve role via crm_whoami\n+ role card"]
   Resolve --> Route
 
-  Route -->|CRM state| MSX["msx-crm tools\nopportunities, milestones, tasks"]
+  Route -->|CRM state| MSX["msx tools\nopportunities, milestones, tasks"]
   Route -->|M365 evidence| WIQ["ask_work_iq\nTeams, email, meetings"]
   Route -->|customer context\nidentifiers| OIL["OIL tools (optional)\nget_customer_context\nprepare_crm_prefetch"]
   Route -->|cross-source| Multi["Multi-medium synthesis"]
@@ -109,7 +109,7 @@ flowchart LR
 
 ### Routing rules
 
-- Use **msx-crm** tools for structured CRM entities and write-intent planning:
+- Use **msx** tools for structured CRM entities and write-intent planning:
   - opportunities, milestones, tasks, owners, statuses, dates, and dry-run updates.
 - Use **WorkIQ** MCP (`ask_work_iq`) for M365 collaboration evidence:
   - Teams chats/channels, meeting transcripts/notes, Outlook email/calendar, SharePoint/OneDrive files.
@@ -154,7 +154,7 @@ sequenceDiagram
   participant User
   participant Agent as Copilot Agent
   participant OIL as OIL (optional)
-  participant MCP as msx-crm Tool
+  participant MCP as msx Tool
   participant Auth as Auth Service
   participant CRM as MSX CRM
 
@@ -190,7 +190,7 @@ Update-oriented tools validate inputs and execute CRM write operations.
 sequenceDiagram
   participant User
   participant Agent as Copilot Agent
-  participant MCP as msx-crm Tool
+  participant MCP as msx Tool
   participant CRM as MSX CRM
 
   User->>Agent: "Create task under Cloud Assessment milestone"
@@ -252,7 +252,7 @@ sequenceDiagram
   participant Agent as Copilot Agent
   participant OIL as OIL (optional)
   participant WIQ as WorkIQ
-  participant MSX as msx-crm
+  participant MSX as msx
 
   User->>Agent: "Summarize Contoso blocker risk this week"
 
@@ -297,7 +297,7 @@ Use this when you want one practical loop with minimal setup overhead.
 2. State role + objective in one line (example: “Role: Solution Engineer. Summarize blocker risk for Contoso this week.”).
 3. If OIL is available, Copilot auto-runs `get_customer_context` for VAULT-PREFETCH.
 4. Ask for WorkIQ evidence first (`ask_work_iq`) limited to timeframe + source types.
-5. Ask for CRM facts second (`msx-crm` milestones/tasks/opportunity status).
+5. Ask for CRM facts second (`msx` milestones/tasks/opportunity status).
 6. Ask for a final merged brief in sections: `CRM facts`, `M365 evidence`, and `Vault context` (if OIL active).
 
 For write-intent changes, keep the same flow but require explicit approval before any create/update/close action.

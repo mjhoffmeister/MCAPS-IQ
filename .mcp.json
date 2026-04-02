@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-	"msx-crm": {
+	"msx": {
 		"type": "stdio",
 		"command": "npx",
 		"args": ["-y", "@microsoft/msx-mcp-server@latest"],

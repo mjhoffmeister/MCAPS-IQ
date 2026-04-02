@@ -67,8 +67,8 @@ Launch these lanes simultaneously. Each lane scopes to the quarter date range.
 
 MSX is authoritative for *what work existed and when*.
 
-- `msx-crm:get_my_active_opportunities` → list all opps active during the quarter.
-- For opps with activity: `msx-crm:get_milestones({ opportunityIds: [...], statusFilter: 'all', includeTasks: true })` → milestones completed, tasks closed, blockers resolved within the quarter.
+- `msx:get_my_active_opportunities` → list all opps active during the quarter.
+- For opps with activity: `msx:get_milestones({ opportunityIds: [...], statusFilter: 'all', includeTasks: true })` → milestones completed, tasks closed, blockers resolved within the quarter.
 - Identify: opportunity names, customer names, milestone dates, role ownership, pipeline value influenced.
 
 **Extract**: milestones delivered, tasks completed, deals progressed, risks mitigated, pipeline value influenced, role assignments.

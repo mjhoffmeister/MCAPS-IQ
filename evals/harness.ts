@@ -218,7 +218,7 @@ export class MockCrmServer {
 
   /** Handle a tool call. Reads return fixture data; writes are staged, never executed. */
   handle(tool: string, params: Record<string, unknown> = {}): unknown {
-    const shortTool = tool.replace("msx-crm:", "");
+    const shortTool = tool.replace("msx:", "");
 
     // Write operations → stage as no-op, never execute
     if (this.#isWriteOp(shortTool)) {

@@ -22,8 +22,8 @@ Ensures SEs can position and execute HoK engagements compliantly by verifying le
 
 ## Flow
 
-1. **Scope**: Call `msx-crm:get_my_active_opportunities` — single call for all active opportunities where SE is on deal team.
-2. **Milestone scan**: Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, `includeTasks: true` — identify milestones with HoK-related tasks or proof milestones that could benefit from HoK.
+1. **Scope**: Call `msx:get_my_active_opportunities` — single call for all active opportunities where SE is on deal team.
+2. **Milestone scan**: Call `msx:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, `includeTasks: true` — identify milestones with HoK-related tasks or proof milestones that could benefit from HoK.
 3. **Vault context** (if OIL available): Call `oil:get_customer_context({ customer })` — check for existing HoK notes, legal coverage records, and engagement history.
 4. **Classify each opportunity** into HoK positioning categories (see below).
 5. Generate actionable output:

@@ -20,21 +20,21 @@ Prevents premature milestone commitment by validating that delivery readiness ev
 
 ## Flow
 
-1. Call `msx-crm:get_milestones` with `opportunityId` — isolate milestones transitioning to committed.
-2. For each candidate milestone, call `msx-crm:crm_query` on `msp_engagementmilestones` to validate:
+1. Call `msx:get_milestones` with `opportunityId` — isolate milestones transitioning to committed.
+2. For each candidate milestone, call `msx:crm_query` on `msp_engagementmilestones` to validate:
    - `msp_commitmentrecommendation` current value
    - `msp_milestonedate` is populated and realistic (not past, not >12 months)
    - Delivery motion is captured (Partner / Unified / ISD / CSA)
    - Owner is a CSU-aligned role (not still STU-owned)
-3. Call `msx-crm:get_milestone_activities` for execution evidence — tasks with owners and dates.
+3. Call `msx:get_milestone_activities` for execution evidence — tasks with owners and dates.
 4. **CSA ownership resolution** — for each opportunity with milestones being committed:
-   a. Call `msx-crm:manage_deal_team({ action: "list", opportunityId })` to get deal team members.
-   b. Call `msx-crm:crm_query` on `systemusers` with deal team member IDs, selecting `fullname,title,internalemailaddress`.
+   a. Call `msx:manage_deal_team({ action: "list", opportunityId })` to get deal team members.
+   b. Call `msx:crm_query` on `systemusers` with deal team member IDs, selecting `fullname,title,internalemailaddress`.
    c. Identify members whose `title` contains "Cloud Solution Architect" or "CSA" (case-insensitive).
    d. If CSA found **and actively working the aligned project** → recommend as milestone owner.
    e. If no active CSA → identify CSAM (title contains "Customer Success" or "CSAM") as fallback owner.
    f. If neither CSA nor CSAM on deal team → flag as commit-gate blocker: "No CSU role on deal team — add CSA or CSAM before committing."
-5. If gaps found, generate dry-run `msx-crm:create_task` payloads for remediation.
+5. If gaps found, generate dry-run `msx:create_task` payloads for remediation.
 
 ## Decision Logic
 

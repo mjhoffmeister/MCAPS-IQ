@@ -22,17 +22,25 @@ This is the moment everything comes together. You'll start the MCP servers and a
 ## Start the MCP Servers
 
 1. In VS Code, open the file `.vscode/mcp.json`
-2. You'll see **"Start"** buttons above each server definition
-3. Click **Start** on **`msx-crm`** (required)
-4. Optionally click **Start** on **`workiq`** (for M365 searches)
+2. You'll see **"Start"** buttons (CodeLens) above each server definition
+3. Click **Start** on **`msx`** (required) and optionally **`workiq`** (for M365 searches)
 
 ![Starting MCP servers](../assets/mcp_json_start.png)
 
 !!! tip "What are MCP servers?"
-    MCP (Model Context Protocol) servers are bridges between Copilot and your data. The `msx-crm` server connects to your MSX Dynamics 365 CRM. The `workiq` server connects to your Microsoft 365 data (Teams, Outlook, SharePoint).
+    MCP (Model Context Protocol) servers are bridges between Copilot and your data. The `msx` server connects to your MSX Dynamics 365 CRM. The `workiq` server connects to your Microsoft 365 data (Teams, Outlook, SharePoint).
 
 !!! info "Server status"
-    Once started, you'll see **"Running"** indicators next to each server with the number of tools available. `msx-crm` provides ~23 tools, `workiq` provides 2 tools.
+    Once started, you'll see **"Running"** indicators next to each server with the number of tools available. `msx` provides ~23 tools, `workiq` provides 2 tools.
+
+!!! warning "Don't see the Start buttons?"
+    The **Start** / **Stop** CodeLens buttons in `mcp.json` require:
+
+    - **GitHub Copilot Chat extension** — version **0.25+** (check Extensions → GitHub Copilot Chat → version number)
+    - **Agent mode enabled** — Copilot Chat must be in Agent mode, not just Chat mode. Look for the agent icon in the Copilot panel header, or toggle it via the model picker dropdown.
+    - **File must be the active editor tab** — the CodeLens only renders when `mcp.json` is the focused file.
+
+    If the buttons still don't appear after confirming the above, try: **close the file → reload VS Code** (++cmd+shift+p++ → "Developer: Reload Window") **→ reopen `.vscode/mcp.json`**.
 
 ---
 
@@ -73,7 +81,7 @@ Who am I in MSX?
     | Error | Fix |
     |-------|-----|
     | "Not authenticated" | Run `az login` again in your terminal |
-    | "Server not running" | Click **Start** on `msx-crm` in `.vscode/mcp.json` |
+    | \"Server not running\" | Click **Start** on `msx` in `.vscode/mcp.json` |
     | "Connection refused" | Check VPN is connected |
     | "Token expired" | Run `az login` to refresh |
     | No response at all | Make sure the Copilot extension is active (check bottom status bar) |

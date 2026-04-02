@@ -36,9 +36,9 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 
 ## Runtime Contract
 
-- **Read tools are live**: `msx-crm:crm_auth_status`, `msx-crm:crm_whoami`, `msx-crm:get_my_active_opportunities`, `msx-crm:list_accounts_by_tpid`, `msx-crm:list_opportunities`, `msx-crm:get_milestones`, `msx-crm:get_milestone_activities`, `msx-crm:crm_get_record`, `msx-crm:crm_query`, `msx-crm:get_task_status_options`.
-- **Write-intent tools are staged (not immediate writes)**: `msx-crm:create_task`, `msx-crm:update_task`, `msx-crm:close_task`, `msx-crm:create_milestone`, `msx-crm:update_milestone`, `msx-crm:manage_deal_team`, `msx-crm:manage_milestone_team` return staged operations with `staged: true` and an `operationId`.
-- **Approval-execution tools are live**: `msx-crm:list_pending_operations`, `msx-crm:view_staged_changes_diff`, `msx-crm:execute_operation`, `msx-crm:execute_all`, `msx-crm:cancel_operation`, `msx-crm:cancel_all`.
+- **Read tools are live**: `msx:crm_auth_status`, `msx:crm_whoami`, `msx:get_my_active_opportunities`, `msx:list_accounts_by_tpid`, `msx:list_opportunities`, `msx:get_milestones`, `msx:get_milestone_activities`, `msx:crm_get_record`, `msx:crm_query`, `msx:get_task_status_options`.
+- **Write-intent tools are staged (not immediate writes)**: `msx:create_task`, `msx:update_task`, `msx:close_task`, `msx:create_milestone`, `msx:update_milestone`, `msx:manage_deal_team`, `msx:manage_milestone_team` return staged operations with `staged: true` and an `operationId`.
+- **Approval-execution tools are live**: `msx:list_pending_operations`, `msx:view_staged_changes_diff`, `msx:execute_operation`, `msx:execute_all`, `msx:cancel_operation`, `msx:cancel_all`.
 - Follow the `write-gate` skill for mandatory human confirmation before calling any execute tool.
 
 ### Staged Write Presentation Contract (CLI + Plugin)
@@ -55,10 +55,10 @@ When a staged write response is returned, the agent MUST:
 Collect scope in minimal calls before per-milestone workflows:
 
 0. **VAULT-PREFETCH** — call `oil:get_customer_context({ customer })` for opportunity GUIDs and context. Skip if OIL unavailable. See `vault-routing` skill.
-1. **Prefer `get_milestones` with name resolution** — `msx-crm:get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` resolves customer → accounts → opportunities → milestones in one call. Add `includeTasks: true` to embed tasks inline.
-2. **If vault provided GUIDs** — `msx-crm:get_milestones({ opportunityId })` or `msx-crm:get_milestones({ opportunityIds: [...] })` for batch.
-3. `msx-crm:get_milestone_activities(milestoneId)` — only for specific milestones needing deep investigation (or use `includeTasks: true` above).
-4. `msx-crm:crm_query` — for ad-hoc OData needs not covered by `get_milestones`. See `crm-query-strategy` skill.
+1. **Prefer `get_milestones` with name resolution** — `msx:get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` resolves customer → accounts → opportunities → milestones in one call. Add `includeTasks: true` to embed tasks inline.
+2. **If vault provided GUIDs** — `msx:get_milestones({ opportunityId })` or `msx:get_milestones({ opportunityIds: [...] })` for batch.
+3. `msx:get_milestone_activities(milestoneId)` — only for specific milestones needing deep investigation (or use `includeTasks: true` above).
+4. `msx:crm_query` — for ad-hoc OData needs not covered by `get_milestones`. See `crm-query-strategy` skill.
 
 ## M365 Communication Layer
 
@@ -140,7 +140,7 @@ When any workflow needs to identify the CSA or CSAM for an account or opportunit
    - `## V-Team Roles (from CRM)` → `### CSAM` and `### CSA` subsections
    - The vault contacts note reflects email-confirmed and V-Team-confirmed assignments. Do NOT override vault-confirmed roles with CRM deal team inferences.
 2. **Vault handoff tracker** — check `Reference/Committed-Milestone-Handoff-Tracker.md` for known CSA/CSAM assignments previously confirmed by the user.
-3. **CRM deal team** (supplementary, not primary) — `msx-crm:manage_deal_team({ action: "list", opportunityId })` → resolve member titles via `msx-crm:crm_query` on `systemusers` (select `fullname,title,internalemailaddress`). Match titles containing "Cloud Solution Architect" or "CSA" for CSA; "Customer Success" or "CSAM" for CSAM. If no match, check **other opportunities on the same account**. **Critical**: CRM deal team membership alone is not sufficient to infer role.
+3. **CRM deal team** (supplementary, not primary) — `msx:manage_deal_team({ action: "list", opportunityId })` → resolve member titles via `msx:crm_query` on `systemusers` (select `fullname,title,internalemailaddress`). Match titles containing "Cloud Solution Architect" or "CSA" for CSA; "Customer Success" or "CSAM" for CSAM. If no match, check **other opportunities on the same account**. **Critical**: CRM deal team membership alone is not sufficient to infer role.
 4. **PBI fallback** — delegate to `pbi-analyst` with the **WhoIsTheCSAM** report:
    - Report ID: `8be168b9-0ba6-415a-bba8-8cbfa2a9e381`
    - Dataset: `SSDMSelfServeOpenAccess`
@@ -171,7 +171,7 @@ When partner-led or co-sell motions are present on an opportunity, adjust owners
 - Partner-led milestones → do not assign Microsoft roles as delivery owners
 - Co-sell → require explicit accountability split per milestone (no implicit shared)
 - Partner delivery with no Microsoft contact → flag as `partner_gap_risk`
-- Detect partner involvement via `msx-crm:crm_get_record` on opportunity (partner linkage, co-sell flags, deal registration)
+- Detect partner involvement via `msx:crm_get_record` on opportunity (partner linkage, co-sell flags, deal registration)
 - Skill adjustments: `commit-gate-enforcement` includes partner capacity; `handoff-readiness-validation` includes partner artifacts; `se-execution-check` flags partner execution gaps without absorbing partner PM work
 
 ## Common Output Conventions

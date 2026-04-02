@@ -600,7 +600,7 @@ scenarios:
       - tool: "oil:query_notes"
         args: { where: { tpid: "10427242" } }
     forbidden_calls:
-      - tool: "msx-crm:list_accounts_by_tpid"
+      - tool: "msx:list_accounts_by_tpid"
         reason: "CRM returns sub-account names that don't match vault folders"
     failure_modes:
       - "Agent calls CRM first, gets 'Windstream', passes to get_customer_context → folder not found"

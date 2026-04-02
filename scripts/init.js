@@ -30,7 +30,7 @@ const ROOT = resolve(__dirname, "..");
 // require local source checkout in this repo.
 const PACKAGE_SERVERS = [
   {
-    name: "msx-crm",
+    name: "msx",
     package: "@microsoft/msx-mcp-server@latest",
   },
   {
@@ -42,6 +42,7 @@ const PACKAGE_SERVERS = [
 
 // ── prerequisite checks ─────────────────────────────────────────────
 const PREREQS = [
+  { cmd: "git --version", label: "Git" },
   { cmd: "node --version", label: "Node.js", minMajor: 18 },
   { cmd: "npm --version", label: "npm" },
 ];
@@ -307,13 +308,18 @@ function ask(question) {
   return new Promise((resolve) => rl.question(question, (a) => { rl.close(); resolve(a.trim()); }));
 }
 
-async function configureEnv() {
+async function configureEnv({ force = false } = {}) {
   const envPath = join(ROOT, ".env");
   const existing = parseEnvFile(envPath);
 
-  if (existing.OBSIDIAN_VAULT_PATH) {
+  if (existing.OBSIDIAN_VAULT_PATH && !force) {
     ok(`Vault path already configured: ${existing.OBSIDIAN_VAULT_PATH}`);
     return;
+  }
+
+  if (existing.OBSIDIAN_VAULT_PATH && force) {
+    warn(`Current vault path: ${existing.OBSIDIAN_VAULT_PATH}`);
+    console.log("  Re-entering vault configuration.\n");
   }
 
   // Skip prompt in non-interactive environments (CI, piped stdin)
@@ -327,23 +333,37 @@ async function configureEnv() {
   console.log("  The OIL MCP server needs the path to your Obsidian vault.");
   console.log("  This is stored in .env (gitignored) — not committed.\n");
 
-  const vaultPath = await ask("  Obsidian vault path (or press Enter to skip): ");
+  let vaultPath = "";
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    vaultPath = await ask("  Obsidian vault path (or press Enter to skip): ");
 
-  if (!vaultPath) {
-    warn("Skipped — OIL server won't start without a vault path.");
-    warn("You can set it later:  echo 'OBSIDIAN_VAULT_PATH=/your/path' >> .env");
-    return;
+    if (!vaultPath) {
+      warn("Skipped — OIL server won't start without a vault path.");
+      warn("You can set it later:  echo 'OBSIDIAN_VAULT_PATH=/your/path' >> .env");
+      warn("Or re-run:  npm run vault:env /your/path");
+      return;
+    }
+
+    if (existsSync(vaultPath)) break;
+
+    warn(`Path does not exist: ${vaultPath}`);
+    if (attempt < MAX_ATTEMPTS) {
+      console.log("  Please check the path and try again.\n");
+    } else {
+      warn("Saving anyway — make sure the vault is created before starting OIL.");
+    }
   }
 
-  if (!existsSync(vaultPath)) {
-    warn(`Path does not exist yet: ${vaultPath}`);
-    warn("Saving anyway — make sure the vault is created before starting OIL.");
+  // Write to .env (replace existing value or append)
+  const envLine = `OBSIDIAN_VAULT_PATH=${vaultPath}`;
+  let content = existsSync(envPath) ? readFileSync(envPath, "utf-8") : "";
+  if (content.match(/^OBSIDIAN_VAULT_PATH\s*=/m)) {
+    content = content.replace(/^OBSIDIAN_VAULT_PATH\s*=.*$/m, envLine);
+  } else {
+    content = content + (content.length > 0 && !content.endsWith("\n") ? "\n" : "") + envLine + "\n";
   }
-
-  // Append to .env (preserve any other vars)
-  const envLine = `OBSIDIAN_VAULT_PATH=${vaultPath}\n`;
-  const content = existsSync(envPath) ? readFileSync(envPath, "utf-8") : "";
-  writeFileSync(envPath, content + envLine, "utf-8");
+  writeFileSync(envPath, content, "utf-8");
   ok(`Saved to .env: OBSIDIAN_VAULT_PATH=${vaultPath}`);
 
   // Persist to shell profile so it's available system-wide
@@ -364,10 +384,15 @@ async function configureEnv() {
 
 // ── main ────────────────────────────────────────────────────────────
 const checkMode = process.argv.includes("--check");
+const reconfigureVault = process.argv.includes("--reconfigure-vault");
 
 if (checkMode) {
   const ok = checkOnly();
   process.exit(ok ? 0 : 1);
+} else if (reconfigureVault) {
+  heading("Reconfigure Obsidian Vault Path");
+  await configureEnv({ force: true });
+  process.exit(0);
 } else {
   const prereqsOk = checkPrereqs();
   if (!prereqsOk) {

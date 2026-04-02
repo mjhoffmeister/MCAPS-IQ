@@ -151,10 +151,10 @@ scenarios:
       input: "83827671"
       canonical_name: "Nielsen Consumer LLC"
     expectedCalls:
-      - tool: "msx-crm:list_opportunities"
+      - tool: "msx:list_opportunities"
         paramsContains:
           customerKeyword: "Nielsen"
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_milestones"
         paramsContains:
           customerKeyword: "Nielsen"
     outputValidation:
@@ -298,7 +298,7 @@ scenarios:
     expectedCalls:
       - tool: "oil:search_vault"
         purpose: "Step 2: Match attendees to vault entities"
-      - tool: "msx-crm:list_opportunities"
+      - tool: "msx:list_opportunities"
         purpose: "Step 3: CRM context for linked meetings"
     m365_budget: low  # Single calendar query, not broad search
 

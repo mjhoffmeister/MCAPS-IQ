@@ -90,7 +90,7 @@ Write-intent operations are always **low freedom**.
 
 - `name`: ≤64 chars, lowercase + hyphens only, gerund or noun form
 - `argument-hint`: describes what the user should provide
-- MCP tool references use fully qualified names: `msx-crm:crm_query`, `oil:get_customer_context`
+- MCP tool references use fully qualified names: `msx:crm_query`, `oil:get_customer_context`
 
 ### P6. Consistent Terminology
 
@@ -336,7 +336,7 @@ Medium | Low (for write-intent)
 When this skill activates.
 
 ## Flow
-1. Step 1 — tool call with `msx-crm:tool_name`
+1. Step 1 — tool call with `msx:tool_name`
 2. Step 2 — evaluation logic
 3. Step 3 — output generation
 

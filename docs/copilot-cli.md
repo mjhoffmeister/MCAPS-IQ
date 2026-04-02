@@ -37,7 +37,7 @@ npm install -g @github/copilot
 
 Copilot CLI automatically picks up the project's configuration when you run it from the repo root:
 
-- **MCP servers** — reads `.vscode/mcp.json` and connects to the same `msx-crm`, `workiq`, `powerbi-remote`, and `oil` servers. The Power BI server uses a local stdio proxy (`scripts/pbi-start.js`) that handles Azure CLI auth automatically, so it works identically in CLI and VS Code.
+- **MCP servers** — reads `.vscode/mcp.json` and connects to the same `msx`, `workiq`, `powerbi-remote`, and `oil` servers. The Power BI server uses a local stdio proxy (`scripts/pbi-start.js`) that handles Azure CLI auth automatically, so it works identically in CLI and VS Code.
 - **AGENTS.md** — loads the agent instructions from the repo root.
 - **Skills & instructions** — loads `.github/skills/` and `.github/instructions/` the same way VS Code does, matching by keyword.
 

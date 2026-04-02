@@ -23,10 +23,10 @@ Run **feasibility** first when both modes are appropriate (e.g., proof just comp
 
 ## Flow
 
-1. Call `msx-crm:crm_get_record` on opportunity for solution play, stage, and success plan linkage.
-2. Call `msx-crm:get_milestones` with `opportunityId` and `includeTasks: true` — identify proof/POC/pilot milestones with inline task/proof traces.
-3. Call `msx-crm:get_milestone_activities` for milestones with unclear technical state (targeted only).
-4. Call `msx-crm:crm_query` on task entities for broader dependency tracking if needed.
+1. Call `msx:crm_get_record` on opportunity for solution play, stage, and success plan linkage.
+2. Call `msx:get_milestones` with `opportunityId` and `includeTasks: true` — identify proof/POC/pilot milestones with inline task/proof traces.
+3. Call `msx:get_milestone_activities` for milestones with unclear technical state (targeted only).
+4. Call `msx:crm_query` on task entities for broader dependency tracking if needed.
 
 ### Feasibility Assessment
 
@@ -61,8 +61,8 @@ Compile from gathered evidence:
 Handoff not execution-ready if constraints, dependencies, or success metrics are implicit. Missing proof artifacts → flag and create task to close gap.
 
 5. Generate dry-run corrections:
-   - `msx-crm:update_milestone` for risk/dependency/status notes
-   - `msx-crm:create_task` for prerequisite and gap-closure actions
+   - `msx:update_milestone` for risk/dependency/status notes
+   - `msx:create_task` for prerequisite and gap-closure actions
 
 ## Output Schema
 

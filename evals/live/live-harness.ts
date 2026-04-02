@@ -569,12 +569,12 @@ export const MOCK_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
 // ── Tool name mapping (function-calling safe names ↔ MCP tool names) ────────
 
 function toMcpToolName(fnName: string): string {
-  // msx_crm__get_milestones → msx-crm:get_milestones
-  return fnName.replace("__", ":").replace("msx_crm", "msx-crm");
+  // msx_crm__get_milestones → msx:get_milestones
+  return fnName.replace("__", ":").replace("msx_crm", "msx");
 }
 
 function fromMcpToolName(mcpName: string): string {
-  return mcpName.replace(":", "__").replace("msx-crm", "msx_crm");
+  return mcpName.replace(":", "__").replace("msx", "msx_crm");
 }
 
 // ── System prompt assembly ──────────────────────────────────────────────────
@@ -724,7 +724,7 @@ export async function runLiveScenario(
 
       // Route to mock server
       let result: unknown;
-      if (mcpName.startsWith("msx-crm:")) {
+      if (mcpName.startsWith("msx:")) {
         result = crm.handle(mcpName, params);
       } else if (mcpName.startsWith("oil:")) {
         result = oil.handle(mcpName, params);

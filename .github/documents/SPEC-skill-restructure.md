@@ -78,7 +78,7 @@ Each atomic skill must declare which freedom level governs its core workflow. Wr
 - `name`: ≤64 chars, **lowercase + hyphens only**, gerund or noun form preferred (e.g., `commit-gate-enforcement`, `pipeline-hygiene-triage`)
 - No reserved words (`anthropic`, `claude`) in name
 - `argument-hint`: Describes what the user should provide when invoking (opportunity IDs, milestone state, etc.)
-- MCP tool references use fully qualified names: `msx-crm:crm_query`, `msx-crm:get_milestones`, `oil:get_customer_context`
+- MCP tool references use fully qualified names: `msx:crm_query`, `msx:get_milestones`, `oil:get_customer_context`
 
 ### P6. Consistent Terminology
 
@@ -407,7 +407,7 @@ Medium | Low (for write-intent)
 When this skill activates (1–2 bullets).
 
 ## Flow
-1. Step 1 — tool call with `msx-crm:tool_name`
+1. Step 1 — tool call with `msx:tool_name`
 2. Step 2 — evaluation logic
 3. Step 3 — output generation
 

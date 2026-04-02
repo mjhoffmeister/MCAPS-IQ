@@ -516,7 +516,7 @@ async function captureCrm(flags) {
   let conn;
   try {
     conn = await connectMcpServer(
-      "msx-crm",
+      "msx",
       "node",
       [join(ROOT, "scripts", "msx-start.js")],
     );

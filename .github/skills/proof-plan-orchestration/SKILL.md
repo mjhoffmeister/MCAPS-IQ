@@ -20,13 +20,13 @@ Defines the technical proof plan by scoping proof type (POC/Pilot/Demo/HoK), suc
 
 ## Flow
 
-1. Call `msx-crm:crm_get_record` on opportunity for solution play, stage, and customer context.
-2. Call `msx-crm:get_milestones` with `opportunityId` — check for existing proof milestones (POC/Pilot/Demo).
-3. If proof milestones exist, call `msx-crm:get_milestone_activities` to assess current task state.
+1. Call `msx:crm_get_record` on opportunity for solution play, stage, and customer context.
+2. Call `msx:get_milestones` with `opportunityId` — check for existing proof milestones (POC/Pilot/Demo).
+3. If proof milestones exist, call `msx:get_milestone_activities` to assess current task state.
 4. Define proof plan components (see below).
 5. Generate dry-run actions:
-   - `msx-crm:update_milestone` for scope/criteria updates on existing proof milestones
-   - `msx-crm:create_task` for proof execution tasks with owners and dates (SE role: pair with immediate `close_task` — SE tasks are activity records, not open work items)
+   - `msx:update_milestone` for scope/criteria updates on existing proof milestones
+   - `msx:create_task` for proof execution tasks with owners and dates (SE role: pair with immediate `close_task` — SE tasks are activity records, not open work items)
 
 ## Proof Plan Components
 
