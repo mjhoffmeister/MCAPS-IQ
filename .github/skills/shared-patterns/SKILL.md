@@ -182,9 +182,31 @@ When partner-led or co-sell motions are present on an opportunity, adjust owners
 - Risk findings always include: one-sentence risk, evidence source, role to act, minimum intervention.
 - `connect_hook_hint` (optional): pre-classified Connects impact area(s) and one-line hook template for passive evidence capture.
 
-### Artifact Output Directory (Mandatory)
+### Artifact Output Directory (Mandatory — Vault-First)
 
-All generated file artifacts MUST be saved under `.copilot/docs/` in the workspace root.
+Generated file artifacts follow a **vault-first** storage strategy. When OIL is available, save artifacts into the Obsidian vault so the user has one place to find everything. Fall back to `.copilot/docs/` only when OIL is unavailable.
+
+#### Resolution order
+
+1. **Vault available** — save to `Deliverables/` in the vault root via `oil:create_note` (for `.md`/text) or direct file write to the vault path (for binary formats).
+   - Customer-scoped artifacts go under `Customers/<Customer>/Deliverables/<name>.<ext>`.
+   - General (non-customer) artifacts go under `Deliverables/<name>.<ext>`.
+2. **Vault unavailable** — save to `.copilot/docs/<name>.<ext>` in the workspace root (gitignored fallback).
+3. **User provides explicit path** — honor it, regardless of vault availability.
+
+#### Vault paths (when OIL available)
+
+| Artifact type | Customer-scoped | General |
+|---|---|---|
+| PDF | `Customers/<Customer>/Deliverables/<name>.pdf` | `Deliverables/<name>.pdf` |
+| Word (.docx) | `Customers/<Customer>/Deliverables/<name>.docx` | `Deliverables/<name>.docx` |
+| Excel (.xlsx) | `Customers/<Customer>/Deliverables/<name>.xlsx` | `Deliverables/<name>.xlsx` |
+| PowerPoint (.pptx) | `Customers/<Customer>/Deliverables/<name>.pptx` | `Deliverables/<name>.pptx` |
+| Excalidraw | `Customers/<Customer>/Deliverables/<name>.excalidraw` | `Deliverables/<name>.excalidraw` |
+| PBI session report | `Customers/<Customer>/Deliverables/<prompt>-<date>.md` | `Deliverables/pbi/<prompt>-<date>.md` |
+| Other documents | `Customers/<Customer>/Deliverables/<name>.<ext>` | `Deliverables/<name>.<ext>` |
+
+#### Fallback paths (vault unavailable)
 
 | Artifact type | Default path |
 |---|---|
@@ -193,10 +215,16 @@ All generated file artifacts MUST be saved under `.copilot/docs/` in the workspa
 | Excel (.xlsx) | `.copilot/docs/<name>.xlsx` |
 | PowerPoint (.pptx) | `.copilot/docs/<name>.pptx` |
 | Excalidraw | `.copilot/docs/excalidraw/<name>.excalidraw` |
+| PBI session report | `.copilot/sessions/pbi/<prompt>-<date>.md` |
 | Other documents | `.copilot/docs/<name>.<ext>` |
 
-- Create `.copilot/docs/` automatically before writing — use `mkdir -p` or equivalent.
-- Use descriptive filenames: `<customer>-<artifact>-<date>.<ext>`.
+#### Rules
+
+- **Check vault availability first**: Call `oil:get_vault_context()` (or reuse cached result) before choosing output path.
+- Create target directories automatically before writing — use `mkdir -p` or equivalent.
+- Use descriptive filenames: `<customer>-<artifact>-<date>.<ext>` (e.g. `contoso-pricing-model-2026-03-16.xlsx`).
+- After writing to vault, confirm the path in your response so the user knows where to find it.
+- Binary files (xlsx, pptx, pdf, docx) are written to the vault filesystem path directly (the vault is a local folder); `oil:create_note` is for markdown notes only.
 
 ### CRM Record Linkification (Mandatory)
 

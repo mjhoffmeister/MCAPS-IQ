@@ -46,7 +46,7 @@ pip install openpyxl
 
 ## Output Requirements
 
-**Output directory**: Save generated `.xlsx`/`.csv` files to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the directory with `os.makedirs('.copilot/docs', exist_ok=True)` before writing.
+**Output directory**: Save generated `.xlsx`/`.csv` files to the vault `Deliverables/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
 
 ### All Excel Files
 - Use a consistent, professional font (e.g., Arial) unless the user specifies otherwise

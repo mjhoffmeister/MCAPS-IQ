@@ -75,7 +75,7 @@ TABLE WITHOUT ID
 FROM "Meetings"
 WHERE project = this.file.name
    OR contains(project, this.file.name)
-   OR contains(flatten(file.outlinks), this.file.link)
+   OR contains(file.outlinks, this.file.link)
 SORT date DESC
 ```
 

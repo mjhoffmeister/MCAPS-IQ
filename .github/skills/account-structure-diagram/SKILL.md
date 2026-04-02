@@ -44,7 +44,7 @@ Generates an Excalidraw diagram that visually represents a customer's account st
 
 5. **Generate Excalidraw diagram** — Produce a valid `.excalidraw.md` code block using the layout and element specs below.
 
-6. **Output** — Return the diagram as a fenced code block (` ```excalidraw `) that can be pasted into an Obsidian note or saved as a `.excalidraw` file in `.copilot/docs/excalidraw/` (see `shared-patterns` skill § Artifact Output Directory).
+6. **Output** — Return the diagram as a fenced code block (` ```excalidraw `) that can be pasted into an Obsidian note. When OIL is available, save the `.excalidraw` file to the vault `Deliverables/` folder (customer-scoped: `Customers/<Customer>/Deliverables/`); otherwise fall back to `.copilot/docs/excalidraw/` (see `shared-patterns` skill § Artifact Output Directory).
 
 ## Layout Specification
 
