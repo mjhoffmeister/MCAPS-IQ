@@ -22,10 +22,14 @@ Before calling any CRM read tool that may return large result sets (especially `
 1. Identify current user via `crm_auth_status` (or `crm_whoami`).
 2. Fetch profile data using `crm_get_record` for `systemusers(<userId>)` with available identity fields (for example: name/title/email/business unit).
 3. Map the user to one of these role workflows:
+   - `Account Executive` → `role-ae` skill
    - `Specialist` → `role-specialist` skill
    - `Solution Engineer` → `role-se` skill
    - `Cloud Solution Architect` → `role-csa` skill
    - `Customer Success Account Manager` → `role-csam` skill
+   - `Account Technology Strategist` → `role-ats` skill
+   - `Industry Advisor` → `role-ia` skill
+   - `ATU Sales Director` → `role-atu-sd` skill
 4. If mapping is ambiguous or multiple roles match:
    - Present top 1–2 likely role mappings with reasons.
    - Ask the user to confirm role before proceeding.
@@ -47,13 +51,13 @@ Before proposing or executing **any** write-intent action, check this matrix. If
 
 | Action | Allowed Roles | Blocked Roles (must redirect) |
 |---|---|---|
-| `create_milestone` | **Specialist** | SE, CSA, CSAM — redirect to Specialist |
-| `update_milestone` (structure: name, date, monthlyUse, workload, commitment) | **Specialist**, **CSAM** (Stage 4-5 only) | SE, CSA — redirect to Specialist/CSAM |
-| `update_milestone` (status only: On Track/At Risk/Blocked) | **Specialist**, **CSAM**, **CSA** | SE — can flag but redirect status update to milestone owner |
+| `create_milestone` | **Specialist** | AE, IA, SD, SE, CSA, CSAM, ATS — redirect to Specialist |
+| `update_milestone` (structure: name, date, monthlyUse, workload, commitment) | **Specialist**, **CSAM** (Stage 4-5 only) | SE, CSA, ATS — redirect to Specialist/CSAM |
+| `update_milestone` (status only: On Track/At Risk/Blocked) | **Specialist**, **CSAM**, **CSA** | SE, ATS — can flag but redirect status update to milestone owner |
 | `create_task` | **All roles** (on milestones they touch) | — |
 | `update_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
 | `close_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
-| Opportunity field updates (stage, close date, revenue) | **Specialist** | SE, CSA, CSAM — redirect to Specialist |
+| Opportunity field updates (stage, close date, revenue) | **Specialist** | AE, IA, SD, SE, CSA, CSAM, ATS — redirect to Specialist |
 | Deal team membership | **Specialist**, **self-add by any role** | — |
 
 **Enforcement rule**: When the agent detects a gap (e.g., "this milestone has no tasks"), the recommendation must respect the matrix:

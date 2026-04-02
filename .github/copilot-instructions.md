@@ -91,7 +91,7 @@ For account-specific work, if OIL is available, start in the Obsidian vault befo
 ## MSX/CRM Operations
 
 **Role mapping (mandatory before guidance or write-intent planning):**
-- Capture the user's MSX role up front: Specialist, SE, CSA, or CSAM. If not confirmed, present options. If inferable from `crm_whoami`, present and confirm.
+- Capture the user's MSX role up front: AE, Specialist, SE, CSA, CSAM, ATS, IA, or ATU Sales Director. If not confirmed, present options. If inferable from `crm_whoami`, present and confirm.
 - MCEM stages → `mcem-flow` skill. Shared patterns → `shared-patterns` skill.
 
 **CRM query discipline:**

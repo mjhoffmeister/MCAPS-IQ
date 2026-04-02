@@ -50,8 +50,7 @@ const result = spawnSync(
   npx,
   [
     "-y",
-    "--registry",
-    "https://npm.pkg.github.com",
+    "--@microsoft:registry=https://npm.pkg.github.com",
     "@microsoft/msx-mcp-server@latest",
     ...passthrough,
   ],
