@@ -12,7 +12,7 @@
  *   1 — one or more steps failed
  */
 
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -434,10 +434,16 @@ async function installAgencyCli() {
 
   try {
     if (isWindows) {
-      run(
-        'powershell -NoProfile -Command "iex \\"& { $(irm aka.ms/InstallTool.ps1)} agency\\"; $env:Path = [System.Environment]::GetEnvironmentVariable(\\"Path\\", \\"Machine\\") + \\";\\\" + [System.Environment]::GetEnvironmentVariable(\\"Path\\", \\"User\\")"',
-        ROOT
-      );
+      // Use pwsh (PowerShell 7+) if available, fall back to powershell.exe
+      const psExe = tryRun("pwsh -v") ? "pwsh" : "powershell.exe";
+      const psScript = [
+        'iex "& { $(irm aka.ms/InstallTool.ps1)} agency"',
+        '$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")',
+      ].join("; ");
+      execFileSync(psExe, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript], {
+        cwd: ROOT,
+        stdio: "inherit",
+      });
     } else {
       run("curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency && exec $SHELL -l", ROOT);
     }

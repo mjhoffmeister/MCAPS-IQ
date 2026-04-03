@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, execSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -23,6 +23,16 @@ const PUBLIC_PACKAGES = [
 ];
 
 function run(command, args, options = {}) {
+  if (process.platform === "win32") {
+    // On Windows, npm/gh are .cmd shims — use execSync with a shell
+    const escaped = args.map((a) => (a.includes(" ") ? `"${a}"` : a)).join(" ");
+    return execSync(`${command} ${escaped}`, {
+      cwd: ROOT,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+      ...options,
+    }).trim();
+  }
   return execFileSync(command, args, {
     cwd: ROOT,
     encoding: "utf-8",
@@ -32,12 +42,12 @@ function run(command, args, options = {}) {
 }
 
 function hasGhCli() {
-  const result = spawnSync("gh", ["--version"], { stdio: "ignore" });
+  const result = spawnSync("gh", ["--version"], { stdio: "ignore", shell: process.platform === "win32" });
   return !result.error && result.status === 0;
 }
 
 function hasCommand(cmd) {
-  const result = spawnSync(process.platform === "win32" ? "where" : "which", [cmd], { stdio: "ignore" });
+  const result = spawnSync(process.platform === "win32" ? "where" : "which", [cmd], { stdio: "ignore", shell: process.platform === "win32" });
   return !result.error && result.status === 0;
 }
 
@@ -64,7 +74,7 @@ async function tryInstallGhCli() {
     process.stderr.write("[auth:packages] Homebrew install failed.\n");
   } else if (isWin && hasCommand("winget")) {
     process.stdout.write("[auth:packages] Detected Windows with winget. Installing GitHub CLI…\n");
-    const result = spawnSync("winget", ["install", "GitHub.cli", "--silent", "--accept-package-agreements", "--accept-source-agreements"], { cwd: ROOT, stdio: "inherit" });
+    const result = spawnSync("winget", ["install", "GitHub.cli", "--silent", "--accept-package-agreements", "--accept-source-agreements"], { cwd: ROOT, stdio: "inherit", shell: true });
     if (!result.error && result.status === 0) {
       // Add GitHub CLI to PATH for the current process
       const ghPath = "C:\\Program Files\\GitHub CLI";
@@ -237,11 +247,11 @@ async function loginForPackages(accounts) {
       // Switch to selected account, then refresh to add read:packages scope
       const user = accounts[idx].user;
       process.stdout.write(`[auth:packages] Switching to ${user} and refreshing token with read:packages scope…\n`);
-      spawnSync("gh", ["auth", "switch", "--hostname", HOST, "--user", user], { cwd: ROOT, stdio: "inherit" });
+      spawnSync("gh", ["auth", "switch", "--hostname", HOST, "--user", user], { cwd: ROOT, stdio: "inherit", shell: process.platform === "win32" });
       const result = spawnSync(
         "gh",
         ["auth", "refresh", "--hostname", HOST, "--scopes", "read:packages"],
-        { cwd: ROOT, stdio: "inherit" },
+        { cwd: ROOT, stdio: "inherit", shell: process.platform === "win32" },
       );
       if (result.error || result.status !== 0) {
         throw new Error(`Token refresh failed for ${user}. Run 'gh auth switch --user ${user} && gh auth refresh --scopes read:packages' manually.`);
@@ -255,12 +265,23 @@ async function loginForPackages(accounts) {
   const result = spawnSync(
     "gh",
     ["auth", "login", "--hostname", HOST, "--web", "--scopes", "read:packages"],
-    { cwd: ROOT, stdio: "inherit" },
+    { cwd: ROOT, stdio: "inherit", shell: process.platform === "win32" },
   );
 
   if (result.error || result.status !== 0) {
     throw new Error("GitHub CLI login failed. Complete 'gh auth login' manually and retry.");
   }
+}
+
+function getExistingToken() {
+  if (!existsSync(NPMRC_PATH)) return null;
+  const content = readFileSync(NPMRC_PATH, "utf-8");
+  // Check managed block first
+  const managedMatch = content.match(new RegExp(`${MANAGED_START}[\\s\\S]*?//npm\\.pkg\\.github\\.com/:_authToken=([^\\s]+)`, "m"));
+  if (managedMatch) return managedMatch[1];
+  // Check any github packages token
+  const tokenMatch = content.match(/\/\/npm\.pkg\.github\.com\/:_authToken=([^\s]+)/);
+  return tokenMatch ? tokenMatch[1] : null;
 }
 
 function checkPackageReachable(packageName, registry) {
@@ -311,6 +332,14 @@ export async function ensureGithubPackagesAuth(options = {}) {
   if (privateUnreachable.length === 0) {
     // Only public packages failed — not an auth issue
     process.stderr.write("\n[auth:packages] Unreachable packages are public — this is a network issue, not auth.\n");
+    return { ok: currentResults.length - unreachable.length, warned: unreachable.length };
+  }
+
+  // ── Step 2b: If a token already exists, skip interactive login ─
+  const existingToken = getExistingToken();
+  if (existingToken) {
+    process.stdout.write("\n[auth:packages] Auth token already configured in ~/.npmrc — skipping interactive login.\n");
+    process.stdout.write("[auth:packages] If packages are genuinely unreachable, run: npm run auth:packages\n");
     return { ok: currentResults.length - unreachable.length, warned: unreachable.length };
   }
 
