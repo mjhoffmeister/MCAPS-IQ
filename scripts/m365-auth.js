@@ -25,10 +25,11 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE_DIR = resolve(ROOT, ".auth-cache");
 const CACHE_FILE = resolve(CACHE_DIR, "m365-tokens.json");
 

@@ -19,7 +19,8 @@ tools:
 
 agents: [
   m365-actions,
-  pbi-analyst
+  pbi-analyst,
+  obsidian-viz
 ]
 
 handoffs: 
@@ -31,6 +32,11 @@ handoffs:
   - label: Power BI Analysis
     agent: pbi-analyst
     prompt: "Delegate medium/heavy Power BI analysis tasks to the pbi-analyst subagent. Return only the rendered report output."
+    send: true
+
+  - label: Vault Visualization
+    agent: obsidian-viz
+    prompt: "Delegate dashboard, chart, kanban, timeline, diagram, or report creation/editing to the obsidian-viz subagent. Describe the desired visualization and data source."
     send: true
 ---
 # @mcaps — Account Team Operations Agent

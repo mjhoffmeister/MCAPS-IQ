@@ -6,163 +6,91 @@ argument-hint: 'Provide the path to the PDF file and describe what operation to 
 
 # PDF Processing Guide
 
-## Python Environment — MANDATORY
+## Setup
 
-**All Python scripts in this skill MUST run inside a virtual environment. No exceptions.**
-
-```powershell
-# Create venv (once per session, skip if .venv already exists)
-python -m venv .venv
-
-# Activate (Windows PowerShell)
-.venv\Scripts\Activate.ps1
-
-# Activate (bash/macOS)
-source .venv/bin/activate
-
-# Install dependencies INSIDE venv only
-pip install pypdf pdfplumber reportlab
-
-# For OCR (only if needed)
-pip install pytesseract pdf2image
-
-# For advanced rendering (only if needed)
-pip install pypdfium2
+```bash
+npm install pdf-lib        # create, merge, split, rotate, watermark, encrypt, fill forms
+npm install pdf-parse      # extract text from PDFs
 ```
 
-**Rules:**
-- NEVER run `pip install` globally — always activate `.venv` first
-- Check if `.venv` exists before creating: `Test-Path .venv`
-- All `python scripts/...` commands assume the venv is active
-- Clean up `.venv` when the session is done if it was created for this task
+No Python or virtual environment required.
 
-**Temp file cleanup — MANDATORY:**
-- All temp scripts MUST use `.tmp_` prefix (e.g., `.tmp_merge_pdfs.py`)
-- After the task completes, delete ALL `.tmp_*` files autonomously — never leave them behind, never ask the user
-- `Remove-Item` is deny-listed in auto-approval mode. Use Python instead:
-  ```
-  .venv\Scripts\python.exe -c "import os,glob; [os.remove(f) for f in glob.glob('.tmp_*')]"
-  ```
-- If no `.venv` exists, use system `python -c "..."`
 ---
 
 ## Overview
 
-This guide covers PDF processing using Python libraries and command-line tools. For advanced features and JavaScript libraries, see [reference.md](reference.md). For PDF form filling, see [forms.md](forms.md).
-
 **Output directory**: Save generated/merged/split `.pdf` files to the vault `Deliverables/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
-
-> **Note:** `scripts/` paths are relative to this skill folder (`.github/skills/pdf/`).
 
 ## Quick Reference
 
-| Task | Best Tool | Key Code |
-|------|-----------|----------|
-| Read/extract text | pdfplumber | `page.extract_text()` |
-| Extract tables | pdfplumber | `page.extract_tables()` |
-| Merge PDFs | pypdf | `writer.add_page(page)` |
-| Split PDFs | pypdf | One page per file |
-| Create PDFs | reportlab | Canvas or Platypus |
-| Rotate pages | pypdf | `page.rotate(90)` |
-| Add watermark | pypdf | `page.merge_page(watermark)` |
-| Encrypt/decrypt | pypdf | `writer.encrypt()` |
-| OCR scanned PDFs | pytesseract | Convert to image first |
-| Fill PDF forms | See [forms.md](forms.md) | Fillable or annotation-based |
-| Command-line merge | qpdf | `qpdf --empty --pages ...` |
+| Task | Tool | Key API |
+|------|------|---------|
+| Extract text | `pdf-parse` | `pdf(buffer).then(d => d.text)` |
+| Merge PDFs | `pdf-lib` | `PDFDocument.copyPages()` |
+| Split PDFs | `pdf-lib` | One page per doc |
+| Create PDFs | `pdf-lib` | `PDFDocument.create()` |
+| Rotate pages | `pdf-lib` | `page.setRotation()` |
+| Add watermark | `pdf-lib` | `page.drawText()` overlay |
+| Encrypt | `pdf-lib` | `doc.encrypt()` |
+| Fill forms | `pdf-lib` | `form.getTextField().setText()` |
+| Command-line merge | `qpdf` | `qpdf --empty --pages ...` |
+| Command-line text | `pdftotext` | `pdftotext input.pdf -` |
 
 ---
 
 ## Reading & Extracting
 
-### Quick Start
-```python
-from pypdf import PdfReader
+### Extract Text
 
-reader = PdfReader("document.pdf")
-print(f"Pages: {len(reader.pages)}")
+```javascript
+import pdfParse from 'pdf-parse';
+import { readFileSync } from 'fs';
 
-text = ""
-for page in reader.pages:
-    text += page.extract_text()
+const buffer = readFileSync('document.pdf');
+const data = await pdfParse(buffer);
+
+console.log(`Pages: ${data.numpages}`);
+console.log(data.text);  // full extracted text
+// data.info  — metadata (Title, Author, etc.)
 ```
 
-### Text with Layout (pdfplumber)
-```python
-import pdfplumber
-
-with pdfplumber.open("document.pdf") as pdf:
-    for page in pdf.pages:
-        text = page.extract_text()
-        print(text)
-```
-
-### Extract Tables
-```python
-import pdfplumber
-
-with pdfplumber.open("document.pdf") as pdf:
-    for i, page in enumerate(pdf.pages):
-        tables = page.extract_tables()
-        for j, table in enumerate(tables):
-            print(f"Table {j+1} on page {i+1}:")
-            for row in table:
-                print(row)
-```
-
-### Tables to Excel
-```python
-import pdfplumber
-import pandas as pd
-
-with pdfplumber.open("document.pdf") as pdf:
-    all_tables = []
-    for page in pdf.pages:
-        tables = page.extract_tables()
-        for table in tables:
-            if table:
-                df = pd.DataFrame(table[1:], columns=table[0])
-                all_tables.append(df)
-
-if all_tables:
-    combined_df = pd.concat(all_tables, ignore_index=True)
-    combined_df.to_excel("extracted_tables.xlsx", index=False)
-```
-
-### Extract Metadata
-```python
-reader = PdfReader("document.pdf")
-meta = reader.metadata
-print(f"Title: {meta.title}, Author: {meta.author}, Pages: {len(reader.pages)}")
-```
+> For layout-sensitive extraction (tables, columns), use `qpdf` + `pdftotext -layout` (see Command-Line Tools).
 
 ---
 
 ## Merging & Splitting
 
 ### Merge PDFs
-```python
-from pypdf import PdfWriter, PdfReader
 
-writer = PdfWriter()
-for pdf_file in ["doc1.pdf", "doc2.pdf", "doc3.pdf"]:
-    reader = PdfReader(pdf_file)
-    for page in reader.pages:
-        writer.add_page(page)
+```javascript
+import { PDFDocument } from 'pdf-lib';
+import { readFileSync, writeFileSync } from 'fs';
 
-with open("merged.pdf", "wb") as output:
-    writer.write(output)
+const merged = await PDFDocument.create();
+
+for (const path of ['doc1.pdf', 'doc2.pdf', 'doc3.pdf']) {
+  const src = await PDFDocument.load(readFileSync(path));
+  const pages = await merged.copyPages(src, src.getPageIndices());
+  pages.forEach(p => merged.addPage(p));
+}
+
+writeFileSync('merged.pdf', await merged.save());
 ```
 
-### Split PDF
-```python
-from pypdf import PdfReader, PdfWriter
+### Split PDF (one file per page)
 
-reader = PdfReader("input.pdf")
-for i, page in enumerate(reader.pages):
-    writer = PdfWriter()
-    writer.add_page(page)
-    with open(f"page_{i+1}.pdf", "wb") as output:
-        writer.write(output)
+```javascript
+import { PDFDocument } from 'pdf-lib';
+import { readFileSync, writeFileSync } from 'fs';
+
+const src = await PDFDocument.load(readFileSync('input.pdf'));
+
+for (let i = 0; i < src.getPageCount(); i++) {
+  const single = await PDFDocument.create();
+  const [page] = await single.copyPages(src, [i]);
+  single.addPage(page);
+  writeFileSync(`page_${i + 1}.pdf`, await single.save());
+}
 ```
 
 ---
@@ -170,81 +98,62 @@ for i, page in enumerate(reader.pages):
 ## Page Manipulation
 
 ### Rotate Pages
-```python
-from pypdf import PdfReader, PdfWriter
 
-reader = PdfReader("input.pdf")
-writer = PdfWriter()
-page = reader.pages[0]
-page.rotate(90)  # 90 degrees clockwise
-writer.add_page(page)
+```javascript
+import { PDFDocument, degrees } from 'pdf-lib';
+import { readFileSync, writeFileSync } from 'fs';
 
-with open("rotated.pdf", "wb") as output:
-    writer.write(output)
+const doc = await PDFDocument.load(readFileSync('input.pdf'));
+doc.getPage(0).setRotation(degrees(90)); // rotate first page 90° CW
+writeFileSync('rotated.pdf', await doc.save());
 ```
 
 ### Add Watermark
-```python
-from pypdf import PdfReader, PdfWriter
 
-watermark = PdfReader("watermark.pdf").pages[0]
-reader = PdfReader("document.pdf")
-writer = PdfWriter()
+```javascript
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { readFileSync, writeFileSync } from 'fs';
 
-for page in reader.pages:
-    page.merge_page(watermark)
-    writer.add_page(page)
+const doc  = await PDFDocument.load(readFileSync('document.pdf'));
+const font = await doc.embedFont(StandardFonts.HelveticaBold);
 
-with open("watermarked.pdf", "wb") as output:
-    writer.write(output)
+for (const page of doc.getPages()) {
+  const { width, height } = page.getSize();
+  page.drawText('CONFIDENTIAL', {
+    x: width / 4, y: height / 2,
+    size: 48, font,
+    color: rgb(0.75, 0, 0),
+    opacity: 0.3,
+    rotate: { type: 'degrees', angle: 45 },
+  });
+}
+
+writeFileSync('watermarked.pdf', await doc.save());
 ```
 
 ---
 
-## Creating PDFs (reportlab)
+## Creating PDFs
 
-### Basic PDF
-```python
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+```javascript
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { writeFileSync } from 'fs';
 
-c = canvas.Canvas("hello.pdf", pagesize=letter)
-width, height = letter
-c.drawString(100, height - 100, "Hello World!")
-c.line(100, height - 140, 400, height - 140)
-c.save()
-```
+const doc  = await PDFDocument.create();
+const font = await doc.embedFont(StandardFonts.Helvetica);
+const page = doc.addPage([612, 792]); // US Letter in points (72pt = 1 inch)
+const { width, height } = page.getSize();
 
-### Multi-Page Report
-```python
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet
+page.drawText('Hello World!', {
+  x: 100, y: height - 100,
+  size: 24, font,
+  color: rgb(0, 0, 0),
+});
 
-doc = SimpleDocTemplate("report.pdf", pagesize=letter)
-styles = getSampleStyleSheet()
-story = []
+// Horizontal rule
+page.drawLine({ start: { x: 100, y: height - 140 }, end: { x: 400, y: height - 140 }, thickness: 1 });
 
-story.append(Paragraph("Report Title", styles['Title']))
-story.append(Spacer(1, 12))
-story.append(Paragraph("Body content here. " * 20, styles['Normal']))
-story.append(PageBreak())
-story.append(Paragraph("Page 2", styles['Heading1']))
-
-doc.build(story)
-```
-
-### Subscripts and Superscripts
-
-**IMPORTANT**: Never use Unicode subscript/superscript characters in ReportLab. They render as black boxes. Use XML markup instead:
-
-```python
-from reportlab.platypus import Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
-styles = getSampleStyleSheet()
-
-chemical = Paragraph("H<sub>2</sub>O", styles['Normal'])
-squared = Paragraph("x<super>2</super>", styles['Normal'])
+writeFileSync('hello.pdf', await doc.save());
 ```
 
 ---
@@ -252,46 +161,33 @@ squared = Paragraph("x<super>2</super>", styles['Normal'])
 ## Security
 
 ### Encrypt PDF
-```python
-from pypdf import PdfReader, PdfWriter
 
-reader = PdfReader("input.pdf")
-writer = PdfWriter()
-for page in reader.pages:
-    writer.add_page(page)
+```javascript
+import { PDFDocument } from 'pdf-lib';
+import { readFileSync, writeFileSync } from 'fs';
 
-writer.encrypt("userpassword", "ownerpassword")
-with open("encrypted.pdf", "wb") as output:
-    writer.write(output)
+const doc = await PDFDocument.load(readFileSync('input.pdf'));
+await doc.encrypt({
+  userPassword:  'userpassword',
+  ownerPassword: 'ownerpassword',
+  permissions: { printing: 'lowResolution', copying: false },
+});
+writeFileSync('encrypted.pdf', await doc.save());
 ```
 
 ---
 
 ## OCR (Scanned PDFs)
 
-```python
-# Requires: pip install pytesseract pdf2image
-# Also requires Tesseract OCR engine installed on system
-import pytesseract
-from pdf2image import convert_from_path
-
-images = convert_from_path('scanned.pdf')
-text = ""
-for i, image in enumerate(images):
-    text += f"Page {i+1}:\n"
-    text += pytesseract.image_to_string(image)
-    text += "\n\n"
-```
+pdf-lib and pdf-parse do not include OCR. For scanned PDFs:
+- **Cloud option**: Azure Document Intelligence (`@azure-rest/ai-document-intelligence`)
+- **CLI option**: `tesseract` + `pdftoppm` (requires system installs)
 
 ---
 
-## Extract Images
+## PDF Form Filling
 
-```bash
-# Using pdfimages (poppler-utils)
-pdfimages -j input.pdf output_prefix
-# Extracts as output_prefix-000.jpg, output_prefix-001.jpg, etc.
-```
+See [forms.md](forms.md) — covers both fillable (AcroForm) and non-fillable (annotation-based) approaches using `pdf-lib`.
 
 ---
 
@@ -314,13 +210,8 @@ pdftotext -f 1 -l 5 input.pdf output.txt # Pages 1-5 only
 
 ---
 
-## PDF Form Filling
-
-For form filling workflows, read [forms.md](forms.md) — it covers both fillable (AcroForm) and non-fillable (annotation-based) approaches with helper scripts.
-
----
-
 ## Next Steps
 
-- [reference.md](reference.md) — Advanced pypdfium2, pdf-lib (JS), pdfjs-dist
+- [reference.md](reference.md) — Additional libraries: pdfjs-dist, canvas rendering
 - [forms.md](forms.md) — Complete form filling workflow with validation
+

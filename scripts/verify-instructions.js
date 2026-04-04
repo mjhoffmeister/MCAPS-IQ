@@ -21,9 +21,10 @@
 
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, readdir, stat } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const REPO_ROOT = resolve(import.meta.dirname, '..');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECKSUM_FILE = join(REPO_ROOT, '.github', '.instruction-checksums.json');
 
 const SCAN_DIRS = [

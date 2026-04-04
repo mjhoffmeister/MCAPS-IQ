@@ -1,33 +1,35 @@
 <!-- vault-sync template: People Note
-     Customize this template to change how CRM deal team members are stored in your vault.
-     Placeholders use {CRM_FIELD} syntax — the sync process replaces them with live values.
+     Edit this template to adjust how CRM deal team members appear in your vault.
+     Syntax: {{field}}, {{field|format}}, {{#each array}}...{{/each}}
      The "Notes" and "Meetings" sections are user-authored and never overwritten. -->
 
 ---
 tags:
   - people
-title: "{CRM title}"
-email: "{internalemailaddress}"
+title: "{{title}}"
+email: "{{internalemailaddress}}"
 company: "Microsoft"
 customers:
-  - "{CustomerName}"
+{{#each customerList}}
+  - "{{name}}"
+{{/each}}
 org: internal
 icon: LiUser
 ---
 
 tags:: [[👥 People MOC]]
 
-# {Full Name}
+# {{fullname}}
 
 ## Notes
 - Category: Internal Account Team
 - Organization: Microsoft
-- Discovered via CRM deal team on [[{OpportunityName}]]
+- Discovered via CRM deal team on {{oppLinks}}
 
 ## Meetings
 
 ```dataview
 Table file.cday as Created, summary AS "Summary"
-FROM "Timestamps/Meetings" where contains(file.outlinks, [[{Full Name}]])
+FROM "Timestamps/Meetings" where contains(file.outlinks, [[{{fullname}}]])
 SORT file.cday DESC
 ```

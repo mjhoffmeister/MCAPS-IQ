@@ -6,38 +6,17 @@ argument-hint: 'Provide file path and operation: read, create, or modify'
 
 # DOCX Creation, Editing, and Analysis
 
-## Python Environment — MANDATORY
+## Setup
 
-**All Python scripts in this skill MUST run inside a virtual environment. No exceptions.**
-
-```powershell
-# Create venv (once per session, skip if .venv already exists)
-python -m venv .venv
-
-# Activate (Windows PowerShell)
-.venv\Scripts\Activate.ps1
-
-# Activate (bash/macOS)
-source .venv/bin/activate
-
-# Install dependencies INSIDE venv only
-pip install pypdf pdfplumber  # only if needed for PDF conversion steps
+```bash
+npm install docx          # create new documents
+npm install mammoth       # read / extract text and HTML
+npm install docxtemplater pizzip  # fill {placeholder} templates
+npm install adm-zip       # unpack/repack for raw XML edits
 ```
 
-**Rules:**
-- NEVER run `pip install` globally — always activate `.venv` first
-- Check if `.venv` exists before creating: `Test-Path .venv`
-- All `python scripts/...` commands assume the venv is active
-- Clean up `.venv` when the session is done if it was created for this task
+Install only the packages needed for the requested operation. No Python or virtual environment required.
 
-**Temp file cleanup — MANDATORY:**
-- All temp scripts MUST use `.tmp_` prefix (e.g., `.tmp_convert_docx.py`)
-- After the task completes, delete ALL `.tmp_*` files autonomously — never leave them behind, never ask the user
-- `Remove-Item` is deny-listed in auto-approval mode. Use Python instead:
-  ```
-  .venv\Scripts\python.exe -c "import os,glob; [os.remove(f) for f in glob.glob('.tmp_*')]"
-  ```
-- If no `.venv` exists, use system `python -c "..."`
 ---
 
 ## Overview
@@ -50,34 +29,36 @@ A .docx file is a ZIP archive containing XML files.
 
 | Task | Approach |
 |------|----------|
-| Read/analyze content | `pandoc` or unpack for raw XML |
-| Create new document | Use `docx` npm package — see Creating New Documents |
-| Edit existing document | Unpack → edit XML → repack — see Editing Existing Documents |
+| Read/analyze content | `mammoth` — extractRawText or convertToHtml |
+| Create new document | `docx` npm package — see Creating New Documents |
+| Fill template placeholders | `docxtemplater` + `pizzip` |
+| Edit existing document XML | `adm-zip` unpack → edit XML → repack |
 
 ### Converting .doc to .docx
 
 Legacy `.doc` files must be converted before editing:
 
 ```bash
-python scripts/office/soffice.py --headless --convert-to docx document.doc
+soffice --headless --convert-to docx document.doc
 ```
-
-> **Note:** `scripts/` paths are relative to this skill folder (`.github/skills/docx/`).
 
 ### Reading Content
 
-```bash
-# Text extraction with tracked changes
-pandoc --track-changes=all document.docx -o output.md
+```javascript
+import mammoth from 'mammoth';
 
-# Raw XML access
-python scripts/office/unpack.py document.docx unpacked/
+// Plain text extraction (strips all formatting)
+const { value: text } = await mammoth.extractRawText({ path: 'document.docx' });
+
+// HTML extraction (preserves headings, lists, tables, bold/italic)
+const { value: html } = await mammoth.convertToHtml({ path: 'document.docx' });
+// Check result.messages for conversion warnings
 ```
 
 ### Converting to Images
 
 ```bash
-python scripts/office/soffice.py --headless --convert-to pdf document.docx
+soffice --headless --convert-to pdf document.docx
 pdftoppm -jpeg -r 150 document.pdf page
 ```
 
@@ -86,7 +67,7 @@ pdftoppm -jpeg -r 150 document.pdf page
 To produce a clean document with all tracked changes accepted (requires LibreOffice):
 
 ```bash
-python scripts/accept_changes.py input.docx output.docx
+soffice --headless --accept-all-tracked-changes document.docx
 ```
 
 ### OOXML Reference Lookup
@@ -115,10 +96,7 @@ Packer.toBuffer(doc).then(buffer => fs.writeFileSync("doc.docx", buffer));
 ```
 
 ### Validation
-After creating the file, validate it. If validation fails, unpack, fix the XML, and repack.
-```bash
-python scripts/office/validate.py doc.docx
-```
+After creating the file, verify it opens correctly in Word or LibreOffice. If it fails to open, unpack with `adm-zip`, inspect `word/document.xml` for malformed XML, then repack.
 
 ### Page Size
 
@@ -315,10 +293,17 @@ sections: [{
 **Follow all 3 steps in order.**
 
 ### Step 1: Unpack
-```bash
-python scripts/office/unpack.py document.docx unpacked/
+
+```javascript
+import AdmZip from 'adm-zip';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+
+const zip = new AdmZip('document.docx');
+const outDir = 'unpacked';
+zip.extractAllTo(outDir, true);
+// Edit files in unpacked/word/ (see XML Reference below)
 ```
-Extracts XML, pretty-prints, merges adjacent runs, and converts smart quotes to XML entities. Use `--merge-runs false` to skip run merging.
 
 ### Step 2: Edit XML
 
@@ -326,7 +311,7 @@ Edit files in `unpacked/word/`. See XML Reference below for patterns.
 
 **Use "Claude" as the author** for tracked changes and comments, unless the user explicitly requests a different name.
 
-**Use the Edit tool directly for string replacement. Do not write Python scripts.** The Edit tool shows exactly what is being replaced.
+**Use the Edit tool directly for string replacement.** The Edit tool shows exactly what is being replaced.
 
 **CRITICAL: Use smart quotes for new content:**
 ```xml
@@ -339,23 +324,39 @@ Edit files in `unpacked/word/`. See XML Reference below for patterns.
 | `&#x201C;` | " (left double) |
 | `&#x201D;` | " (right double) |
 
-**Adding comments:** Use `comment.py` to handle boilerplate:
-```bash
-python scripts/comment.py unpacked/ 0 "Comment text with &amp; and &#x2019;"
-python scripts/comment.py unpacked/ 1 "Reply text" --parent 0
-python scripts/comment.py unpacked/ 0 "Text" --author "Custom Author"
-```
-Then add markers to document.xml (see Comments in XML Reference).
+**Adding comments:** Manually append the comment entry to `unpacked/word/comments.xml` (create the file if absent), then add markers to `document.xml` (see Comments in XML Reference). A minimal `comments.xml`:
 
-### Step 3: Pack
-```bash
-python scripts/office/pack.py unpacked/ output.docx --original document.docx
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:comment w:id="0" w:author="Claude" w:date="2025-01-01T00:00:00Z">
+    <w:p><w:r><w:t>Comment text here</w:t></w:r></w:p>
+  </w:comment>
+</w:comments>
 ```
-Validates with auto-repair, condenses XML, and creates DOCX. Use `--validate false` to skip.
 
-**Auto-repair will fix:**
-- `durableId` >= 0x7FFFFFFF (regenerates valid ID)
-- Missing `xml:space="preserve"` on `<w:t>` with whitespace
+Register the part in `[Content_Types].xml` and `word/_rels/document.xml.rels` if not already present.
+
+### Step 3: Repack
+
+```javascript
+import AdmZip from 'adm-zip';
+
+const zip = new AdmZip();
+zip.addLocalFolder('unpacked');
+zip.writeZip('output.docx');
+```
+
+**Manual repairs to check:**
+- `xml:space="preserve"` on `<w:t>` elements with leading/trailing whitespace
+- `w:rsid` attributes must be 8-digit hex (e.g., `00AB1234`)
+
+### Common Pitfalls
+
+- **Replace entire `<w:r>` elements**: When adding tracked changes, replace the whole `<w:r>...</w:r>` block with `<w:del>...<w:ins>...` as siblings.
+- **Preserve `<w:rPr>` formatting**: Copy the original run's `<w:rPr>` block into your tracked change runs.
+
+---
 
 ### Common Pitfalls
 
@@ -437,7 +438,7 @@ Inside `<w:del>`: Use `<w:delText>` instead of `<w:t>`, and `<w:delInstrText>` i
 
 ### Comments
 
-After running `comment.py`, add markers to document.xml.
+After inserting the comment entry in `comments.xml` (see Step 2 above), add markers to `document.xml`.
 
 **CRITICAL: `<w:commentRangeStart>` and `<w:commentRangeEnd>` are siblings of `<w:r>`, never inside `<w:r>`.**
 
@@ -461,7 +462,9 @@ EMU units: 914400 = 1 inch.
 
 ## Dependencies
 
-- **pandoc**: Text extraction
-- **docx**: `npm install docx` (new documents via Node.js)
-- **LibreOffice**: PDF conversion, tracked-changes acceptance (auto-configured via `scripts/office/soffice.py`)
-- **Poppler**: `pdftoppm` for image conversion
+- **docx**: `npm install docx` — new documents
+- **mammoth**: `npm install mammoth` — read/extract existing documents
+- **docxtemplater** + **pizzip**: `npm install docxtemplater pizzip` — template filling
+- **adm-zip**: `npm install adm-zip` — unpack/repack for raw XML edits
+- **LibreOffice** (optional, system install): `soffice` CLI for .doc→.docx conversion and tracked-changes acceptance
+- **Poppler** (optional, system install): `pdftoppm` for image conversion from PDF

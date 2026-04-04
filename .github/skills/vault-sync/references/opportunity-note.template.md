@@ -1,63 +1,79 @@
 <!-- vault-sync template: Opportunity Note
-     Customize this template to change how CRM opportunity data is stored in your vault.
-     Placeholders use {CRM_FIELD} syntax — the sync process replaces them with live values. -->
+     Edit this template to adjust how CRM opportunities appear in your vault.
+     Syntax: {{field}}, {{field|format}}, {{#each array}}...{{/each}}, {{#empty array}}...{{/empty}}
+     Formats: currency, acrMonthly, escapePipes, default:<fallback> -->
 
 ---
-customer: "{CustomerName}"
-opportunity: "{OpportunityName}"
-opportunityId: "{GUID}"
-opportunityNumber: "{msp_opportunitynumber}"
-stage: "{msp_activesalesstage label}"
-estClose: "{YYYY-MM-DD}"
-dealValue: {estimatedvalue}
-recurringACR: {msp_consumptionconsumedrecurring}
-solutionPlay: "{msp_salesplay label}"
-msxLink: "https://microsoftsales.crm.dynamics.com/main.aspx?etn=opportunity&id={GUID}&pagetype=entityrecord"
-last_opp_sync: "{ISO date}"
+
+customer: "{{customerName}}"
+opportunity: "{{name}}"
+opportunityId: "{{opportunityid}}"
+opportunityNumber: "{{msp_opportunitynumber}}"
+stage: "{{msp_activesalesstage|default:Unknown}}"
+estClose: "{{msp_estcompletiondate|default:Unknown}}"
+dealValue: {{estimatedvalue|default:0}}
+recurringACR: {{msp_consumptionconsumedrecurring|default:0}}
+solutionPlay: "{{msp_salesplay|default:Unknown}}"
+msxLink: "{{oppUrl}}"
+last_opp_sync: "{{syncDate}}"
 icon: LiTarget
 tags:
-  - opportunity
-  - crm-synced
+
+- opportunity
+- crm-synced
+
 ---
 
-# 🎯 {OpportunityName}
+# 🎯
 
-| | |
-|---|---|
-| **Opp #** | [{msp_opportunitynumber}]({msxLink}) |
-| **Stage** | {stage} |
-| **Est. Close** | {date} |
-| **Solution Play** | {play} |
-| **🔗 MSX** | [Open in MSX]({msxLink}) |
+|                         |                                      |
+| ----------------------- | ------------------------------------ |
+| **Opp #**         | [{{msp_opportunitynumber}}]({{oppUrl}}) |
+| **Stage**         | {{msp_activesalesstage}}             |
+| **Est. Close**    | {{msp_estcompletiondate}}            |
+| **Solution Play** | {{msp_salesplay}}                    |
+| **🔗 MSX**        | [Open in MSX]({{oppUrl}})               |
 
 ## 💰 ACR Summary
 
 <!-- Auto-synced from MSX CRM. Do not edit manually — values refresh on next sync. -->
 
-| | Name | Monthly Use (ACR) | Commitment | Status | 🔗 |
-|---|------|-------------------|------------|--------|----|
-| 🎯 **Opportunity** | {OppName — ESCAPE PIPES} | — | — | {best-available ACR} | [MSX]({oppUrl}) |
-| 📋 Milestone | {MilestoneName — ESCAPE PIPES} | ${msp_monthlyuse}/mo | {commitment} | {status} | [MSX]({milestoneUrl}) |
-| **Total Milestone ACR** | — | **${sum}/mo** | — | — | |
+|                               | Name         | Monthly Use (ACR)     | Commitment         | Status       | 🔗                                 |
+| ----------------------------- | ------------ | --------------------- | ------------------ | ------------ | ---------------------------------- |
+| 🎯**Opportunity**       | {{name}}     | {{escapePipes}}     | —                 | —           | {{msp_consumptionconsumedrecurring |
+| {{#each milestones}}          |              |                       |                    |              |                                    |
+| 📋 Milestone                  | {{msp_name}} | {{}}escapePipes}}     | {{msp_monthlyuse}} | {{acrMonthly}} | {{msp_commitmentrecommendation}}     |
+| {{/each}}                     |              |                       |                    |              |                                    |
+| **Total Milestone ACR** | —           | **{{totalMilestoneACR}}| {{acrMonthly}}**     | —           | —                                 |
 
 ## 👤 Deal Team
 
 <!-- Auto-synced from MSX CRM deal team. Do not edit manually. -->
 
-| 👤 Name | Email | Title | Owner | <!-- userid --> |
-|---------|-------|-------|-------|---|
-| {FullName} | {email} | {title} | {✅ if msp_isowner} | <!-- userid:{systemuserid} --> |
+| 👤 Name             | Email                  | Title        | Owner   | `<!-- userid -->` |
+| ------------------- | ---------------------- | ------------ | ------- | ------------------- |
+| {{#each dealTeam}}  |                        |              |         |                     |
+| [[{{fullname}}]]    | {{internalemailaddress}} | {{default:—}} | {{title}} | {{default:—}}        |
+| {{/each}}           |                        |              |         |                     |
+| {{#empty dealTeam}} |                        |              |         |                     |
+| —                  | —                     | —           | —      |                     |
+| {{/empty}}          |                        |              |         |                     |
 
 ## Opportunity Notes
 
 <!-- Synced from CRM opportunity description field. -->
 
-{description text, or "No description in CRM." if empty}
+{{description|default:No description in CRM.}}
 
 ## 📝 Milestone Forecast Comments
 
 <!-- Auto-synced from MSX CRM msp_forecastcomments. Most recent comment per milestone. -->
 
-| 📋 Milestone | Latest Comment | Author | Date | 🔗 |
-|-------------|----------------|--------|------|---|
-| {MilestoneName} | {latest comment, truncated 200 chars} | {userId} | {modifiedOn} | [MSX]({milestoneUrl}) |
+| 📋 Milestone                | Latest Comment        | Author    | Date          | 🔗       |
+| --------------------------- | --------------------- | --------- | ------------- | -------- |
+| {{#each forecastComments}}  |                       |           |               |          |
+| {{milestoneName             | escapePipes}}         | {{comment | escapePipes}} | {{userId |
+| {{/each}}                   |                       |           |               |          |
+| {{#empty forecastComments}} |                       |           |               |          |
+| —                          | No forecast comments. | —        | —            |          |
+| {{/empty}}                  |                       |           |               |          |

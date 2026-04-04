@@ -1,6 +1,6 @@
 ---
 name: vault-sync
-description: "Unified CRM→vault sync and hygiene skill. Six modes: opportunity sync, milestone sync, people sync (batch CRM + ad-hoc create from context), customer hygiene, task sync, and project sync (create + hygiene). Direction is always CRM→vault (one-way). Handles post-workflow auto-capture, on-demand batch sync, People note correlation, Agent Insights consolidation, task activity logging, and project note creation and standardization. All modes use parallel batch processing across customers. Templates for all entity types live in references/. Triggers: sync opportunity, opp sync, capture deal team, pipeline to vault, save opportunity, milestone sync, sync milestones, refresh milestones, milestone vault sync, milestone status sync, milestone to vault, sync people, people sync, deal team people, link deal team, update people notes, who is on my deals, people directory sync, create person, add person, new people note, customer hygiene, clean up customer, consolidate insights, tidy customer notes, customer cleanup, refresh customer, create customer note, sync tasks, task sync, update task log, SE activity log, task vault capture, task activity log, sync task to vault, record task in vault, task log, what tasks did I do, milestone task history, post-write vault capture, vault capture opportunity, capture opp data, opportunity vault sync, deal team to vault, opportunity notes, opportunity ACR, create project, new project, new project note, scaffold project, start project, project creation, fix projects, fixup projects, project hygiene, project sync, standardize projects, project cleanup, fix project notes, project template, missing meetings dataview."
+description: "Unified CRM→vault sync and hygiene skill. Seven modes: opportunity sync, milestone sync, people sync (batch CRM + ad-hoc create), customer hygiene, task sync, project sync (create + hygiene), dashboard sync. Always CRM→vault (one-way). Templates live in references/. Triggers: sync opportunity, opp sync, capture deal team, pipeline to vault, milestone sync, refresh milestones, milestone vault sync, sync people, people sync, deal team people, create person, add person, new people note, customer hygiene, clean up customer, consolidate insights, tidy customer notes, create customer note, sync tasks, task sync, update task log, SE activity log, task activity log, record task in vault, post-write vault capture, opportunity vault sync, create project, new project, scaffold project, project hygiene, project sync, project cleanup, fix project notes, missing meetings dataview, create dashboard, pipeline dashboard, insert dashboard, refresh dashboard, vault dashboard, pipeline intelligence dashboard, open dashboard."
 argument-hint: "Scope by customer name, opportunity number, or 'all' for full portfolio sweep"
 ---
 
@@ -525,6 +525,52 @@ Scans existing project notes (`Projects/` folder) for missing or inconsistent fr
 
 ---
 
+## Mode 7: Dashboard Sync
+
+Creates and maintains a single `_Dashboard/Pipeline Dashboard.md` note in the vault root. The dashboard is a live-query surface: Dataview and DataviewJS render all tables on open — the agent only writes the static shell, the scope summary (`dashboard_scope`), and the `last_refreshed` timestamp. There is no CRM read in this mode; the dashboard queries are vault-only.
+
+### Triggers
+`create dashboard`, `pipeline dashboard`, `insert dashboard`, `refresh dashboard`, `vault dashboard`, `pipeline intelligence dashboard`, `open dashboard`
+
+### Steps
+
+1. **Check for existing note**: `oil:search_vault({ query: "Pipeline Intelligence Dashboard", filter_folder: "_Dashboard" })`.
+   - **Not found**: Create from template (step 3).
+   - **Found**: Update `last_refreshed` and `dashboard_scope` frontmatter only (step 2).
+
+2. **Scope summary (CPU-only)**: Build the `scopeSummary` string from any context already in the conversation. If a prior vault prefetch, morning brief, or opp sync ran this session, extract customer count and milestone count. Fallback: `"Full portfolio — open vault to compute totals."`
+
+3. **Render template**: Substitute `{{syncDate}}` (ISO timestamp, e.g. `2026-04-03T09:15:00`) and `{{scopeSummary}}` (e.g. `"12 customers · 28 milestones"`) into the Pipeline Dashboard Template.
+
+4. **Write note**:
+   - **New**: `oil:create_note({ path: "_Dashboard/Pipeline Dashboard.md" })` with rendered template.
+   - **Existing**: `oil:atomic_replace` on the frontmatter block to update `last_refreshed` and `dashboard_scope` only. Preserve all other content.
+
+5. **Summary**:
+   ```
+   ✅ Pipeline dashboard written to _Dashboard/Pipeline Dashboard.md
+   Scope: {{scopeSummary}}
+   Open in Obsidian and install Dataview + Meta Bind (optional) for live filtering.
+   ```
+
+### Required Obsidian Plugins
+
+| Plugin | Role | Required? |
+|--------|------|-----------|
+| **Dataview** | Live milestone table (`## 📋 Milestones by Owner`) | ✅ Required |
+| **DataviewJS** | Pipeline Pulse stats + Opportunity Breakdown + Hygiene Risk Register | ✅ Required |
+| **Meta Bind** v0.12+ | Inline filter controls (Stage / Customer / Window) | Optional — filters block is gracefully ignored if absent |
+| **Iconize** | `LiLayoutDashboard` sidebar icon | Optional — no functional impact |
+
+### Decision Logic
+
+- **Never overwrite user content**: Preserve everything below `<!-- end-crm-sync -->` and the `## Notes` section.
+- **Never query CRM**: Dashboard is vault-only. Live CRM data surfaces through normal opp/milestone sync populating vault notes that Dataview queries.
+- **Idempotent**: Running dashboard sync twice is safe. Second run updates only the two frontmatter fields.
+- **Template location**: [`references/pipeline-dashboard.template.md`](references/pipeline-dashboard.template.md).
+
+---
+
 ## Shared: People Correlation
 
 Used by Opp Sync and auto-capture modes. **MANDATORY — do not skip.**
@@ -552,6 +598,7 @@ Templates live in `references/` as standalone `.md` files. Customize them to cha
 | Milestone Note | [`references/milestone-note.template.md`](references/milestone-note.template.md) | Mode 2 (Milestone Sync) |
 | People Note | [`references/people-note.template.md`](references/people-note.template.md) | Mode 3 (People Sync) |
 | Customer Note | [`references/customer-note.template.md`](references/customer-note.template.md) | Mode 4 (Customer Hygiene) |
+| Pipeline Dashboard | [`references/pipeline-dashboard.template.md`](references/pipeline-dashboard.template.md) | Mode 7 (Dashboard Sync) |
 
 When a sync mode creates a new vault note, it reads the corresponding template file, substitutes placeholders with CRM field values, and writes the result via `oil:create_note`. Sections marked with `<!-- end-crm-sync -->` or `<!-- User-authored -->` comments are never overwritten on subsequent syncs.
 

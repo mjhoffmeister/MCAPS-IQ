@@ -1,65 +1,73 @@
 <!-- vault-sync template: Milestone Note
-     Customize this template to change how CRM milestone data is stored in your vault.
-     Placeholders use {CRM_FIELD} syntax — the sync process replaces them with live values.
+     Edit this template to adjust how CRM milestones appear in your vault.
+     Syntax: {{field}}, {{field|format}}, {{#each array}}...{{/each}}, {{#empty array}}...{{/empty}}
      The "Notes" section below <!-- end-crm-sync --> is never overwritten by sync. -->
 
 ---
-customer: "{CustomerName}"
-opportunity: "{OpportunityName}"
-opportunityId: "{opportunityGUID}"
-milestone: "{MilestoneName}"
-milestoneId: "{milestoneGUID}"
-milestoneNumber: "{msp_milestonenumber}"
-monthlyUse: {msp_monthlyuse}
-status: "{msp_milestonestatus label}"
-commitment: "{msp_commitmentrecommendation label}"
-milestoneDate: "{YYYY-MM-DD}"
-owner: "{owner fullname}"
-ownerEmail: "{owner internalemailaddress}"
-workload: "{msp_milestoneworkload label}"
-deliveredBy: "{msp_deliveryspecifiedfield label}"
-msxLink: "https://microsoftsales.crm.dynamics.com/main.aspx?etn=msp_engagementmilestone&id={milestoneGUID}&pagetype=entityrecord"
-last_milestone_sync: "{ISO date}"
+
+customer: "{{customerName}}"
+opportunity: "{{opportunityName}}"
+opportunityId: "{{opportunityid}}"
+milestone: "{{msp_name}}"
+milestoneId: "{{msp_engagementmilestoneid}}"
+milestoneNumber: "{{msp_milestonenumber|default:—}}"
+monthlyUse: {{msp_monthlyuse|default:0}}
+status: "{{msp_milestonestatus|default:Unknown}}"
+commitment: "{{msp_commitmentrecommendation|default:Unknown}}"
+milestoneDate: "{{msp_milestonedate|default:Unknown}}"
+owner: "{{owner.fullname|default:Unknown}}"
+ownerEmail: "{{owner.internalemailaddress|default:Unknown}}"
+workload: "{{msp_milestoneworkload|default:Unknown}}"
+deliveredBy: "{{msp_deliveryspecifiedfield|default:Unknown}}"
+msxLink: "{{msUrl}}"
+last_milestone_sync: "{{syncDate}}"
 icon: LiFlag
 tags:
-  - milestone
-  - crm-synced
+
+- milestone
+- crm-synced
+
 ---
 
-# 📋 {MilestoneName}
+# 📋}
 
-| | |
-|---|---|
-| **Milestone #** | {msp_milestonenumber} |
-| **💰 Monthly Use (ACR)** | ${msp_monthlyuse}/mo |
-| **Status** | {status} |
-| **Commitment** | {commitment} |
-| **📅 Milestone Date** | {YYYY-MM-DD} |
-| **👤 Owner** | {owner fullname} |
-| **Workload** | {workload} |
-| **Delivered By** | {deliveredBy} |
-| **🔗 MSX** | [Open in MSX]({msxLink}) |
-| **🎯 Parent Opp** | [[{OpportunityName}]] · [MSX]({oppMsxLink}) |
+|                                |                                              |
+| ------------------------------ | -------------------------------------------- |
+| **Milestone #**          | {{msp_milestonenumber}}                      |
+| **💰 Monthly Use (ACR)** | {{msp_monthlyuse}}                           |
+| **Status**               | {{msp_milestonestatus}}                      |
+| **Commitment**           | {{msp_commitmentrecommendation}}             |
+| **📅 Milestone Date**    | {{msp_milestonedate}}                        |
+| **👤 Owner**             | [[{{owner.fullname}}]]                       |
+| **Workload**             | {{msp_milestoneworkload}}                    |
+| **Delivered By**         | {{msp_deliveryspecifiedfield}}               |
+| **🔗 MSX**               | [Open in MSX]({{msUrl}})                        |
+| **🎯 Parent Opp**        | [[{{opportunityNoteName}}]] ·[MSX]({{oppUrl}}) |
 
 ## 📝 Forecast Comments
 
 <!-- Auto-synced from MSX CRM. Do not edit — refreshes on next sync. -->
 
-| Date | Author | Comment |
-|------|--------|---------|
-| {modifiedOn YYYY-MM-DD} | {userId} | {comment, truncated 300 chars} |
+| Date                        | Author         | Comment               |
+| --------------------------- | -------------- | --------------------- |
+| {{#each forecastComments}}  |                |                       |
+| {{modifiedOn}}                | {{default:—}} | {{userId}}              |
+| {{/each}}                   |                |                       |
+| {{#empty forecastComments}} |                |                       |
+| —                          | —             | No forecast comments. |
+| {{/empty}}                  |                |                       |
 
-> **Latest**: {msp_forecastcomments, or "No forecast comments." if empty}
+> **Latest**: {{msp_forecastcomments|default:No forecast comments.}}
 
 ## Notes
 
 <!-- User-authored section. Sync never touches content below this line. -->
-<!-- end-crm-sync -->
 
+<!-- end-crm-sync -->
 
 ## Task Activity Log
 
 <!-- Managed by task sync. Do not edit manually. -->
 
 | Date | Action | Task | Owner | Link |
-|------|--------|------|-------|------|
+| ---- | ------ | ---- | ----- | ---- |

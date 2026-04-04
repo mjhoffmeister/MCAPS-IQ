@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "docx": "^9.6.1",
     "eslint": "^10.1.0",
     "eslint-plugin-security": "^4.0.0",
     "pptxgenjs": "^4.0.1",

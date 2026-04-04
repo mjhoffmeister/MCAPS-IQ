@@ -1,25 +1,27 @@
 <!-- vault-sync template: Customer Note
-     Customize this template to change how customer root notes are structured in your vault.
-     Placeholders use {CRM_FIELD} syntax — the sync process replaces them with live values.
+     Edit this template to adjust how customer root notes are structured in your vault.
+     Syntax: {{field}}, {{field|format}}
      The "Notes" section is user-authored and never overwritten by sync operations. -->
 
 ---
+
 tags:
-  - customer
-aliases:
-  - "{CRM Account Name}"
-sticker: lucide//building-2
-icon: LiBuilding2
-parent_company:
-subsidiaries:
-has_unified: false
-MSX:
-  account: "{CRM Account Name}"
-  accountId: "{account GUID if known}"
-last_validated: "{ISO date}"
+
+- customer
+  aliases:
+- "{{name}}"
+  sticker: lucide//building-2
+  icon: LiBuilding2
+  parent_company:
+  subsidiaries:
+  has_unified: false
+  MSX:
+  account: "{{name}}"
+  accountId: "{{accountId}}"
+  last_validated: "{{syncDate}}"
+
 ---
 
-# {CustomerName}
 
 ## 🏢 Pipeline
 
@@ -32,7 +34,7 @@ TABLE WITHOUT ID
   "$" + string(recurringACR) + "/mo" AS "💰 ACR",
   estClose AS "Est. Close",
   solutionPlay AS "Solution Play"
-FROM "Customers/{CustomerName}/opportunities"
+FROM "Customers/{{safeName}}/opportunities"
 WHERE contains(tags, "opportunity")
 SORT recurringACR DESC
 ```
@@ -49,7 +51,7 @@ TABLE WITHOUT ID
   commitment AS "Commitment",
   owner AS "Owner",
   milestoneDate AS "Due Date"
-FROM "Customers/{CustomerName}/milestones"
+FROM "Customers/{{safeName}}/milestones"
 WHERE contains(tags, "milestone") AND status != "Completed" AND status != "Cancelled"
 SORT milestoneDate ASC
 ```
@@ -57,35 +59,19 @@ SORT milestoneDate ASC
 ## Microsoft Team
 
 - **STU:**
-  -
+  ----
 - **ATU:**
-  -
+  ----
 - **CSU:**
-  -
+  ----
 
 ## Stakeholders
 
 | Name | Title | Email | Role |
-|------|-------|-------|------|
-
+| ---- | ----- | ----- | ---- |
 
 ## Summary
-
-
 
 ## Notes
 
 <!-- User-authored section. Never overwritten by sync operations. -->
-
-
-
-## Agent Insights
-
-<!-- Consolidated by hygiene pass. Most recent first. Limit ~15 entries. -->
-
-
-
-## Connect Hooks
-
-<!-- Evidence captures for Connect attribution. See connect-hooks instructions. -->
-

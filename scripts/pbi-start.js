@@ -20,12 +20,13 @@
  */
 
 import { readFileSync, existsSync } from "node:fs";
-import { resolve, delimiter } from "node:path";
+import { dirname, resolve, delimiter } from "node:path";
 import { homedir, platform } from "node:os";
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const isWin = platform() === "win32";
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const envFile = resolve(ROOT, ".env");
 
 const FABRIC_URL =

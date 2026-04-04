@@ -24,10 +24,11 @@
  */
 
 import { readFileSync, existsSync } from "node:fs";
-import { resolve, delimiter } from "node:path";
+import { dirname, resolve, delimiter } from "node:path";
 import { homedir, platform } from "node:os";
 import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
+import { fileURLToPath } from "node:url";
 
 // —— Parse CLI arguments ————————————————————————————————
 const { values: args } = parseArgs({
@@ -52,7 +53,7 @@ const AUTH_MODE = args.auth;  // "m365" or undefined
 const DEFAULT_TENANT_ID = "72f988bf-86f1-41af-91ab-2d7cd011db47";
 
 const isWin = platform() === "win32";
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const envFile = resolve(ROOT, ".env");
 
 // —— Load .env ——————————————————————————————————————————

@@ -68,6 +68,57 @@ Can't get things running? This page covers every common issue, organized by symp
     ```
     Then retry `npm install`.
 
+??? failure "`npm install` fails with Node.js version error on Windows / PowerShell"
+    **Symptom:** `npm install` fails during the `postinstall` step with a cryptic error like:
+    ```
+    TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received undefined
+    ```
+
+    **Cause:** Some setup scripts used a Node.js 21+ API (`import.meta.dirname`) that is not available on Node 18 or 20. This was fixed in a recent update.
+
+    **Fix:** Update Node.js to v20 LTS (or newer) and pull the latest repo changes:
+    ```powershell
+    # Check your Node version
+    node --version
+
+    # Update via winget (Windows)
+    winget install OpenJS.NodeJS.LTS --silent --accept-package-agreements
+
+    # Or via nvm-windows
+    nvm install lts
+    nvm use lts
+    ```
+    Then re-run:
+    ```powershell
+    npm install
+    ```
+
+??? failure "`mcaps` command not found after install in PowerShell"
+    **Symptom:** Setup completed but running `mcaps` in PowerShell gives "command not found" or a `.ps1 cannot be loaded` error.
+
+    **Cause 1 — Execution policy:** npm creates a `.ps1` shim for `mcaps` but PowerShell's default `Restricted` policy blocks all `.ps1` files.
+    ```powershell
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+    ```
+
+    **Cause 2 — npm global bin not in PATH:** The npm global `bin` directory may not be on your PATH.
+    ```powershell
+    # Find where npm installs global bins
+    npm config get prefix
+
+    # Add it to PATH for this session
+    $env:PATH += ";$(npm config get prefix)"
+
+    # Or add permanently via System Properties → Environment Variables
+    ```
+
+    **Cause 3 — Use the PowerShell function alias instead:**
+    ```powershell
+    # Add to your PowerShell profile ($PROFILE)
+    Add-Content $PROFILE 'function mcaps { node "C:\path\to\mcaps-iq\bin\mcaps.js" @args }'
+    . $PROFILE
+    ```
+
 ??? failure "npx package fetch hangs or fails"
     **Cause:** Usually a proxy or VPN issue blocking npm registry access.
     
