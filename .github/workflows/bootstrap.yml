@@ -45,9 +45,11 @@ jobs:
       - name: PowerShell syntax check — bootstrap.ps1
         shell: pwsh
         run: |
+          $tokens = $null
+          $errors = $null
           $null = [System.Management.Automation.Language.Parser]::ParseFile(
             "${{ github.workspace }}/scripts/bootstrap.ps1",
-            [ref]$null,
+            [ref]$tokens,
             [ref]$errors
           )
           if ($errors.Count -gt 0) {
