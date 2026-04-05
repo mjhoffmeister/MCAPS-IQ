@@ -43,12 +43,33 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
 
     Go to [https://aka.ms/copilot](https://aka.ms/copilot) — if it shows your Copilot license is active, you're all set.
 
+    ??? success "Validate: What you should see"
+        After signing in with your `@microsoft.com` account, you should see green checkmarks confirming:
+
+        - **GitHub Copilot enabled** for your Enterprise Managed User (EMU) account
+        - **Linked personal GitHub account** (if you have one connected)
+
+        ![Copilot license active](../assets/copilot-license-active.png)
+
+        If you see these checkmarks, your Copilot access is confirmed and ready to use.
+
 === "Set up"
 
     1. **Create a free GitHub account** — if you don't have a personal GitHub account, register [here](https://github.com/signup)
     2. **Link it to Microsoft EMU**: Go to [https://aka.ms/copilot](https://aka.ms/copilot) and sign in with your `@microsoft.com` account. Follow the prompts to associate your GitHub account with Microsoft's enterprise organization.
 
     Once linked, you'll have unlimited GitHub Copilot tokens through Microsoft's enterprise license — no personal subscription needed.
+
+    ??? warning "Don't forget: Verify your billing is set to Microsoft"
+        After linking your account, confirm that Copilot usage is billed to Microsoft's enterprise license:
+
+        1. Go to [github.com/settings/copilot/features](https://github.com/settings/copilot/features)
+        2. In the left sidebar, click **Copilot** → **Features**
+        3. Under **Billing → Usage billed to**, verify the dropdown shows **"Microsoft GitHub Copilot feature flag"**
+
+        ![Copilot billing settings](../assets/copilot-billing-settings.png)
+
+        If it shows a different option (like your personal account), click the dropdown and select **Microsoft GitHub Copilot feature flag** to use the enterprise license.
 
 !!! tip "Why do I need this?"
     MCAPS IQ runs on GitHub Copilot. The EMU link gives you the enterprise license so Copilot works without token limits or personal billing.
@@ -65,11 +86,16 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
     2. Press ++cmd+shift+x++ (Extensions)
     3. Search for "GitHub Copilot" — it should show as installed
 
+    ??? example "Example"
+        Here's what the GitHub Copilot Chat extension looks like when installed:
+
+        ![GitHub Copilot Chat Extension](../assets/GHCPChatExtention.png)
+
 === "Install"
 
-    1. Install VS Code and GitHub CLI:
+    1. Install VS Code, GitHub CLI, and Copilot extension:
 
-        ??? example "Step-by-step: Install VS Code and GitHub CLI via PowerShell"
+        ??? example "Step-by-step: Install VS Code, GitHub CLI and Copilot via PowerShell"
 
             **Open PowerShell:**
 
@@ -77,7 +103,17 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
             2. Type **`powershell`** in the search bar
             3. Click **Windows PowerShell** to open it (no need to run as administrator)
 
+            ![Open PowerShell](../assets/PowerShell7.png)
+
             **Run these commands** one at a time:
+
+            ```powershell
+            # First, check if winget is installed
+            winget --version
+
+            # If winget is not recognized, install it with this command:
+            Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
+            ```
 
             ```powershell
             # Install VS Code
@@ -87,32 +123,24 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
             winget install GitHub.cli --silent --accept-package-agreements --accept-source-agreements
             ```
 
-            If Windows asks for permission to make changes, click **Yes**. After both finish, close PowerShell.
-
-    2. Install the GitHub Copilot extension:
-
-        ??? example "Step-by-step: Install Copilot via the terminal"
-
-            **Open VS Code as Administrator:**
-
-            1. Click the **Windows Start menu** (or press the ++win++ key)
-            2. Type **`vsc`** in the search bar
-            3. When **Visual Studio Code** appears, right-click it and choose **Run as administrator**
-
-            **Open a terminal window inside VS Code:**
-
-            1. In VS Code, click **Terminal** in the top menu bar
-            2. Click **New Terminal Window**
-
-            **Run this command** in the terminal to install the Copilot extension:
+            ```powershell
+            # Refresh PATH so the new tools are recognized in this session
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            ```
 
             ```powershell
+            # Install the GitHub Copilot Chat extension
             code --install-extension GitHub.copilot-chat
             ```
 
-            You should see a message confirming the extension was installed. If VS Code asks you to reload the window, click **Reload**.
+            If Windows asks for permission to make changes, click **Yes**. You should see a message confirming the extension was installed. If VS Code asks you to reload the window, click **Reload**.
 
-    3. Sign in with your GitHub account that has a Copilot license.
+    2. Sign in with your GitHub account that has a Copilot license.
+
+        ??? example "Example: GitHub Copilot Sign In"
+            When VS Code opens, you'll see a prompt to sign in to GitHub Copilot:
+
+            ![GitHub Copilot Sign In](../assets/GHCP_SignIn.png)
 
 !!! info "Copilot license"
     You need a GitHub Copilot subscription (Free, Pro, Pro+, Business, or Enterprise). If you don't have one, ask your manager — Microsoft provides Copilot Business for internal use.
@@ -125,6 +153,14 @@ Git is required to clone the repository. It ships with most macOS dev setups (Xc
 
 !!! warning "GitHub CLI (`gh`) is not Git"
     Having `gh` installed does **not** mean `git` is available. They are separate tools.
+
+??? info "VSCode New Terminal"
+    To open a new terminal in VS Code:
+
+    1. Click **Terminal** in the top menu bar
+    2. Click **New Terminal**
+
+    ![VS Code New Terminal](../assets/vscode-new-terminal.png)
 
 === "Check"
 
@@ -147,8 +183,10 @@ Git is required to clone the repository. It ships with most macOS dev setups (Xc
     # Windows (run in VS Code terminal)
     winget install Git.Git --silent --accept-package-agreements --accept-source-agreements
 
-    # IMPORTANT: Close and reopen VS Code after installing Git.
-    # New terminals inside VS Code won't see PATH changes until you restart.
+    # Refresh PATH so git is recognized in this session
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+    # Verify installation
     git --version
     ```
 
@@ -168,12 +206,16 @@ Git is required to clone the repository. It ships with most macOS dev setups (Xc
     ```bash
     # macOS (Homebrew)
     brew install node
-    
-    # Windows (run in VS Code terminal — see "Step-by-step" above for how to open it)
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+    ```
+
+    ```powershell
+    # Windows (run in VS Code terminal)
     winget install OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
-    
-    # After install, close and reopen your terminal, then verify:
+
+    # Refresh PATH so node is recognized in this session
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+    # Verify installation
     node --version
     # Should print v18.x.x or higher
     ```
