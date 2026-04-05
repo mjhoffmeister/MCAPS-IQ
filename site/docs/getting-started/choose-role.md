@@ -47,7 +47,18 @@ I'm a Specialist. What should I focus on today?
 
 <div class="grid cards" markdown>
 
--   :material-chart-line:{ .lg .middle } __Specialist (STU)__
+-   :material-briefcase-outline:{ .lg .middle } __[Account Executive (AE)](../prompts/by-role.md#account-executive)__
+
+    ---
+
+    **Customer relationship owner & strategic orchestrator**
+
+    - Account planning & MACC execution
+    - Pipeline generation & commercial excellence
+    - Cross-team account leadership
+    - Executive sponsor engagement
+
+-   :material-chart-line:{ .lg .middle } __[Specialist (STU)](../prompts/by-role.md#specialist)__
 
     ---
 
@@ -58,29 +69,29 @@ I'm a Specialist. What should I focus on today?
     - Stage 2–3 progression
     - STU-to-CSU handoff checklists
 
--   :material-wrench:{ .lg .middle } __Solution Engineer (SE)__
+-   :material-wrench:{ .lg .middle } __[Solution Engineer (SE)](../prompts/by-role.md#solution-engineer)__
 
     ---
 
-    **Technical proof executor**
+    **Technical proof executor & HoK driver**
 
-    - POC/Pilot/Demo management
+    - POC/Pilot/Demo/HoK management
     - Task-record hygiene
     - BANT qualification support
     - SE-to-CSU handoff
 
--   :material-vector-polygon:{ .lg .middle } __Cloud Solution Architect (CSA)__
+-   :material-vector-polygon:{ .lg .middle } __[Cloud Solution Architect (CSA)](../prompts/by-role.md#cloud-solution-architect)__
 
     ---
 
-    **Architecture-focused execution owner**
+    **Architecture & execution owner**
 
     - Technical proof oversight
     - Guardrail enforcement
     - Value-realization validation
     - Architecture handoff documents
 
--   :material-shield-check:{ .lg .middle } __CSAM__
+-   :material-shield-check:{ .lg .middle } __[CSAM](../prompts/by-role.md#csam)__
 
     ---
 
@@ -90,6 +101,28 @@ I'm a Specialist. What should I focus on today?
     - Success-plan alignment
     - Adoption tracking
     - Commit-readiness gates
+
+-   :material-compass-outline:{ .lg .middle } __[Account Technology Strategist (ATS)](../prompts/by-role.md#account-technology-strategist)__
+
+    ---
+
+    **AI & Security strategy leader**
+
+    - Customer technology relationship management
+    - AI and Security strategy alignment
+    - Technical team orchestration
+    - Consumption growth through technology adoption
+
+-   :material-account-tie:{ .lg .middle } __[ATU Sales Director](../prompts/by-role.md#atu-sales-director)__
+
+    ---
+
+    **Sales leader & coaching orchestrator**
+
+    - Pipeline governance & coverage
+    - MACC budget execution
+    - Team coaching & people leadership
+    - Red Carpet compliance
 
 </div>
 
