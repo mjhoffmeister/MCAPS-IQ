@@ -37,6 +37,20 @@ hide:
 ??? tip "Need a Copilot license?"
     Go to [aka.ms/copilot](https://aka.ms/copilot) and sign in with your `@microsoft.com` account. If you don't have access, ask your manager — Microsoft provides Copilot Business for internal use.
 
+    A successfully linked account looks like this — your **personal** GitHub account and your **Enterprise Managed User** (`_microsoft`) account are both linked, with green checkmarks confirming Copilot access:
+
+    <figure markdown="span">
+      ![Successfully linked Copilot accounts at aka.ms/copilot](../assets/copilot-license-active.png){ loading=lazy width="700" }
+      <figcaption>At <a href="https://aka.ms/copilot">aka.ms/copilot</a>, confirm your personal GitHub account is <strong>linked</strong> and shows green ✓ checkmarks for Copilot access.</figcaption>
+    </figure>
+
+    Next, verify your personal GitHub account is billing Copilot through Microsoft. Go to [github.com/settings/copilot/features](https://github.com/settings/copilot/features) and confirm **"Usage billed to"** shows **"Microsoft GitHub Copilot feature flag"** — this ensures you get unlimited Copilot tokens:
+
+    <figure markdown="span">
+      ![GitHub Copilot billing settings showing Microsoft feature flag](../assets/copilot-billing-settings.png){ loading=lazy width="700" }
+      <figcaption>In GitHub Settings → Copilot → Features, confirm <strong>Usage billed to</strong> shows <strong>Microsoft GitHub Copilot feature flag</strong>.</figcaption>
+    </figure>
+
 ---
 
 ## Step 1: Install Git + GitHub CLI
@@ -54,6 +68,19 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
 
     !!! tip "Don't have PowerShell 7?"
         If you only see **Windows PowerShell** (version 5.x), that works too — but the bootstrap script in Step 3 will install PowerShell 7 for you automatically.
+
+    ??? warning "Don't have `winget`?"
+        If `winget --version` returns an error, install it:
+
+        ```powershell
+        Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
+        ```
+
+        Then update to the latest version:
+
+        ```powershell
+        winget install -e --id Microsoft.AppInstaller --source winget --accept-source-agreements --accept-package-agreements
+        ```
 
     Then run:
 

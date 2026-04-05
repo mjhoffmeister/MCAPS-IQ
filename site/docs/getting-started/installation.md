@@ -73,6 +73,20 @@ This uses your `gh` session to write a repo-local `.npmrc` for accessing private
 
 ---
 
+## Sign In to Copilot in VS Code
+
+After opening VS Code, check the **bottom status bar** for your Copilot sign-in status. If you see **"Signed out"**, click **"Sign in to use Copilot"** and authenticate with your **personal GitHub account** (not your `_microsoft` EMU account).
+
+<figure markdown="span">
+  ![VS Code status bar showing Signed out with Sign in to use Copilot button](../assets/GHCP_SignIn.png){ loading=lazy width="400" }
+  <figcaption>If the status bar shows <strong>Signed out</strong>, click <strong>Sign in to use Copilot</strong> and use your <strong>personal</strong> GitHub account.</figcaption>
+</figure>
+
+!!! warning "Use your personal GitHub account"
+    Sign in with your **personal** GitHub account (e.g. `JohnDoe`), **not** your Enterprise Managed User ending in `_microsoft`. Your personal account must be [linked and billing through Microsoft](index.md#before-you-begin) for unlimited Copilot tokens.
+
+---
+
 ## Sign In to Azure
 
 !!! success "Bootstrap did this"
@@ -111,6 +125,20 @@ Use your **Microsoft corp account** (`yourname@microsoft.com`). You must be on *
     | Azure CLI | `az --version` | 2.x+ |
     | Azure login | `az account show` | Shows your subscription |
     | MSX access | `az account get-access-token --resource https://microsoftsales.crm.dynamics.com` | Returns a token |
+
+---
+
+## Opening a Terminal in VS Code
+
+Some steps (like running the environment check or `az login`) require a terminal. To open one in VS Code, go to **Terminal → New Terminal** (++ctrl+shift+grave++) or use the menu:
+
+<figure markdown="span">
+  ![VS Code Terminal menu showing New Terminal option](../assets/vscode-new-terminal.png){ loading=lazy width="600" }
+  <figcaption>Click <strong>Terminal → New Terminal</strong> to open an integrated terminal. On Windows this opens PowerShell; on macOS it opens zsh.</figcaption>
+</figure>
+
+!!! tip "Copilot CLI users"
+    If you plan to use the [Copilot CLI](../integrations/copilot-cli.md) to interact with MCAPS IQ from the terminal, this is where you'll run `mcaps` commands.
 
 ---
 

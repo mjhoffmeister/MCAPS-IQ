@@ -97,6 +97,34 @@ Cross-role context flows automatically — handoffs, coverage gaps, and relation
 })();
 </script>
 
+<div class="diagram-embed">
+<div class="diagram-embed-label">How It Works — Architecture</div>
+<div class="diagram-frame-wrapper" id="arch-diagram-wrapper">
+<iframe src="assets/architecture-diagram.html" loading="lazy" title="MCAPS IQ Architecture Diagram"></iframe>
+</div>
+<p class="diagram-hint">Scroll to explore · or open full size ↓</p>
+<div class="diagram-actions">
+<a href="assets/architecture-diagram.html" target="_blank" class="md-button">↗️ View Architecture Full Size</a>
+<a href="architecture/" class="md-button">Deep Dive: How It Works</a>
+</div>
+</div>
+
+<script>
+(function() {
+  function fitArchDiagram() {
+    var w = document.getElementById('arch-diagram-wrapper');
+    var f = w && w.querySelector('iframe');
+    if (!w || !f) return;
+    var z = w.clientWidth / 1680;
+    f.style.zoom = z;
+  }
+  window.addEventListener('load', fitArchDiagram);
+  window.addEventListener('resize', fitArchDiagram);
+  setTimeout(fitArchDiagram, 300);
+  if (typeof document$ !== 'undefined') document$.subscribe(function(){ setTimeout(fitArchDiagram, 200); });
+})();
+</script>
+
 ---
 
 !!! note "This is a showcase of GitHub Copilot's extensibility"

@@ -36,6 +36,16 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
   - macOS: `brew install gh`
   - Windows: `winget install GitHub.cli`
 
+> [!TIP]
+> **Don't have `winget`?** If `winget --version` returns an error, install it:
+> ```powershell
+> Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
+> ```
+> Then update to the latest version:
+> ```powershell
+> winget install -e --id Microsoft.AppInstaller --source winget --accept-source-agreements --accept-package-agreements
+> ```
+
 > [!IMPORTANT]
 > **Git and GitHub CLI are the only tools you need to install manually.** The bootstrap script (Step 2) installs everything else — VS Code, Node.js, Azure CLI, PowerShell 7 (Windows), and the Copilot extension.
 >

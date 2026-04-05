@@ -11,7 +11,36 @@ hide:
 
 MCAPS IQ is a collection of **MCP servers**, **domain skills**, and **instruction files** that extend GitHub Copilot's capabilities into enterprise sales operations.
 
+<div class="diagram-embed">
+<div class="diagram-embed-label">Visual Architecture Guide</div>
+<div class="diagram-frame-wrapper" id="arch-diagram-wrapper">
+<iframe src="../assets/architecture-diagram.html" loading="lazy" title="MCAPS IQ Architecture Diagram"></iframe>
+</div>
+<p class="diagram-hint">Scroll to explore · or open full size ↓</p>
+<div class="diagram-actions">
+<a href="../assets/architecture-diagram.html" target="_blank" class="md-button md-button--primary">↗️ View Full Size</a>
+</div>
+</div>
+
+<script>
+(function() {
+  function fitArchDiagram() {
+    var w = document.getElementById('arch-diagram-wrapper');
+    var f = w && w.querySelector('iframe');
+    if (!w || !f) return;
+    var z = w.clientWidth / 1680;
+    f.style.zoom = z;
+  }
+  window.addEventListener('load', fitArchDiagram);
+  window.addEventListener('resize', fitArchDiagram);
+  setTimeout(fitArchDiagram, 300);
+  if (typeof document$ !== 'undefined') document$.subscribe(function(){ setTimeout(fitArchDiagram, 200); });
+})();
+</script>
+
 ---
+
+## Deep Dives
 
 <div class="grid cards" markdown>
 
