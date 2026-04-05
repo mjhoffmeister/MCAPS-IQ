@@ -30,12 +30,16 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 - [ ] **Microsoft corp account** (e.g., `your-alias@microsoft.com`)
 - [ ] **GitHub Copilot License** (For Microsoft Internal: [https://aka.ms/copilot](https://aka.ms/copilot))
 - [ ] [Git](https://git-scm.com/) — `git --version` to check
+  - macOS: `brew install git`
+  - Windows: `winget install Git.Git`
 - [ ] [GitHub CLI (`gh`)](https://cli.github.com/) — required to clone this private repo and for package auth
   - macOS: `brew install gh`
   - Windows: `winget install GitHub.cli`
 
 > [!IMPORTANT]
 > **Git and GitHub CLI are the only tools you need to install manually.** The bootstrap script (Step 2) installs everything else — VS Code, Node.js, Azure CLI, PowerShell 7 (Windows), and the Copilot extension.
+>
+> **Already have VS Code?** Great. If not, `winget install Microsoft.VisualStudioCode` (Windows) or `brew install --cask visual-studio-code` (macOS) — or let the bootstrap script handle it.
 
 > **Heads-up:** If you install Git or `gh` while VS Code is open, **close and reopen VS Code entirely**. VS Code terminals inherit the system PATH from launch — newly installed tools won't be visible until you restart.
 

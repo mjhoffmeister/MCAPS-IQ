@@ -25,7 +25,7 @@ hide:
 
 | Step | What You'll Do | Time |
 |------|---------------|------|
-| **Getting Started** (this page) | Verify you have VS Code, Node.js, Azure CLI, and VPN | 2 min |
+| **Getting Started** (this page) | Install Git + GitHub CLI, run bootstrap, verify VPN | 2 min |
 | [**Installation**](installation.md) | Clone the repo, install dependencies, sign in to Azure | 3 min |
 | [**Your First Chat**](first-chat.md) | Open Copilot, start the MCP servers, and ask your first question | 1 min |
 | [**Choose Your Role**](choose-role.md) | Tell Copilot who you are so it tailors its behavior | 30 sec |
