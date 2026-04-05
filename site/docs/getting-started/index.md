@@ -45,7 +45,17 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
 
 === "Windows"
 
-    Open **PowerShell** or **Command Prompt** and run:
+    First, open **PowerShell 7**. Press the ++win++ key (or click Start), type `power`, and select **PowerShell 7 (x64)**:
+
+    <figure markdown="span">
+      ![Open PowerShell 7 from the Start menu](../assets/PowerShell7.png){ loading=lazy width="300" }
+      <figcaption>Search for "power" in the Start menu and click <strong>PowerShell 7 (x64)</strong>.</figcaption>
+    </figure>
+
+    !!! tip "Don't have PowerShell 7?"
+        If you only see **Windows PowerShell** (version 5.x), that works too — but the bootstrap script in Step 3 will install PowerShell 7 for you automatically.
+
+    Then run:
 
     ```powershell
     winget install Git.Git --silent --accept-package-agreements --accept-source-agreements
@@ -71,8 +81,43 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
 
 ## Step 2: Authenticate and Clone
 
+Before cloning the repo, you need to authenticate the GitHub CLI. This grants access to the Microsoft org's private packages.
+
 ```bash
 gh auth login          # Use your PERSONAL GitHub account (not _microsoft EMU)
+```
+
+Select **GitHub.com**, **HTTPS**, authenticate with credentials, and **Login with a web browser**. The CLI will give you a one-time device code:
+
+<figure markdown="span">
+  ![gh auth login terminal flow](../assets/GHAuth0.png){ loading=lazy width="600" }
+  <figcaption>The CLI prompts for GitHub.com, HTTPS, and opens a browser login flow. Copy the one-time code it displays.</figcaption>
+</figure>
+
+A browser window opens to `github.com/login/device`. Enter the one-time code from your terminal and click **Continue**:
+
+<figure markdown="span">
+  ![GitHub device code entry page](../assets/GHAuth1.png){ loading=lazy width="500" }
+  <figcaption>Enter the code from your terminal — never use a code sent by someone else.</figcaption>
+</figure>
+
+On the next screen, review the permissions and make sure the **microsoft** organization has a green checkmark (meaning your account has access). Click **Authorize github**:
+
+<figure markdown="span">
+  ![GitHub CLI authorization with Microsoft org access](../assets/GHAuth3.png){ loading=lazy width="450" }
+  <figcaption>Confirm the <strong>microsoft</strong> org shows a ✓ before authorizing.</figcaption>
+</figure>
+
+After authorizing, you'll see a **Device Activation** confirmation showing your GitHub account. Click **Continue**:
+
+<figure markdown="span">
+  ![GitHub device activation confirmation](../assets/GHAuth2.png){ loading=lazy width="500" }
+  <figcaption>Confirm your GitHub identity and click Continue.</figcaption>
+</figure>
+
+Once authenticated, clone the repo and navigate into it:
+
+```bash
 gh repo clone microsoft/MCAPS-IQ
 cd MCAPS-IQ
 ```
@@ -106,6 +151,34 @@ The bootstrap script checks your system and installs any remaining tools automat
 
 !!! tip "Just want to check what's missing?"
     Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
+
+### What to Expect
+
+The bootstrap script checks for each prerequisite and installs anything missing. Here's what a typical Windows run looks like:
+
+**1. Clone, navigate, and launch the bootstrap script.** After `gh` and `git` are working, clone the repo, `cd` into it, and run the bootstrap script. The script immediately begins checking prerequisites — items already installed get a green ✓:
+
+<figure markdown="span">
+  ![Clone the repo, cd into it, and run the bootstrap script](../assets/Bootstrap0.png){ loading=lazy width="700" }
+  <figcaption>Clone with <code>gh repo clone</code>, <code>cd</code> into the repo, then run the bootstrap script. It checks each prerequisite and auto-installs missing tools (yellow ⚠).</figcaption>
+</figure>
+
+**2. Missing dependencies are installed automatically.** The script detects any tools you're missing (Node.js, Azure CLI, etc.) and installs them via `winget` — no manual downloads needed:
+
+<figure markdown="span">
+  ![Bootstrap detecting and installing missing dependencies](../assets/Bootstrap1.png){ loading=lazy width="700" }
+  <figcaption>After installing Node.js, the script continues checking — here it finds Azure CLI missing and installs it automatically.</figcaption>
+</figure>
+
+**3. Setup complete — VS Code opens.** When all prerequisites are satisfied, the script configures GitHub Packages auth, signs you into Azure, and opens VS Code with the MCAPS-IQ workspace ready to go:
+
+<figure markdown="span">
+  ![Bootstrap complete — VS Code opens with MCAPS-IQ](../assets/Bootstrap2.png){ loading=lazy width="700" }
+  <figcaption>The terminal shows "MCAPS IQ is ready!" with next steps. VS Code opens automatically with the workspace loaded.</figcaption>
+</figure>
+
+!!! warning "Commands not found after install?"
+    If tools like `node`, `az`, or `gh` aren't recognized after the bootstrap script installs them, **close and reopen your PowerShell window** to pick up the updated PATH. If that doesn't help, **restart your PC** — some installers (especially MSI-based ones like Node.js and Azure CLI) require a full restart for PATH changes to propagate.
 
 ---
 

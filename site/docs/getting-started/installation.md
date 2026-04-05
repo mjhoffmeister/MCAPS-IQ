@@ -30,11 +30,28 @@ This is the key step — it connects Copilot to your CRM and M365 data.
     code .
     ```
 
-2. Open `.vscode/mcp.json` — you'll see a **"Start"** button above each server definition
+2. In the Explorer sidebar, expand `.vscode/` and click **`mcp.json`** to open it.
 
-3. Click **Start** on:
+3. You'll see **"▷ Start | More..."** links above each server definition. Click **Start** on:
     - **`msx`** (required) — connects to MSX CRM
-    - **`workiq`** (optional) — enables M365 searches (email, Teams, calendar)
+    - **`oil`** (optional) — connects to your Obsidian vault
+    - **`workiq`** (optional) — enables broad M365 searches (email, Teams, calendar)
+
+<figure markdown="span">
+  ![mcp.json open in VS Code showing Start buttons](../assets/mcp_json_start.png){ loading=lazy width="700" }
+  <figcaption>Open <code>.vscode/mcp.json</code> and click the <strong>▷ Start</strong> links above each server block to connect them.</figcaption>
+</figure>
+
+### Enable Additional Servers
+
+If you scroll down in `mcp.json`, you'll see some server definitions that are **commented out** (e.g. `github`, `ado`). To enable them:
+
+1. **Select** (highlight) the commented-out lines you want to enable
+2. Press ++ctrl+k++ then ++ctrl+u++ to **uncomment** the selection
+3. The server's **▷ Start** button will appear — click it to connect
+
+!!! tip "M365 servers are pre-configured"
+    Scroll further down in `mcp.json` and you'll find the M365 MCP servers already defined and ready to start: **`calendar`**, **`teams`**, **`mail`**, **`sharepoint`**, **`word`**, and **`powerbi-remote`**. These are HTTP-based servers hosted by Microsoft — just click **Start** on the ones you need.
 
 !!! tip "Don't see the Start buttons?"
     - Requires GitHub Copilot Chat **v0.25+** with **Agent mode** enabled

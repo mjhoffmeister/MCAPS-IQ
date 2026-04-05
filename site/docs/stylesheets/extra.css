@@ -2194,3 +2194,33 @@
   color: var(--mcaps-green);
 }
 [data-md-color-scheme="slate"] .oil-plugin .plug-tag { background: rgba(16,124,16,.15); }
+
+/* ════════════════════════════════════════════════════════
+   SCREENSHOT FIGURES — framed images with captions
+   ════════════════════════════════════════════════════════ */
+.md-typeset figure {
+  margin: 1.5rem 0;
+  padding: 0;
+}
+.md-typeset figure img {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+  transition: box-shadow .2s;
+}
+.md-typeset figure img:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .14);
+}
+.md-typeset figure figcaption {
+  font-size: 0.8rem;
+  color: var(--md-default-fg-color--light);
+  margin-top: 0.5rem;
+}
+/* Dark mode: lighter border + stronger shadow */
+[data-md-color-scheme="slate"] .md-typeset figure img {
+  border-color: rgba(255, 255, 255, .1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .3);
+}
+[data-md-color-scheme="slate"] .md-typeset figure img:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .45);
+}
