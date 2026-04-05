@@ -21,12 +21,20 @@ Two commands and you're done.
 
 ## Step 1: Clone the Repo
 
-Open VS Code, then open a terminal inside it (**Terminal** → **New Terminal Window**) and run:
+Open VS Code, then open a terminal inside it (**Terminal** → **New Terminal**) and run:
 
-```bash
+```powershell
+# Navigate to C:\Temp (create it if it doesn't exist)
+if (-not (Test-Path "C:\Temp")) { New-Item -ItemType Directory -Path "C:\Temp" }
+cd C:\Temp
+
+# Clone the repo
 git clone https://github.com/microsoft/mcaps-iq.git
 cd mcaps-iq
 ```
+
+!!! tip "Where is the repo?"
+    The repo will be cloned to `C:\Temp\mcaps-iq`. You can change this to any folder you prefer.
 
 ---
 
