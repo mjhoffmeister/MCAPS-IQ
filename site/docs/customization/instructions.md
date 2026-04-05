@@ -4,6 +4,8 @@ description: Change Copilot's behavior by editing Markdown files.
 tags:
   - customization
   - instructions
+hide:
+  - toc
 ---
 
 # Editing Instructions

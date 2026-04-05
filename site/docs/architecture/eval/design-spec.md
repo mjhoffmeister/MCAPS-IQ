@@ -5,6 +5,8 @@ tags:
   - evaluation
   - design
   - testing
+hide:
+  - toc
 ---
 
 # Prompt & Skill Evaluation Framework — Design Spec

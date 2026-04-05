@@ -38,7 +38,6 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
-    - navigation.expand
     - navigation.path
     - navigation.top
     - navigation.footer
@@ -92,7 +91,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_div_format
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
       combine_header_slug: true
@@ -112,14 +111,12 @@ extra_css:
   - stylesheets/extra.css
 
 extra_javascript:
-  - https://unpkg.com/mermaid@11/dist/mermaid.min.js
   - javascripts/mermaid-init.js
 
 nav:
   - Home: index.md
   - Getting Started:
     - getting-started/index.md
-    - Prerequisites: getting-started/prerequisites.md
     - Installation: getting-started/installation.md
     - Your First Chat: getting-started/first-chat.md
     - Choose Your Role: getting-started/choose-role.md
@@ -156,16 +153,12 @@ nav:
     - Obsidian Vault (OIL): integrations/obsidian.md
     - Power BI: integrations/powerbi.md
     - Copilot CLI: integrations/copilot-cli.md
+    - Squads (Experimental): integrations/squads.md
   - Customization:
     - customization/index.md
     - Editing Instructions: customization/instructions.md
     - Writing Skills: customization/skills.md
     - Adding MCP Servers: customization/mcp-servers.md
-  - Squads:
-    - squads/index.md
-    - Setup: squads/setup.md
-    - Recommended Roles: squads/roles.md
-    - Themes: squads/themes.md
   - FAQ & Troubleshooting:
     - faq/index.md
     - Common Issues: faq/common-issues.md

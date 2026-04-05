@@ -4,6 +4,8 @@ description: Answers to common questions and solutions for frequent issues.
 tags:
   - faq
   - troubleshooting
+hide:
+  - toc
 ---
 
 # FAQ & Troubleshooting

@@ -5,6 +5,8 @@ tags:
   - evaluation
   - regression
   - test-data
+hide:
+  - toc
 ---
 
 # Eval Regression Tracking & Test Data Strategy — Spec

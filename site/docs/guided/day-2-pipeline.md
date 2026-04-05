@@ -5,144 +5,273 @@ tags:
   - guided
   - day-2
   - pipeline
+hide:
+  - toc
 ---
 
 # Day 2: Read Your Pipeline
 
-<div class="step-indicator" markdown>
-<span class="step done">Day 1 ✓</span>
-<span class="step active">Day 2</span>
-<span class="step">Day 3</span>
-<span class="step">Day 5</span>
+<div class="timeline-nav tl-guided">
+<a href="../day-1-hello/" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Day 1</div></a>
+<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Day 2</div></a>
+<a href="../day-3-chains/" class="tl-step"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">Day 3</div></a>
+<a href="../day-5-lightbulb/" class="tl-step"><div class="tl-node"><span class="tl-num">5</span></div><div class="tl-label">Day 5</div></a>
 </div>
 
-**Goal:** Use Copilot to navigate your pipeline — opportunities, milestones, tasks, and health indicators.
+<div class="journey-hero" markdown>
 
-**Time:** ~15 minutes
+## :material-chart-timeline-variant: Navigate your entire pipeline in natural language
 
-**What you'll learn:**
+**Time:** ~15 minutes · You'll drill from portfolio → opportunity → milestone → task and get governance-ready output.
 
-- How to drill from portfolio → opportunity → milestone → task
-- How Copilot activates domain skills automatically
-- How to ask for formatted, governance-ready status updates
+</div>
 
 ---
 
-## Exercise 1: Portfolio Overview
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">1</div>
+<h3>Portfolio Overview</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
 
-```
-Give me a summary of my pipeline — stages, values, and what needs attention.
-```
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">Give me a summary of my pipeline — stages, values, and what needs attention.</div>
+</div>
+</div>
 
-**What to watch for:**
+**What to expect:**
 
-- [x] Copilot calls `list_opportunities` and synthesizes results
-- [x] You'll see opportunities grouped or sorted by MCEM stage
-- [x] It may highlight deals with close dates approaching or stages that look stale
+<ul class="expect-list">
+<li>Copilot calls <code>list_opportunities</code> and synthesizes results</li>
+<li>Opportunities grouped or sorted by MCEM stage</li>
+<li>Deals with approaching close dates or stale stages are highlighted</li>
+</ul>
 
 !!! info "Behind the scenes"
     This prompt may activate the `pipeline-hygiene-triage` skill if it detects issues. Watch for it mentioning "hygiene" or "flag" — that's a skill doing work.
 
+</div>
+</div>
+
 ---
 
-## Exercise 2: Drill Into a Deal
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">2</div>
+<h3>Drill Into a Deal</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
 
 Pick one of the opportunities from Exercise 1 and ask:
 
-```
-Show me the milestones for [Opportunity Name].
-```
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">Show me the milestones for [Opportunity Name].</div>
+</div>
+</div>
 
-**What to watch for:**
+**What to expect:**
 
-- [x] Copilot calls `get_milestones` for that specific opportunity
-- [x] Returns milestones with status, target dates, and owners
-- [x] May flag overdue or uncommitted milestones
+<ul class="expect-list">
+<li>Copilot calls <code>get_milestones</code> for that specific opportunity</li>
+<li>Returns milestones with status, target dates, and owners</li>
+<li>Overdue or uncommitted milestones may be flagged</li>
+</ul>
 
-??? tip "Natural variations"
-    
+??? tip "Natural variations — all of these work"
     - `What's the milestone status on the Contoso deal?`
     - `Any overdue milestones on my Fabrikam opportunity?`
     - `Show me the timeline for Northwind milestones.`
 
----
-
-## Exercise 3: Task-Level Detail
-
-```
-What tasks are attached to the [milestone name] milestone? Any stale or unassigned?
-```
-
-**What to watch for:**
-
-- [x] Copilot drills from milestone to tasks
-- [x] Identifies tasks with no owner, past due dates, or missing status updates
-- [x] If you're an SE, this may activate `task-hygiene-flow`
+</div>
+</div>
 
 ---
 
-## Exercise 4: Governance-Ready Status
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">3</div>
+<h3>Task-Level Detail</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
 
-Here's where it gets powerful. Ask:
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">What tasks are attached to the [milestone name] milestone? Any stale or unassigned?</div>
+</div>
+</div>
 
-```
-Write me a customer-safe status summary for [Opportunity Name] that I can use in governance this week.
-```
+**What to expect:**
 
-**What to watch for:**
+<ul class="expect-list">
+<li>Copilot drills from milestone to tasks</li>
+<li>Identifies tasks with no owner, past due dates, or missing status updates</li>
+<li>If you're an SE, this may activate <code>task-hygiene-flow</code></li>
+</ul>
 
-- [x] Copilot synthesizes opportunity data, milestone health, and task status
-- [x] Produces **two outputs**: customer-facing bullets (no internal jargon) and internal remediation notes
-- [x] This activates the `milestone-health-review` skill
-
-!!! success "This is real time savings"
-    Instead of opening MSX, clicking through each milestone, checking tasks, and writing a summary in OneNote — you got a governance-ready update in one prompt.
+</div>
+</div>
 
 ---
 
-## Exercise 5: Cross-Opportunity View
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">4</div>
+<h3>Governance-Ready Status</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
+
+Here's where it gets powerful:
+
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">Write me a customer-safe status summary for [Opportunity Name] that I can use in governance this week.</div>
+</div>
+</div>
+
+**What to expect:**
+
+<ul class="expect-list">
+<li>Copilot synthesizes opportunity data, milestone health, and task status</li>
+<li>Produces <strong>two outputs</strong>: customer-facing bullets (no internal jargon) and internal remediation notes</li>
+<li>This activates the <code>milestone-health-review</code> skill</li>
+</ul>
+
+<div class="lightbulb-callout" markdown>
+<div class="lc-icon">⚡</div>
+<div class="lc-body" markdown>
+
+#### Real time savings
+
+Instead of opening MSX, clicking through each milestone, checking tasks, and writing a summary in OneNote — you got a governance-ready update in one prompt.
+
+</div>
+</div>
+
+</div>
+</div>
+
+---
+
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">5</div>
+<h3>Cross-Opportunity View</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
 
 If you have multiple active deals:
 
-```
-Across all my active opportunities, which milestones are at risk? Rank by urgency.
-```
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">Across all my active opportunities, which milestones are at risk? Rank by urgency.</div>
+</div>
+</div>
 
-**What to watch for:**
+**What to expect:**
 
-- [x] Copilot queries across all your opportunities (not just one)
-- [x] Aggregates milestones and applies risk logic (overdue, stalled, missing owners)
-- [x] Ranks results so you know where to focus
+<ul class="expect-list">
+<li>Copilot queries across all your opportunities (not just one)</li>
+<li>Aggregates milestones and applies risk logic (overdue, stalled, missing owners)</li>
+<li>Ranks results so you know where to focus</li>
+</ul>
+
+</div>
+</div>
 
 ---
 
-## Exercise 6: M365 Evidence (Optional)
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">6</div>
+<h3>M365 Evidence (Optional)</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
 
 If you have `workiq` running:
 
-```
-Find any recent Teams messages or emails about [customer name] from the last 2 weeks.
-```
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">Find any recent Teams messages or emails about [customer name] from the last 2 weeks.</div>
+</div>
+</div>
 
-**What to watch for:**
+**What to expect:**
 
-- [x] Copilot calls `ask_work_iq` with a scoped query
-- [x] Returns relevant Teams chats, email threads, or meeting notes
-- [x] Cross-references with CRM data for context
+<ul class="expect-list">
+<li>Copilot calls <code>ask_work_iq</code> with a scoped query</li>
+<li>Returns relevant Teams chats, email threads, or meeting notes</li>
+<li>Cross-references with CRM data for context</li>
+</ul>
 
-!!! info "WorkIQ Integration"
-    WorkIQ bridges the gap between CRM records and actual communication. A milestone might show "green" in CRM while the customer's emails reveal frustration. This cross-medium view is where real intelligence lives.
+<div class="lightbulb-callout" markdown>
+<div class="lc-icon">🔗</div>
+<div class="lc-body" markdown>
+
+#### Cross-medium intelligence
+
+WorkIQ bridges the gap between CRM records and actual communication. A milestone might show "green" in CRM while the customer's emails reveal frustration. This cross-medium view is where real intelligence lives.
+
+</div>
+</div>
+
+</div>
+</div>
 
 ---
 
 ## What You Learned Today
 
-| Concept | What It Means |
-|---------|--------------|
-| **Drill-down navigation** | Portfolio → Opportunity → Milestone → Task, all via natural language |
-| **Skill activation** | Copilot loads domain skills (`milestone-health-review`, `task-hygiene-flow`) based on your prompt |
-| **Customer-safe output** | Copilot knows how to produce different outputs for different audiences |
-| **Cross-medium queries** | CRM + M365 data combined in a single response |
+<div class="learned-strip" markdown>
+<div class="ls-item" markdown>
+
+#### Drill-Down Navigation
+
+Portfolio → Opportunity → Milestone → Task, all via natural language
+
+</div>
+<div class="ls-item" markdown>
+
+#### Skill Activation
+
+Copilot loads domain skills automatically based on your prompt
+
+</div>
+<div class="ls-item" markdown>
+
+#### Customer-Safe Output
+
+Copilot produces different outputs for different audiences
+
+</div>
+<div class="ls-item" markdown>
+
+#### Cross-Medium Queries
+
+CRM + M365 data combined in a single response
+
+</div>
+</div>
 
 ---
 
@@ -158,4 +287,10 @@ These observations will make Day 3 more impactful.
 
 ---
 
-[:octicons-arrow-right-16: Continue to Day 3: Multi-Skill Chains](day-3-chains.md){ .md-button .md-button--primary }
+<a class="next-day" href="../day-3-chains/">
+<div class="nd-arrow">→</div>
+<div class="nd-body">
+<h4>Continue to Day 3: Multi-Skill Chains</h4>
+<p>One prompt, multiple skills, comprehensive output — experience real orchestration.</p>
+</div>
+</a>

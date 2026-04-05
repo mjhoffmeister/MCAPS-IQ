@@ -4,6 +4,8 @@ description: Understand the architecture, tools, and design principles behind MC
 tags:
   - architecture
   - how-it-works
+hide:
+  - toc
 ---
 # How It Works
 

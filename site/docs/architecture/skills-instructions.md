@@ -5,6 +5,8 @@ tags:
   - architecture
   - skills
   - instructions
+hide:
+  - toc
 ---
 
 # Skills & Instructions

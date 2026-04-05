@@ -5,6 +5,8 @@ tags:
   - evaluation
   - architecture
   - testing
+hide:
+  - toc
 ---
 
 # Evaluation Framework — Architecture & Implementation Guide

@@ -5,6 +5,8 @@ tags:
   - architecture
   - mcp
   - tools
+hide:
+  - toc
 ---
 
 # MCP Servers & Tools

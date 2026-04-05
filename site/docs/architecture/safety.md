@@ -5,6 +5,8 @@ tags:
   - safety
   - write-operations
   - responsible-ai
+hide:
+  - toc
 ---
 
 # Safety & Write Operations
@@ -26,14 +28,20 @@ All write operations use a **Stage → Review → Execute** pattern:
 
 ```mermaid
 graph LR
-    A[You ask for a change] --> B[Stage]
-    B --> C{Review diff}
-    C -->|Approve| D[Execute]
-    C -->|Cancel| E[Discard]
-    B --> F[10 min auto-expiry]
-    style A fill:#4CAF50,color:#fff
-    style D fill:#1565C0,color:#fff
-    style E fill:#f44336,color:#fff
+    A["💬 <b>You ask</b><br/><small>for a change</small>"] --> B["📋 <b>Stage</b><br/><small>validated locally</small>"]
+    B --> C{"🔍 <b>Review diff</b>"}
+    C -->|"✅ Approve"| D["⚡ <b>Execute</b><br/><small>written to CRM</small>"]
+    C -->|"❌ Cancel"| E["🗑️ <b>Discard</b><br/><small>nothing changed</small>"]
+    B --> F["⏱️ <b>10 min</b><br/><small>auto-expiry</small>"]
+
+    style A fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:2px
+    style B fill:#FFB900,color:#1B1B1B,stroke:#e0a700,stroke-width:2px
+    style C fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style D fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style E fill:#D13438,color:#fff,stroke:#b02a2d,stroke-width:2px
+    style F fill:#737373,color:#fff,stroke:#555,stroke-width:1.5px
+
+    linkStyle default stroke:#9e9e9e,stroke-width:2px
 ```
 
 ### 1. Stage

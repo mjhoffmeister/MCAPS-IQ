@@ -4,6 +4,8 @@ description: Fix common installation and setup issues.
 tags:
   - troubleshooting
   - setup
+hide:
+  - toc
 ---
 
 # Troubleshooting Setup
