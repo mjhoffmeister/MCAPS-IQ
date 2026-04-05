@@ -75,12 +75,20 @@ Before you begin, make sure you're on the **Microsoft corporate VPN** and have y
 
 The bootstrap script checks your system, installs any missing tools (VS Code, Git, Node.js, GitHub CLI, Azure CLI, Copilot extension), clones the repo, authenticates, and opens VS Code — all in one paste.
 
-=== "Windows"
+=== "Windows (PowerShell)"
 
-    Open **PowerShell** and paste:
+    Open **PowerShell** (5.1 or 7) and paste:
 
     ```powershell
     irm https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
+    ```
+
+=== "Windows (cmd.exe)"
+
+    Open **Command Prompt** and paste:
+
+    ```cmd
+    powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex"
     ```
 
 === "macOS"
@@ -93,10 +101,11 @@ The bootstrap script checks your system, installs any missing tools (VS Code, Gi
 
 !!! success "What the script does"
     1. Checks for missing tools and installs them (via `winget` on Windows, `brew` on macOS)
-    2. Clones the MCAPS IQ repo
-    3. Sets up GitHub Packages auth (for private MCP server packages)
-    4. Signs you in to Azure (Microsoft tenant)
-    5. Opens VS Code with the workspace ready
+    2. Installs **PowerShell 7** on Windows if not present (required for VS Code terminal and tooling)
+    3. Clones the MCAPS IQ repo
+    4. Sets up GitHub Packages auth (for private MCP server packages)
+    5. Signs you in to Azure (Microsoft tenant)
+    6. Opens VS Code with the workspace ready
 
 !!! tip "Already have the repo?"
     Run the bootstrap locally with `--skip-clone` / `-SkipClone`:
@@ -206,11 +215,17 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
 
             **Open PowerShell:**
 
-            1. Click the **Windows Start menu** (or press the ++win++ key)
-            2. Type **`powershell`** in the search bar
-            3. Click **Windows PowerShell** to open it (no need to run as administrator)
+            1. Press the ++win++ key and type **`powershell`**
+            2. Click **PowerShell 7 (x64)** to open it (no need to run as administrator)
 
             ![Open PowerShell](../assets/PowerShell7.png)
+
+            !!! tip "Don't see PowerShell 7?"
+                If you only see **Windows PowerShell** (version 5.x), download PowerShell 7 from [https://aka.ms/powershell-release?tag=stable](https://aka.ms/powershell-release?tag=stable) or run:
+
+                ```powershell
+                winget install Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements
+                ```
 
             **Run these commands** one at a time:
 

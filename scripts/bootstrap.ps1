@@ -17,7 +17,8 @@
     -CloneDir     Where to clone the repo (default: C:\Temp\mcaps-iq)
 
 .NOTES
-  Requires: PowerShell 5.1+ (ships with Windows 10/11)
+  Requires: PowerShell 5.1+ to bootstrap (ships with Windows 10/11).
+  The script will install PowerShell 7+ (pwsh) if not already present.
   Elevated: Not required, but winget may prompt UAC for installs
 #>
 [CmdletBinding()]
@@ -62,6 +63,28 @@ function Install-Via-Winget {
 $allGood = $true
 
 Write-Step "Checking prerequisites"
+
+# -- PowerShell 7 --
+if (Test-Command "pwsh") {
+  $pwshVer = & pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()' 2>$null
+  $pwshMajor = [int]($pwshVer -replace '^(\d+).*', '$1')
+  if ($pwshMajor -ge 7) {
+    Write-Ok "PowerShell $pwshVer"
+  } else {
+    Write-Warn "PowerShell $pwshVer found — need 7+"
+    if (-not $CheckOnly) {
+      Install-Via-Winget "Microsoft.PowerShell" "PowerShell 7"
+      Refresh-Path
+    } else { $allGood = $false }
+  }
+} else {
+  Write-Warn "PowerShell 7 (pwsh) not found"
+  if (-not $CheckOnly) {
+    Install-Via-Winget "Microsoft.PowerShell" "PowerShell 7"
+    Refresh-Path
+    if (Test-Command "pwsh") { Write-Ok "PowerShell 7 installed" } else { Write-Fail "PowerShell 7 install failed"; $allGood = $false }
+  } else { $allGood = $false }
+}
 
 # -- VS Code --
 if (Test-Command "code") {

@@ -35,12 +35,18 @@ The bootstrap script checks your system, installs any missing tools, clones the 
 irm https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
 ```
 
+> [!TIP]
+> **Using cmd.exe instead?** Paste this:
+> ```cmd
+> powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex"
+> ```
+
 **macOS** — open Terminal and paste:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.sh | bash
 ```
 
-The script installs VS Code, Git, Node.js, GitHub CLI, Azure CLI, and the Copilot extension if missing, then clones the repo, authenticates, and opens VS Code.
+The script installs PowerShell 7, VS Code, Git, Node.js, GitHub CLI, Azure CLI, and the Copilot extension if missing, then clones the repo, authenticates, and opens VS Code.
 
 > [!TIP]
 > **Already have the repo cloned?** Run the bootstrap locally instead:
