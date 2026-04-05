@@ -13,6 +13,8 @@
 #   --skip-auth    Skip Azure + GitHub auth steps
 #   --check-only   Only verify prerequisites, don't install anything
 #   --clone-dir    Where to clone (default: ~/mcaps-iq)
+#   --with-obsidian  Install Obsidian + scaffold vault (skips prompt)
+#   --no-obsidian   Skip Obsidian setup entirely (skips prompt)
 # ─────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -21,13 +23,16 @@ SKIP_CLONE=false
 SKIP_AUTH=false
 CHECK_ONLY=false
 CLONE_DIR="$HOME/mcaps-iq"
+OBSIDIAN_OPT=""  # empty = ask, "yes" = install, "no" = skip
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skip-clone)  SKIP_CLONE=true; shift ;;
-    --skip-auth)   SKIP_AUTH=true; shift ;;
-    --check-only)  CHECK_ONLY=true; shift ;;
-    --clone-dir)   CLONE_DIR="$2"; shift 2 ;;
+    --skip-clone)    SKIP_CLONE=true; shift ;;
+    --skip-auth)     SKIP_AUTH=true; shift ;;
+    --check-only)    CHECK_ONLY=true; shift ;;
+    --clone-dir)     CLONE_DIR="$2"; shift 2 ;;
+    --with-obsidian) OBSIDIAN_OPT="yes"; shift ;;
+    --no-obsidian)   OBSIDIAN_OPT="no"; shift ;;
     *) echo "Unknown flag: $1"; exit 1 ;;
   esac
 done
@@ -41,6 +46,13 @@ fail()  { printf '  \033[31m✖ %s\033[0m\n' "$1"; }
 has_cmd() { command -v "$1" &>/dev/null; }
 
 has_brew() { has_cmd brew; }
+
+# Resolve VS Code CLI — prefer code-insiders over stable
+resolve_code_cmd() {
+  if has_cmd code-insiders; then echo "code-insiders";
+  elif has_cmd code; then echo "code";
+  else echo ""; fi
+}
 
 install_brew_pkg() {
   local formula="$1" label="$2"
@@ -166,10 +178,12 @@ else
   fi
 fi
 
-# -- VS Code --
-if has_cmd code; then
-  CODE_VER="$(code --version 2>/dev/null | head -1)"
-  ok "VS Code $CODE_VER"
+# -- VS Code (stable or Insiders) --
+CODE_CMD="$(resolve_code_cmd)"
+if [[ -n "$CODE_CMD" ]]; then
+  CODE_VER="$($CODE_CMD --version 2>/dev/null | head -1)"
+  CODE_LABEL="VS Code"; [[ "$CODE_CMD" == "code-insiders" ]] && CODE_LABEL="VS Code Insiders"
+  ok "$CODE_LABEL $CODE_VER"
 else
   warn "VS Code not found"
   if [[ "$CHECK_ONLY" == "false" ]]; then
@@ -179,20 +193,21 @@ else
       # Snap or direct install for Linux
       sudo snap install code --classic 2>/dev/null || true
     fi
-    if has_cmd code; then ok "VS Code installed"; else fail "VS Code install failed"; ALL_GOOD=false; fi
+    CODE_CMD="$(resolve_code_cmd)"
+    if [[ -n "$CODE_CMD" ]]; then ok "VS Code installed"; else fail "VS Code install failed"; ALL_GOOD=false; fi
   else
     ALL_GOOD=false
   fi
 fi
 
 # -- Copilot extension --
-if has_cmd code; then
-  if code --list-extensions 2>/dev/null | grep -qi "github.copilot-chat"; then
+if [[ -n "$CODE_CMD" ]]; then
+  if $CODE_CMD --list-extensions 2>/dev/null | grep -qi "github.copilot-chat"; then
     ok "GitHub Copilot Chat extension installed"
   else
     warn "GitHub Copilot Chat extension not found"
     if [[ "$CHECK_ONLY" == "false" ]]; then
-      code --install-extension GitHub.copilot-chat 2>/dev/null || true
+      $CODE_CMD --install-extension GitHub.copilot-chat 2>/dev/null || true
       ok "Copilot Chat extension installed"
     else
       ALL_GOOD=false
@@ -249,7 +264,79 @@ else
   ok "Skipping auth steps"
 fi
 
-# ── Step 4: Open VS Code ─────────────────────────────────────────────
+# ── Step 4: Obsidian (optional) ───────────────────────────────────────
+OBSIDIAN_INSTALLED=false
+if has_cmd obsidian || [[ -d "/Applications/Obsidian.app" ]] || [[ -d "$HOME/Applications/Obsidian.app" ]]; then
+  OBSIDIAN_INSTALLED=true
+fi
+
+if [[ "$OBSIDIAN_INSTALLED" == "true" ]]; then
+  ok "Obsidian already installed"
+  # Scaffold vault if repo is available
+  if [[ -f "scripts/setup-vault.js" ]]; then
+    if [[ "$OBSIDIAN_OPT" == "no" ]]; then
+      ok "Skipping vault scaffold"
+    else
+      step "Scaffolding Obsidian vault"
+      node scripts/setup-vault.js --check 2>/dev/null || true
+    fi
+  fi
+else
+  # Determine whether to install
+  INSTALL_OBSIDIAN=false
+  if [[ "$OBSIDIAN_OPT" == "yes" ]]; then
+    INSTALL_OBSIDIAN=true
+  elif [[ "$OBSIDIAN_OPT" == "no" ]]; then
+    ok "Skipping Obsidian setup"
+  else
+    # Interactive prompt
+    printf '\n'
+    printf '  \033[36mObsidian provides persistent memory for the agent (meeting history,\033[0m\n'
+    printf '  \033[36mcustomer context, relationship maps). Recommended but optional.\033[0m\n'
+    printf '\n'
+    printf '  Install Obsidian? [y/N] '
+    read -r OBSIDIAN_ANSWER </dev/tty || OBSIDIAN_ANSWER="n"
+    case "$OBSIDIAN_ANSWER" in
+      [yY]|[yY][eE][sS]) INSTALL_OBSIDIAN=true ;;
+      *) ok "Skipping Obsidian — you can install later: https://obsidian.md" ;;
+    esac
+  fi
+
+  if [[ "$INSTALL_OBSIDIAN" == "true" ]]; then
+    step "Installing Obsidian"
+    if [[ "$(uname)" == "Darwin" ]]; then
+      if has_brew; then
+        echo "  Installing Obsidian via Homebrew..."
+        brew install --cask obsidian 2>/dev/null || true
+      else
+        fail "Homebrew not found — install Obsidian manually from https://obsidian.md"
+      fi
+    else
+      # Linux — try snap, then flatpak
+      if has_cmd snap; then
+        sudo snap install obsidian --classic 2>/dev/null || true
+      elif has_cmd flatpak; then
+        flatpak install -y flathub md.obsidian.Obsidian 2>/dev/null || true
+      else
+        warn "Could not auto-install Obsidian on Linux — download from https://obsidian.md"
+      fi
+    fi
+
+    if has_cmd obsidian || [[ -d "/Applications/Obsidian.app" ]] || [[ -d "$HOME/Applications/Obsidian.app" ]]; then
+      ok "Obsidian installed"
+    else
+      warn "Obsidian install may have failed — download from https://obsidian.md"
+    fi
+
+    # Scaffold vault
+    if [[ -f "scripts/setup-vault.js" ]]; then
+      step "Scaffolding Obsidian vault"
+      node scripts/setup-vault.js --check 2>/dev/null || true
+    fi
+  fi
+fi
+
+# ── Step 5: Open VS Code ─────────────────────────────────────────────
 step "Setup complete!"
 
 printf '\n'
@@ -266,4 +353,9 @@ printf '  \033[32m│                                                           
 printf '  \033[32m└─────────────────────────────────────────────────────────────┘\033[0m\n'
 printf '\n'
 
-code .
+CODE_CMD="$(resolve_code_cmd)"
+if [[ -n "$CODE_CMD" ]]; then
+  $CODE_CMD .
+else
+  warn "VS Code not on PATH — open the workspace manually"
+fi

@@ -15,6 +15,8 @@
     -SkipAuth     Skip Azure + GitHub auth steps
     -CheckOnly    Only verify prerequisites, don't install anything
     -CloneDir     Where to clone the repo (default: C:\Temp\mcaps-iq)
+    -WithObsidian Install Obsidian + scaffold vault (skips prompt)
+    -NoObsidian   Skip Obsidian setup entirely (skips prompt)
 
 .NOTES
   Requires: PowerShell 5.1+ to bootstrap (ships with Windows 10/11).
@@ -26,6 +28,8 @@ param(
   [switch]$SkipClone,
   [switch]$SkipAuth,
   [switch]$CheckOnly,
+  [switch]$WithObsidian,
+  [switch]$NoObsidian,
   [string]$CloneDir = "C:\Temp\mcaps-iq"
 )
 
@@ -45,6 +49,12 @@ function Test-Command {
 function Refresh-Path {
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
               [System.Environment]::GetEnvironmentVariable("Path", "User")
+}
+
+function Resolve-CodeCmd {
+  if (Test-Command "code-insiders") { return "code-insiders" }
+  if (Test-Command "code") { return "code" }
+  return $null
 }
 
 function Install-Via-Winget {
@@ -86,15 +96,18 @@ if (Test-Command "pwsh") {
   } else { $allGood = $false }
 }
 
-# -- VS Code --
-if (Test-Command "code") {
-  $codeVer = & code --version 2>$null | Select-Object -First 1
-  Write-Ok "VS Code $codeVer"
+# -- VS Code (stable or Insiders) --
+$codeCmd = Resolve-CodeCmd
+if ($codeCmd) {
+  $codeVer = & $codeCmd --version 2>$null | Select-Object -First 1
+  $codeLabel = if ($codeCmd -eq "code-insiders") { "VS Code Insiders" } else { "VS Code" }
+  Write-Ok "$codeLabel $codeVer"
 } else {
   Write-Warn "VS Code not found"
   if (-not $CheckOnly) {
     Install-Via-Winget "Microsoft.VisualStudioCode" "VS Code"
-    if (Test-Command "code") { Write-Ok "VS Code installed" } else { Write-Fail "VS Code install failed"; $allGood = $false }
+    $codeCmd = Resolve-CodeCmd
+    if ($codeCmd) { Write-Ok "VS Code installed" } else { Write-Fail "VS Code install failed"; $allGood = $false }
   } else { $allGood = $false }
 }
 
@@ -163,15 +176,16 @@ if (Test-Command "az") {
 }
 
 # -- Copilot extension --
-if (Test-Command "code") {
-  $extensions = & code --list-extensions 2>$null
+$codeCmd = Resolve-CodeCmd
+if ($codeCmd) {
+  $extensions = & $codeCmd --list-extensions 2>$null
   if ($extensions -match "GitHub\.copilot-chat") {
     Write-Ok "GitHub Copilot Chat extension installed"
   } else {
     Write-Warn "GitHub Copilot Chat extension not found"
     if (-not $CheckOnly) {
       Write-Host "  Installing Copilot Chat extension..." -ForegroundColor Gray
-      & code --install-extension GitHub.copilot-chat 2>$null
+      & $codeCmd --install-extension GitHub.copilot-chat 2>$null
       Write-Ok "Copilot Chat extension installed"
     } else { $allGood = $false }
   }
@@ -230,7 +244,57 @@ if (-not $SkipAuth) {
   Write-Ok "Skipping auth steps"
 }
 
-# ── Step 4: Open VS Code ─────────────────────────────────────────────
+# ── Step 4: Obsidian (optional) ──────────────────────────────────────
+$obsidianInstalled = (Test-Command "obsidian") -or (Test-Path "$env:LOCALAPPDATA\Obsidian\Obsidian.exe")
+
+if ($obsidianInstalled) {
+  Write-Ok "Obsidian already installed"
+  if (Test-Path "scripts\setup-vault.js") {
+    if (-not $NoObsidian) {
+      Write-Step "Scaffolding Obsidian vault"
+      & node scripts/setup-vault.js --check 2>$null
+    } else {
+      Write-Ok "Skipping vault scaffold"
+    }
+  }
+} else {
+  $installObsidian = $false
+  if ($WithObsidian) {
+    $installObsidian = $true
+  } elseif ($NoObsidian) {
+    Write-Ok "Skipping Obsidian setup"
+  } else {
+    # Interactive prompt
+    Write-Host ""
+    Write-Host "  Obsidian provides persistent memory for the agent (meeting history," -ForegroundColor Cyan
+    Write-Host "  customer context, relationship maps). Recommended but optional." -ForegroundColor Cyan
+    Write-Host ""
+    $answer = Read-Host "  Install Obsidian? [y/N]"
+    if ($answer -match '^[yY]') {
+      $installObsidian = $true
+    } else {
+      Write-Ok "Skipping Obsidian — you can install later: https://obsidian.md"
+    }
+  }
+
+  if ($installObsidian) {
+    Write-Step "Installing Obsidian"
+    Install-Via-Winget "Obsidian.Obsidian" "Obsidian"
+    Refresh-Path
+    $obsidianNow = (Test-Command "obsidian") -or (Test-Path "$env:LOCALAPPDATA\Obsidian\Obsidian.exe")
+    if ($obsidianNow) {
+      Write-Ok "Obsidian installed"
+    } else {
+      Write-Warn "Obsidian install may have failed — download from https://obsidian.md"
+    }
+    if (Test-Path "scripts\setup-vault.js") {
+      Write-Step "Scaffolding Obsidian vault"
+      & node scripts/setup-vault.js --check 2>$null
+    }
+  }
+}
+
+# ── Step 5: Open VS Code ─────────────────────────────────────────────
 Write-Step "Setup complete!"
 
 Write-Host @"
@@ -249,4 +313,9 @@ Write-Host @"
 
 "@ -ForegroundColor Green
 
-code .
+$codeCmd = Resolve-CodeCmd
+if ($codeCmd) {
+  & $codeCmd .
+} else {
+  Write-Warn "VS Code not on PATH — open the workspace manually"
+}
