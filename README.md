@@ -24,22 +24,52 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 
 ## Quick Start (5 Minutes)
 
-**Before you begin**, make sure you have:
+**Before you begin:** Connect to the **Microsoft corporate VPN** and have your `@microsoft.com` account ready.
 
-- [ ] **Microsoft corporate VPN** connected
-- [ ] **Microsoft corp account** (e.g., `your-alias@microsoft.com`)
-- [ ] **GitHub Copilot License** (For Microsoft Internal: [https://aka.ms/copilot](https://aka.ms/copilot))
+### Option A: One-Command Bootstrap (recommended)
+
+The bootstrap script checks your system, installs any missing tools, clones the repo, and opens VS Code — all in one step.
+
+**Windows** — open PowerShell and paste:
+```powershell
+irm https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
+```
+
+**macOS** — open Terminal and paste:
+```bash
+curl -fsSL https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.sh | bash
+```
+
+The script installs VS Code, Git, Node.js, GitHub CLI, Azure CLI, and the Copilot extension if missing, then clones the repo, authenticates, and opens VS Code.
+
+> [!TIP]
+> **Already have the repo cloned?** Run the bootstrap locally instead:
+> ```bash
+> # macOS/Linux
+> ./scripts/bootstrap.sh --skip-clone
+>
+> # Windows PowerShell
+> .\scripts\bootstrap.ps1 -SkipClone
+> ```
+
+> [!TIP]
+> **Just want to check what's missing?** Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
+
+### Option B: Manual Setup
+
+<details>
+<summary>Click to expand manual prerequisites and steps</summary>
+
+Make sure you have:
+
 - [ ] [VS Code](https://code.visualstudio.com/) with the [GitHub Copilot extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
 - [ ] [Git](https://git-scm.com/) — `git --version` to check (`gh` CLI is not a substitute)
 - [ ] [Node.js 18+](https://nodejs.org/)
 - [ ] [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [ ] [GitHub CLI (`gh`)](https://cli.github.com/) — required for private package auth
-  - macOS: `brew install gh`
-  - Windows: `winget install GitHub.cli`
+- [ ] **GitHub Copilot License** ([https://aka.ms/copilot](https://aka.ms/copilot))
 
-> **Heads-up:** If you install any CLI tools (Git, Node, `gh`, `az`) while VS Code is open, **close and reopen VS Code entirely**. VS Code terminals inherit the system PATH from launch — newly installed tools won't be visible until you restart.
-
-### Step 1: Clone and bootstrap
+> **Heads-up:** If you install any CLI tools while VS Code is open, **close and reopen VS Code entirely**. VS Code terminals inherit the system PATH from launch — newly installed tools won't be visible until you restart.
 
 ```bash
 git clone https://github.com/microsoft/mcaps-iq.git
@@ -47,17 +77,13 @@ cd mcaps-iq
 npm install
 ```
 
-`npm install` runs the interactive setup automatically — it checks prerequisites, configures GitHub Packages auth, sets up your Obsidian vault path, and registers the global `mcaps` command. MCP servers themselves run via npx/HTTP and don't require a local install.
-
 > [!IMPORTANT]
 > **Use your personal GitHub account** (e.g. `JohnDoe`) when prompted during install.
 > **Do NOT use your Enterprise Managed User (EMU) account** — the one ending in `_microsoft`.
-> EMU accounts cannot access GitHub Packages from external organizations.
 
-> [!TIP]
-> **Prefer a GUI?** Open the repo in VS Code and run **"Setup: Optional Local Tooling"** from the Command Palette (`Cmd+Shift+P` → `Tasks: Run Task`).
+</details>
 
-### Step 2: Sign in to Azure
+### Sign in to Azure
 
 ```bash
 az login
@@ -65,10 +91,7 @@ az login
 
 > You must be on the corporate VPN and use your Microsoft corp account.
 
-> [!TIP]
-> **Package auth issues?** `npm install` handles GitHub Packages auth automatically. If you need to re-run it: `npm run auth:packages`
-
-### Step 3: Open and start
+### Open and start
 
 ```bash
 code .

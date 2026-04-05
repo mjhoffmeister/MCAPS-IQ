@@ -4,37 +4,54 @@ description: Clone the repo, configure runtime, and sign in to Azure.
 tags:
   - getting-started
   - installation
+hide:
+  - toc
 ---
 
 # Installation
 
-<div class="step-indicator" markdown>
-<span class="step done">1. Prerequisites ✓</span>
-<span class="step active">2. Runtime Setup</span>
-<span class="step">3. First Chat</span>
-<span class="step">4. Choose Role</span>
+<div class="timeline-nav">
+<a href="../" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Getting Started</div></a>
+<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Install</div></a>
+<a href="../first-chat/" class="tl-step"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
+<a href="../choose-role/" class="tl-step"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
 </div>
 
-Two commands and you're done.
+!!! success "Used the bootstrap script?"
+    If you ran the one-command bootstrap from [Getting Started](index.md), you can skip to [Step 3: Sign In to Azure](#step-3-sign-in-to-azure) — the repo is already cloned and tools are installed.
 
 ---
 
 ## Step 1: Clone the Repo
 
-Open VS Code, then open a terminal inside it (**Terminal** → **New Terminal**) and run:
+=== "Bootstrap (already done)"
 
-```powershell
-# Navigate to C:\Temp (create it if it doesn't exist)
-if (-not (Test-Path "C:\Temp")) { New-Item -ItemType Directory -Path "C:\Temp" }
-cd C:\Temp
+    If you used the bootstrap script, the repo is already cloned and VS Code is open. Skip to Step 2.
 
-# Clone the repo
-git clone https://github.com/microsoft/mcaps-iq.git
-cd mcaps-iq
-```
+=== "Windows (manual)"
+
+    Open VS Code, then open a terminal inside it (**Terminal** → **New Terminal**) and run:
+
+    ```powershell
+    # Navigate to C:\Temp (create it if it doesn't exist)
+    if (-not (Test-Path "C:\Temp")) { New-Item -ItemType Directory -Path "C:\Temp" }
+    cd C:\Temp
+
+    # Clone the repo
+    git clone https://github.com/microsoft/mcaps-iq.git
+    cd mcaps-iq
+    ```
+
+=== "macOS / Linux (manual)"
+
+    ```bash
+    cd ~
+    git clone https://github.com/microsoft/mcaps-iq.git
+    cd mcaps-iq
+    ```
 
 !!! tip "Where is the repo?"
-    The repo will be cloned to `C:\Temp\mcaps-iq`. You can change this to any folder you prefer.
+    Default locations: `C:\Temp\mcaps-iq` (Windows bootstrap), `~/mcaps-iq` (macOS bootstrap). You can change this to any folder you prefer.
 
 ---
 
@@ -185,7 +202,10 @@ For more issues, see [Troubleshooting Setup](troubleshooting.md).
 
 ---
 
-## Optional: Add AI Agent Squads
+## Optional: Multi-Agent Squads (Experimental)
+
+!!! warning "Experimental — advanced users only"
+    Multi-agent orchestration can deliver real benefits (parallel workstreams, role-specialized reasoning), but without a clear understanding of what you want each agent to do, you can end up with unnecessary complexity and performance issues. **Master single-agent MCAPS IQ first** before reaching for Squads.
 
 Want a team of AI specialists that work in parallel? **Squads** give you persistent, named agents — an orchestrator, data synthesizer, win strategist, artifact builder, and deal coach — all living in your repo.
 
@@ -193,6 +213,6 @@ Want a team of AI specialists that work in parallel? **Squads** give you persist
 npm run squad:setup
 ```
 
-This installs the [Squad CLI](https://github.com/bradygaster/squad) and initializes a `.squad/` directory with your agent team. Learn more in the [Squads guide](../squads/index.md).
+This installs the [Squad CLI](https://github.com/bradygaster/squad) and initializes a `.squad/` directory with your agent team. Learn more in the [Squads integration guide](../integrations/squads.md).
 
 [:octicons-arrow-right-16: Continue to Your First Chat](first-chat.md){ .md-button .md-button--primary }
