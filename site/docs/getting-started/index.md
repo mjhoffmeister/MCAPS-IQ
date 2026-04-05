@@ -71,52 +71,76 @@ You're connecting Copilot to your enterprise data sources via MCP servers. **VS 
 
 Before you begin, make sure you're on the **Microsoft corporate VPN** and have your `@microsoft.com` account ready.
 
-### :material-rocket-launch: One-Command Bootstrap (recommended)
+Since this is a **private repo**, you need **Git** and **GitHub CLI** installed first to clone it. The bootstrap script then installs everything else automatically (VS Code, Node.js, Azure CLI, PowerShell 7, Copilot extension).
 
-The bootstrap script checks your system, installs any missing tools (VS Code, Git, Node.js, GitHub CLI, Azure CLI, Copilot extension), clones the repo, authenticates, and opens VS Code — all in one paste.
+### Step 1: Install Git + GitHub CLI
 
-=== "Windows (PowerShell)"
+These are the only two tools you need to install manually.
 
-    Open **PowerShell** (5.1 or 7) and paste:
+=== "Windows"
+
+    Open **PowerShell** or **Command Prompt** and run:
 
     ```powershell
-    irm https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
+    winget install Git.Git --silent --accept-package-agreements --accept-source-agreements
+    winget install GitHub.cli --silent --accept-package-agreements --accept-source-agreements
     ```
 
-=== "Windows (cmd.exe)"
+    Then refresh your PATH:
 
-    Open **Command Prompt** and paste:
-
-    ```cmd
-    powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex"
+    ```powershell
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     ```
 
 === "macOS"
 
-    Open **Terminal** and paste:
+    ```bash
+    brew install git gh
+    ```
+
+    !!! tip "No Homebrew?"
+        Install it first: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+
+### Step 2: Authenticate and clone
+
+```bash
+gh auth login          # Use your personal GitHub account, NOT your _microsoft EMU
+gh repo clone microsoft/MCAPS-IQ
+cd MCAPS-IQ
+```
+
+!!! warning "Use your **personal** GitHub account"
+    When prompted to sign in, use your **personal GitHub account** (e.g. `JohnDoe`).
+    **Do NOT use your Enterprise Managed User (EMU) account** — the one ending in `_microsoft`.
+    EMU accounts cannot access GitHub Packages from external organizations.
+
+### Step 3: Run the bootstrap script
+
+=== "macOS / Linux"
 
     ```bash
-    curl -fsSL https://raw.githubusercontent.com/microsoft/MCAPS-IQ/main/scripts/bootstrap.sh | bash
+    ./scripts/bootstrap.sh --skip-clone
+    ```
+
+=== "Windows (PowerShell)"
+
+    ```powershell
+    .\scripts\bootstrap.ps1 -SkipClone
+    ```
+
+=== "Windows (cmd.exe)"
+
+    ```cmd
+    powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
     ```
 
 !!! success "What the script does"
     1. Checks for missing tools and installs them (via `winget` on Windows, `brew` on macOS)
-    2. Installs **PowerShell 7** on Windows if not present (required for VS Code terminal and tooling)
-    3. Clones the MCAPS IQ repo
+    2. Installs **PowerShell 7** on Windows if not present
+    3. Installs **VS Code**, **Node.js 18+**, **Azure CLI**, and the **Copilot extension**
     4. Sets up GitHub Packages auth (for private MCP server packages)
     5. Signs you in to Azure (Microsoft tenant)
     6. Opens VS Code with the workspace ready
-
-!!! tip "Already have the repo?"
-    Run the bootstrap locally with `--skip-clone` / `-SkipClone`:
-
-    ```bash
-    # macOS/Linux
-    ./scripts/bootstrap.sh --skip-clone
-
-    # Windows PowerShell
-    .\scripts\bootstrap.ps1 -SkipClone
-    ```
 
 !!! tip "Just want to check what's missing?"
     Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
@@ -449,48 +473,6 @@ If every item above checks out, you're ready to install:
     | No Copilot license | Ask your manager for GitHub Copilot Business access |
     | Package auth failing | Run `npm run auth:packages` or ask Copilot: *"Help me debug my MCP package auth setup"* |
     | Command not found after install | Close and reopen VS Code entirely to pick up PATH changes |
-
----
-
-## Setup
-
-Since this is a **private repo**, you need Git and GitHub CLI installed first to clone it. After that, the bootstrap script installs everything else automatically (VS Code, Node.js, Azure CLI, PowerShell 7, Copilot extension).
-
-**1. Install Git + GitHub CLI** — see [Manual Prerequisites](#manual-prerequisites) below for platform-specific install commands
-
-**2. Clone the repo:**
-
-```bash
-gh auth login
-gh repo clone microsoft/MCAPS-IQ
-cd MCAPS-IQ
-```
-
-**3. Run the bootstrap script:**
-
-=== "macOS / Linux"
-
-    ```bash
-    ./scripts/bootstrap.sh --skip-clone
-    ```
-
-=== "Windows (PowerShell)"
-
-    ```powershell
-    .\scripts\bootstrap.ps1 -SkipClone
-    ```
-
-=== "Windows (cmd.exe)"
-
-    ```cmd
-    powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
-    ```
-
-!!! tip "Just want to check what's missing?"
-    Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
-
-!!! info "Prefer to install everything manually?"
-    The full [Manual Prerequisites](#manual-prerequisites) section above has check/install steps for every tool if you'd rather skip the bootstrap script.
 
 ---
 
