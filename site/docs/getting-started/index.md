@@ -452,45 +452,45 @@ If every item above checks out, you're ready to install:
 
 ---
 
-## Two Ways to Set Up
+## Setup
 
-### :material-rocket-launch: Bootstrap Path (recommended)
+Since this is a **private repo**, you need Git and GitHub CLI installed first to clone it. After that, the bootstrap script installs everything else automatically (VS Code, Node.js, Azure CLI, PowerShell 7, Copilot extension).
 
-Since this is a **private repo**, you need Git and GitHub CLI installed first to clone it. After that, the bootstrap script installs everything else automatically.
+**1. Install Git + GitHub CLI** — see [Prerequisites](prerequisites.md) for platform-specific install commands
 
-1. **Install Git + GitHub CLI manually** — see [Prerequisites](prerequisites.md) for install commands
-2. **Clone the repo:**
+**2. Clone the repo:**
+
+```bash
+gh auth login
+gh repo clone microsoft/MCAPS-IQ
+cd MCAPS-IQ
+```
+
+**3. Run the bootstrap script:**
+
+=== "macOS / Linux"
+
     ```bash
-    gh auth login
-    gh repo clone microsoft/MCAPS-IQ
-    cd MCAPS-IQ
+    ./scripts/bootstrap.sh --skip-clone
     ```
-3. **Run the bootstrap script** — installs VS Code, Node.js, Azure CLI, PowerShell 7 (Windows), Copilot extension, and configures auth:
 
-    === "macOS / Linux"
+=== "Windows (PowerShell)"
 
-        ```bash
-        ./scripts/bootstrap.sh --skip-clone
-        ```
+    ```powershell
+    .\scripts\bootstrap.ps1 -SkipClone
+    ```
 
-    === "Windows (PowerShell)"
+=== "Windows (cmd.exe)"
 
-        ```powershell
-        .\scripts\bootstrap.ps1 -SkipClone
-        ```
-
-    === "Windows (cmd.exe)"
-
-        ```cmd
-        powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
-        ```
+    ```cmd
+    powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
+    ```
 
 !!! tip "Just want to check what's missing?"
     Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
 
-### :material-format-list-checks: Manual Path
-
-If you prefer to install tools yourself, or the bootstrap script doesn't work for your environment, follow the full [Prerequisites](prerequisites.md) checklist, then continue to [Installation](installation.md).
+!!! info "Prefer to install everything manually?"
+    The full [Prerequisites](prerequisites.md) checklist has check/install steps for every tool if you'd rather skip the bootstrap script.
 
 ---
 
