@@ -456,7 +456,7 @@ If every item above checks out, you're ready to install:
 
 Since this is a **private repo**, you need Git and GitHub CLI installed first to clone it. After that, the bootstrap script installs everything else automatically (VS Code, Node.js, Azure CLI, PowerShell 7, Copilot extension).
 
-**1. Install Git + GitHub CLI** — see [Prerequisites](prerequisites.md) for platform-specific install commands
+**1. Install Git + GitHub CLI** — see [Manual Prerequisites](#manual-prerequisites) below for platform-specific install commands
 
 **2. Clone the repo:**
 
@@ -490,7 +490,7 @@ cd MCAPS-IQ
     Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
 
 !!! info "Prefer to install everything manually?"
-    The full [Prerequisites](prerequisites.md) checklist has check/install steps for every tool if you'd rather skip the bootstrap script.
+    The full [Manual Prerequisites](#manual-prerequisites) section above has check/install steps for every tool if you'd rather skip the bootstrap script.
 
 ---
 
