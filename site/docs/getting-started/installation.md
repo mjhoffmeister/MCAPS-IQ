@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Clone the repo, configure runtime, and sign in to Azure.
+description: Start the MCP servers and verify your setup.
 tags:
   - getting-started
   - installation
@@ -9,128 +9,74 @@ tags:
 # Installation
 
 <div class="step-indicator" markdown>
-<span class="step done">1. Prerequisites ✓</span>
-<span class="step active">2. Runtime Setup</span>
+<span class="step done">1. Getting Started ✓</span>
+<span class="step active">2. Start Servers</span>
 <span class="step">3. First Chat</span>
 <span class="step">4. Choose Role</span>
 </div>
 
-Two commands and you're done.
+!!! success "Ran the bootstrap script?"
+    If you completed [Getting Started](index.md), the repo is cloned, tools are installed, and you're signed in to Azure. **Skip straight to [Start the MCP Servers](#start-the-mcp-servers).**
 
 ---
 
-## Step 1: Clone the Repo
+## Start the MCP Servers
 
-This repo is internal to the Microsoft GitHub org — you need Git and GitHub CLI authenticated before cloning.
+This is the key step — it connects Copilot to your CRM and M365 data.
 
-=== "Bootstrap (recommended)"
-
-    If you followed the [Getting Started](index.md) bootstrap path, the repo is already cloned. Skip to Step 2.
-
-=== "Clone via GitHub CLI"
-
-    ```bash
-    gh auth login          # Use your personal GitHub account, NOT _microsoft EMU
-    gh repo clone microsoft/MCAPS-IQ
-    cd MCAPS-IQ
-    ```
-
-=== "Clone via Git (with token)"
-
-    If you prefer plain `git clone`, you need a GitHub PAT with `repo` scope:
-
-    ```bash
-    git clone https://github.com/microsoft/mcaps-iq.git
-    cd mcaps-iq
-    ```
-
-    Git will prompt for credentials — use your personal GitHub username and a [Personal Access Token](https://github.com/settings/tokens) as the password.
-
----
-
-## Step 2: Runtime Setup
-
-=== "Default runtime (recommended)"
+1. Open the repo in VS Code (the bootstrap script does this automatically):
 
     ```bash
     code .
     ```
 
-    Then open `.vscode/mcp.json` and click **Start** on `msx` (and `workiq` if needed).
-    The default servers run via `npx`/HTTP, so no local server source install is required.
+2. Open `.vscode/mcp.json` — you'll see a **"Start"** button above each server definition
 
-=== "Optional local tooling"
+3. Click **Start** on:
+    - **`msx`** (required) — connects to MSX CRM
+    - **`workiq`** (optional) — enables M365 searches (email, Teams, calendar)
 
-    Use this only if you want local eval/docs tooling or automatic global `mcaps` alias setup:
-    
-    ```bash
-    npm install
-    ```
+!!! tip "Don't see the Start buttons?"
+    - Requires GitHub Copilot Chat **v0.25+** with **Agent mode** enabled
+    - Make sure `mcp.json` is the active editor tab
+    - Try: ++cmd+shift+p++ → **"Developer: Reload Window"**, then reopen the file
 
-    Or in VS Code: ++cmd+shift+p++ → **Tasks: Run Task** → **Setup: Optional Local Tooling**
+!!! failure "Server fails with 401/403/404?"
+    Run `npm run auth:packages` to fix package auth. This uses your GitHub CLI session to configure access to private npm packages.
 
-=== "Manual (advanced)"
+### GitHub Packages Auth
 
-    ```bash
-    # Check runtime prerequisites without local installs
-    node scripts/init.js --check
-
-    # Optional local tooling bootstrap
-    node scripts/init.js
-    ```
-
-!!! tip "What to expect"
-    Runtime startup is immediate once servers are started in `.vscode/mcp.json`. Optional local tooling setup may take longer depending on npm/network conditions.
-
-### One-time GitHub Packages auth
-
-Private MCP packages such as `@microsoft/msx-mcp-server` and `@microsoft/workiq` can be bootstrapped through GitHub CLI instead of a manually created PAT:
+If the bootstrap script didn't configure package auth (or you need to redo it):
 
 ```bash
 npm run auth:packages
 ```
 
-The script looks for a signed-in GitHub account with `read:packages`, falls back to `gh auth login` if needed, and writes a repo-local `.npmrc` for this workspace.
-
-!!! success "Global `mcaps` command"
-    Optional local tooling setup registers a **global `mcaps` command** on your system via `npm link`. After setup, you can type `mcaps` from **any directory** in **any terminal window** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full MCAPS IQ toolkit — MCP servers, agents, and skills are auto-loaded regardless of where you are.
-
-    ```bash
-    # Works from anywhere — no need to cd into the repo
-    mcaps
-    ```
-
-    If the global link fails (permissions, PATH issues), the installer prints manual steps. You can always re-run it:
-
-    ```bash
-    cd mcaps-iq
-    npm link --ignore-scripts
-    ```
+This uses your `gh` session to write a repo-local `.npmrc` for accessing private MCP packages like `@microsoft/msx-mcp-server`.
 
 ---
 
-## Step 3: Sign In to Azure
+## Sign In to Azure
+
+!!! success "Bootstrap did this"
+    If the bootstrap script signed you in, skip this step. Check with: `az account show`
+
+If you need to sign in manually:
 
 ```bash
 az login
 ```
 
-This opens your browser for Azure authentication. Use your **Microsoft corp account** (e.g., `yourname@microsoft.com`).
+Use your **Microsoft corp account** (`yourname@microsoft.com`). You must be on **VPN**.
 
-!!! warning "VPN required"
-    You must be on the Microsoft corporate VPN for Azure login to work with MSX CRM.
-
-??? question "What if I need a specific tenant?"
+??? question "Need a specific tenant?"
     ```bash
     az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
     ```
-    This is the Microsoft tenant ID. The MCP server uses this by default.
 
 ---
 
 ## Verify Your Setup
-
-Want to double-check everything before moving on?
 
 === "Automated check"
 
@@ -145,50 +91,48 @@ Want to double-check everything before moving on?
     | What | Command | Expected |
     |------|---------|---------|
     | Node.js | `node --version` | v18+ |
-    | npm | `npm --version` | 8+ |
     | Azure CLI | `az --version` | 2.x+ |
     | Azure login | `az account show` | Shows your subscription |
     | MSX access | `az account get-access-token --resource https://microsoftsales.crm.dynamics.com` | Returns a token |
 
 ---
 
-## Common Setup Issues
+## Optional: Local Tooling & `mcaps` Command
 
-??? failure "Optional local tooling install fails with permission errors"
+The default setup runs MCP servers via `npx`/HTTP — no local install needed. But if you want local eval/docs tooling or a global `mcaps` command:
+
+```bash
+npm install
+```
+
+This registers a **global `mcaps` command** via `npm link`. After setup, type `mcaps` from **any directory** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full toolkit.
+
+---
+
+## Common Issues
+
+??? failure "npx cannot fetch MSX or OIL packages"
     ```bash
-    # Fix npm permissions (macOS/Linux)
-    sudo chown -R $(whoami) ~/.npm
-    npm install
+    npm run auth:packages
+    npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
     ```
+    If still failing, check VPN/proxy and confirm your GitHub account has package access.
+
+??? failure "`az login` hangs or fails"  
+    1. Make sure you're on VPN
+    2. Try: `az login --use-device-code`
+    3. If that fails: `az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47`
 
 ??? failure "PowerShell execution policy (Windows)"
     ```powershell
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
     ```
-    Then retry `npm install`.
-
-??? failure "npx cannot fetch MSX or OIL packages"
-    ```bash
-    npm run auth:packages
-    npm ping
-    npx -y --registry https://npm.pkg.github.com @microsoft/msx-mcp-server@latest
-    npx -y @jinlee794/obsidian-intelligence-layer@latest mcp
-    ```
-    If package fetch still fails, check VPN/proxy and confirm your GitHub account has package access.
-
-??? failure "`az login` hangs or fails"  
-    1. Make sure you're on VPN
-    2. Try: `az login --use-device-code` (uses a device code instead of browser)
-    3. If that fails: `az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47`
 
 ??? failure "Node.js version too old"
     ```bash
     # macOS
     brew upgrade node
-    
-    # Or use nvm
-    nvm install 18
-    nvm use 18
+    # Or: nvm install 18 && nvm use 18
     ```
 
 For more issues, see [Troubleshooting Setup](troubleshooting.md).
