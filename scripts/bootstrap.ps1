@@ -57,11 +57,23 @@ function Resolve-CodeCmd {
   return $null
 }
 
+function Test-Winget-Installed {
+  param([string]$PackageId)
+  if (-not (Test-Command "winget")) { return $false }
+  $result = winget list --id $PackageId --accept-source-agreements 2>$null
+  return ($LASTEXITCODE -eq 0 -and ($result | Select-String $PackageId))
+}
+
 function Install-Via-Winget {
   param([string]$PackageId, [string]$Label)
   if (-not (Test-Command "winget")) {
     Write-Fail "winget not found — install $Label manually"
     return $false
+  }
+  # Already installed — treat as success
+  if (Test-Winget-Installed $PackageId) {
+    Write-Ok "$Label already installed (winget)"
+    return $true
   }
   Write-Host "  Installing $Label via winget..." -ForegroundColor Gray
   winget install $PackageId --silent --accept-package-agreements --accept-source-agreements 2>$null
@@ -245,7 +257,10 @@ if (-not $SkipAuth) {
 }
 
 # ── Step 4: Obsidian (optional) ──────────────────────────────────────
-$obsidianInstalled = (Test-Command "obsidian") -or (Test-Path "$env:LOCALAPPDATA\Obsidian\Obsidian.exe")
+$obsidianInstalled = (Test-Command "obsidian") -or
+                     (Test-Path "$env:LOCALAPPDATA\Obsidian\Obsidian.exe") -or
+                     (Test-Path "$env:LOCALAPPDATA\Programs\Obsidian\Obsidian.exe") -or
+                     (Test-Winget-Installed "Obsidian.Obsidian")
 
 if ($obsidianInstalled) {
   Write-Ok "Obsidian already installed"
@@ -281,7 +296,10 @@ if ($obsidianInstalled) {
     Write-Step "Installing Obsidian"
     Install-Via-Winget "Obsidian.Obsidian" "Obsidian"
     Refresh-Path
-    $obsidianNow = (Test-Command "obsidian") -or (Test-Path "$env:LOCALAPPDATA\Obsidian\Obsidian.exe")
+    $obsidianNow = (Test-Command "obsidian") -or
+                   (Test-Path "$env:LOCALAPPDATA\Obsidian\Obsidian.exe") -or
+                   (Test-Path "$env:LOCALAPPDATA\Programs\Obsidian\Obsidian.exe") -or
+                   (Test-Winget-Installed "Obsidian.Obsidian")
     if ($obsidianNow) {
       Write-Ok "Obsidian installed"
     } else {
