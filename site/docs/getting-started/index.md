@@ -71,7 +71,7 @@ You're connecting Copilot to your enterprise data sources via MCP servers. **VS 
 
 Before you begin, make sure you're on the **Microsoft corporate VPN** and have your `@microsoft.com` account ready.
 
-Since this is a **private repo**, you need **Git** and **GitHub CLI** installed first to clone it. The bootstrap script then installs everything else automatically (VS Code, Node.js, Azure CLI, PowerShell 7, Copilot extension).
+Since this repo is **internal to the Microsoft GitHub org**, you need **Git** and **GitHub CLI** installed first to clone it. The bootstrap script then installs everything else automatically (VS Code, Node.js, Azure CLI, PowerShell 7, Copilot extension).
 
 ### Step 1: Install Git + GitHub CLI
 

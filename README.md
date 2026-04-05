@@ -32,7 +32,7 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 - [ ] [Git](https://git-scm.com/) — `git --version` to check
   - macOS: `brew install git`
   - Windows: `winget install Git.Git`
-- [ ] [GitHub CLI (`gh`)](https://cli.github.com/) — required to clone this private repo and for package auth
+- [ ] [GitHub CLI (`gh`)](https://cli.github.com/) — required to clone this internal repo and for package auth
   - macOS: `brew install gh`
   - Windows: `winget install GitHub.cli`
 

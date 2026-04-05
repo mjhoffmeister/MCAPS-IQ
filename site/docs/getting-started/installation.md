@@ -21,7 +21,7 @@ Two commands and you're done.
 
 ## Step 1: Clone the Repo
 
-This is a private repo — you need Git and GitHub CLI authenticated before cloning.
+This repo is internal to the Microsoft GitHub org — you need Git and GitHub CLI authenticated before cloning.
 
 === "Bootstrap (recommended)"
 
