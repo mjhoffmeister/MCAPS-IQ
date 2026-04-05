@@ -5,6 +5,8 @@ tags:
   - evaluation
   - hardening
   - testing
+hide:
+  - toc
 ---
 
 # Eval Framework Hardening Spec

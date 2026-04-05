@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # Welcome to the Agentic Era — Presentation Prompt
 
 > **Prompt for AI presentation generators** (Gamma, Beautiful.ai, Copilot in PowerPoint, etc.)

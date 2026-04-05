@@ -4,15 +4,17 @@ description: Start the MCP servers and talk to Copilot about your MSX data.
 tags:
   - getting-started
   - first-chat
+hide:
+  - toc
 ---
 
 # Your First Chat
 
-<div class="step-indicator" markdown>
-<span class="step done">1. Prerequisites ✓</span>
-<span class="step done">2. Install ✓</span>
-<span class="step active">3. First Chat</span>
-<span class="step">4. Choose Role</span>
+<div class="timeline-nav">
+<a href="../" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Getting Started</div></a>
+<a href="../installation/" class="tl-step done"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Install</div></a>
+<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
+<a href="../choose-role/" class="tl-step"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
 </div>
 
 This is the moment everything comes together. You'll start the MCP servers and ask Copilot your first question.

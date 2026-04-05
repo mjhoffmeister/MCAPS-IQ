@@ -4,15 +4,17 @@ description: Everything you need before installing MCAPS IQ.
 tags:
   - getting-started
   - prerequisites
+hide:
+  - toc
 ---
 
 # Prerequisites
 
-<div class="step-indicator" markdown>
-<span class="step active">1. Prerequisites</span>
-<span class="step">2. Install</span>
-<span class="step">3. First Chat</span>
-<span class="step">4. Choose Role</span>
+<div class="timeline-nav">
+<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Prerequisites</div></a>
+<a href="../installation/" class="tl-step"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Install</div></a>
+<a href="../first-chat/" class="tl-step"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
+<a href="../choose-role/" class="tl-step"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
 </div>
 
 Before you begin, verify you have everything in this checklist. Each item takes 30 seconds to check.
@@ -43,7 +45,7 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
 
     Go to [https://aka.ms/copilot](https://aka.ms/copilot) — if it shows your Copilot license is active, you're all set.
 
-    ??? success "Validate: What you should see"
+    ???+ success "Validate: What you should see"
         After signing in with your `@microsoft.com` account, you should see green checkmarks confirming:
 
         - **GitHub Copilot enabled** for your Enterprise Managed User (EMU) account
@@ -86,7 +88,7 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
     2. Press ++cmd+shift+x++ (Extensions)
     3. Search for "GitHub Copilot" — it should show as installed
 
-    ??? example "Example"
+    ???+ example "Example"
         Here's what the GitHub Copilot Chat extension looks like when installed:
 
         ![GitHub Copilot Chat Extension](../assets/GHCPChatExtention.png)
@@ -137,7 +139,7 @@ You need a GitHub account linked to Microsoft's Enterprise Managed Users (EMU) t
 
     2. Sign in with your GitHub account that has a Copilot license.
 
-        ??? example "Example: GitHub Copilot Sign In"
+        ???+ example "Example: GitHub Copilot Sign In"
             When VS Code opens, you'll see a prompt to sign in to GitHub Copilot:
 
             ![GitHub Copilot Sign In](../assets/GHCP_SignIn.png)

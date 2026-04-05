@@ -1,8 +1,21 @@
 # Obsidian Vault Integration (OIL)
 
+> **Strongly recommended.** While MCAPS IQ works without Obsidian (stateless CRM-only mode), the vault is what makes the agent truly yours — the difference between a chatbot that forgets everything and an assistant that accumulates institutional knowledge over time.
+
 The **[Obsidian Intelligence Layer (OIL)](https://github.com/JinLee794/Obsidian-Intelligence-Layer)** turns your local Obsidian vault into a durable knowledge layer for AI agents. Instead of starting every conversation from scratch, OIL gives agents persistent memory — customer context, meeting history, relationship maps, and accumulated insights — all indexed and queryable through MCP tools.
 
-> **Don't use Obsidian?** No worries — everything works without it. The system operates statelessly (CRM-only) and you can bring your own persistence layer if desired.
+---
+
+## Why Obsidian Is the Perfect Agentic Sandbox
+
+Obsidian isn't just a note-taking app — it's a **fully local, extensible, programmable knowledge environment** uniquely suited as the persistence and rendering layer for AI agent workflows.
+
+- **100% local** — your notes never leave your machine. No cloud sync required, no data residency questions for enterprise account data.
+- **Graph-based** — Obsidian's `[[wikilink]]` model gives OIL a pre-built relationship graph (people ↔ customers ↔ meetings ↔ projects) queryable in O(1) via a pre-indexed backlink map.
+- **Markdown-native** — plain `.md` files you own forever. No proprietary format, no vendor lock-in.
+- **Import from existing tools** — built-in importers for **OneNote**, Evernote, Notion, Apple Notes, Google Keep, and HTML. Bootstrap your vault with years of accumulated customer knowledge on day one.
+- **Renders HTML & JavaScript** — plugins like Dataview, DataviewJS, Charts, Templater, Meta Bind, and Excalidraw turn the vault into a **living dashboard** with interactive scorecards, computed views, and visual diagrams — all running locally with zero infrastructure.
+- **Works offline** — Obsidian doesn't even need to be running. OIL reads the vault folder directly.
 
 ---
 
@@ -27,27 +40,30 @@ The **[Obsidian Intelligence Layer (OIL)](https://github.com/JinLee794/Obsidian-
 
 3. Click **Start** on `oil` in VS Code just like the other servers.
 
-OIL exposes domain-specific tools including `get_customer_context`, `search_vault`, `prepare_crm_prefetch`, `promote_findings`, and `check_vault_health`. See the upstream [OIL README](https://github.com/JinLee794/Obsidian-Intelligence-Layer#readme) for full tool coverage and configuration details.
+OIL v2 exposes 7 tools in two categories. See the upstream [OIL README](https://github.com/JinLee794/Obsidian-Intelligence-Layer#readme) for full details.
 
 ---
 
-## Why Obsidian?
+## What OIL Provides (7 Tools)
 
-- **100% local** — your notes never leave your machine. No cloud sync required.
-- **Graph-based** — Obsidian's wikilink model gives OIL a pre-built relationship graph (people ↔ customers ↔ meetings ↔ projects) queryable in O(1) via a pre-indexed backlink map.
-- **Markdown-native** — plain `.md` files you own forever. No proprietary format, no vendor lock-in.
-- **Works offline** — Obsidian doesn't even need to be running. OIL reads the vault folder directly.
+### Retrieve (5 tools) — Token-efficient reads and search
 
----
+| Tool | Purpose |
+|------|---------|
+| `get_note_metadata` | Peek before loading — frontmatter, timestamps, word count, headings, `mtime_ms` (needed for writes) |
+| `read_note_section` | Read a single heading section. Most token-efficient read — request `## Team` instead of a 5,000-word note |
+| `get_related_entities` | Deduped flat list of linked notes from the graph index — paths and titles, max 3 hops, capped at 50 |
+| `semantic_search` | Fuzzy search (fuse.js) with lexical content fallback. Returns match snippets with scores, capped at 20 |
+| `query_frontmatter` | Fast cached frontmatter index lookup by key + value fragment. No disk scan — runs against in-memory index |
 
-## What OIL Provides
+### Write (2 tools) — Atomic writes with mtime concurrency
 
-| Category            | Tools                                                                                                                        | Purpose                                                |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| **Orient**    | `get_vault_context`, `get_customer_context`, `get_person_context`, `query_graph`, `resolve_people_to_customers`    | Understand who/what/where before querying CRM          |
-| **Retrieve**  | `search_vault`, `query_notes`, `find_similar_notes`                                                                    | 3-tier search: lexical → fuzzy → semantic embeddings |
-| **Write**     | `patch_note`, `capture_connect_hook`, `draft_meeting_note`, `update_customer_file`, `create_customer_file`, + more | Gated writes with diffs and human confirmation         |
-| **Composite** | `prepare_crm_prefetch`, `correlate_with_vault`, `promote_findings`, `check_vault_health`, `get_drift_report`       | Cross-MCP workflows that bridge vault ↔ CRM ↔ M365   |
+| Tool | Purpose |
+|------|---------|
+| `atomic_append` | Append content under a specific heading. Requires `expected_mtime` — rejects if file changed since last read |
+| `atomic_replace` | Replace entire note content. Same mtime check. For full-file rewrites when section-level append isn't sufficient |
+
+> **Note:** OIL v1 had 22 tools across Orient, Retrieve, Write, and Composite categories. v2 consolidated these into 7 — the LLM handles orchestration, OIL focuses on token-efficient reads and safe writes.
 
 ---
 

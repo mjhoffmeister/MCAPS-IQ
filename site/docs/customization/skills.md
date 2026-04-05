@@ -4,6 +4,8 @@ description: Create new domain skills for your team's specific workflows.
 tags:
   - customization
   - skills
+hide:
+  - toc
 ---
 
 # Writing Skills

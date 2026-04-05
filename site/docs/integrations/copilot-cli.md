@@ -4,6 +4,8 @@ description: Run MCAPS IQ from your terminal without opening VS Code.
 tags:
   - integrations
   - cli
+hide:
+  - toc
 ---
 
 # Copilot CLI

@@ -1,3 +1,20 @@
+---
+title: Scenario Prompts
+description: Redirects to the updated prompt catalog pages.
+hide:
+  - toc
+---
+
+# Scenario Prompts
+
+!!! note "This page has been reorganized"
+    Scenario prompts are now organized across dedicated pages with rich visual formatting:
+    
+    - **[Slash Commands](slash-commands.md)** — All 27 built-in guided flows with data source badges
+    - **[By Role](by-role.md)** — Visual role cards for Specialist, SE, CSA, CSAM, AE, ATS, and SD
+    - **[Multi-Skill Chains](multi-skill-chains.md)** — Flow diagrams for complex multi-skill workflows
+    - **[Power BI Analytics](powerbi.md)** — All 7 PBI prompts with semantic model details
+
 # Scenario Prompts
 
 Copy-paste any of these into the Copilot chat window after you've started the MCP servers. Each prompt triggers one or more skills automatically — you don't need to name the skills, just describe what you need.

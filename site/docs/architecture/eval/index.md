@@ -5,6 +5,8 @@ tags:
   - evaluation
   - testing
   - quality
+hide:
+  - toc
 ---
 
 # Evaluation Framework

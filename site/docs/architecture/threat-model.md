@@ -5,6 +5,8 @@ tags:
   - architecture
   - security
   - threat-model
+hide:
+  - toc
 ---
 # Threat Model — MCAPS-IQ
 

@@ -4,6 +4,8 @@ description: How MCAPS IQ connects Copilot to your enterprise data sources.
 tags:
   - architecture
   - overview
+hide:
+  - toc
 ---
 
 # System Overview
@@ -33,20 +35,26 @@ You (Copilot Chat)
 
 ```mermaid
 sequenceDiagram
-    participant U as You
-    participant C as GitHub Copilot
-    participant I as .github/ Instructions
-    participant M as MCP Server
-    participant D as Data Source
+    participant U as 🧑‍💻 You
+    participant C as 🤖 GitHub Copilot
+    participant I as 📄 .github/ Instructions
+    participant M as 🔌 MCP Server
+    participant D as 🏢 Data Source
 
     U->>C: "Show my milestones"
+    activate C
     C->>I: Load matching skills & instructions
     I-->>C: milestone-health-review skill
     C->>M: get_milestones(mine: true)
+    activate M
     M->>D: OData query to Dynamics 365
+    activate D
     D-->>M: Milestone records
+    deactivate D
     M-->>C: Structured response
+    deactivate M
     C-->>U: Formatted milestone summary
+    deactivate C
 ```
 
 ---

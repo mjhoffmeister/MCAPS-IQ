@@ -4,6 +4,8 @@ description: Specific error messages and their solutions.
 tags:
   - faq
   - errors
+hide:
+  - toc
 ---
 
 # Error Reference

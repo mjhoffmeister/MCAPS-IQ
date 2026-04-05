@@ -4,15 +4,17 @@ description: Tell Copilot your MCAPS role so it tailors its behavior to your wor
 tags:
   - getting-started
   - roles
+hide:
+  - toc
 ---
 
 # Choose Your Role
 
-<div class="step-indicator" markdown>
-<span class="step done">1. Prerequisites ✓</span>
-<span class="step done">2. Install ✓</span>
-<span class="step done">3. First Chat ✓</span>
-<span class="step active">4. Choose Role</span>
+<div class="timeline-nav">
+<a href="../" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Getting Started</div></a>
+<a href="../installation/" class="tl-step done"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Install</div></a>
+<a href="../first-chat/" class="tl-step done"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
+<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
 </div>
 
 Copilot automatically detects your role from CRM, but you can also tell it explicitly. This takes 30 seconds and dramatically improves the relevance of its guidance.

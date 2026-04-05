@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # TOON Integration Spec — MCAPS Copilot Tools
 
 > **Status**: Proposal / RFC  

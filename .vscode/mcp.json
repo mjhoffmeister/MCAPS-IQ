@@ -43,7 +43,7 @@
 		"workiq": {
 			"type": "stdio",
 			"command": "npx",
-			"args": ["-y", "@microsoft/workiq@latest", "mcp"],
+			"args": ["-y", "@microsoft/workiq@latest", "mcp"]
 		},
 		"powerbi-remote": {
             "type": "http",
@@ -52,27 +52,27 @@
 		"calendar": {
 			"type": "http",
 			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_CalendarTools",
-			"headers": {},
+			"headers": {}
 		},
 		"teams": {
 			"type": "http",
 			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_TeamsServer",
-			"headers": {},
+			"headers": {}
 		},
 		"mail":{
 			"type": "http",
 			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_MailTools",
-			"headers": {},
+			"headers": {}
 		},
 		"sharepoint": {
 			"type": "http",
 			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_ODSPRemoteServer",
-			"headers": {},
+			"headers": {}
 		},
 		"word": {
 			"type": "http",
 			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/72f988bf-86f1-41af-91ab-2d7cd011db47/servers/mcp_WordServer",
-			"headers": {},
+			"headers": {}
 		}
 
 	}
