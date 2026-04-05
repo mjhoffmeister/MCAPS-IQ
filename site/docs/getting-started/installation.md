@@ -4,54 +4,47 @@ description: Clone the repo, configure runtime, and sign in to Azure.
 tags:
   - getting-started
   - installation
-hide:
-  - toc
 ---
 
 # Installation
 
-<div class="timeline-nav">
-<a href="../" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Getting Started</div></a>
-<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Install</div></a>
-<a href="../first-chat/" class="tl-step"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
-<a href="../choose-role/" class="tl-step"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
+<div class="step-indicator" markdown>
+<span class="step done">1. Prerequisites ✓</span>
+<span class="step active">2. Runtime Setup</span>
+<span class="step">3. First Chat</span>
+<span class="step">4. Choose Role</span>
 </div>
 
-!!! success "Used the bootstrap script?"
-    If you ran the one-command bootstrap from [Getting Started](index.md), you can skip to [Step 3: Sign In to Azure](#step-3-sign-in-to-azure) — the repo is already cloned and tools are installed.
+Two commands and you're done.
 
 ---
 
 ## Step 1: Clone the Repo
 
-=== "Bootstrap (already done)"
+This is a private repo — you need Git and GitHub CLI authenticated before cloning.
 
-    If you used the bootstrap script, the repo is already cloned and VS Code is open. Skip to Step 2.
+=== "Bootstrap (recommended)"
 
-=== "Windows (manual)"
+    If you followed the [Getting Started](index.md) bootstrap path, the repo is already cloned. Skip to Step 2.
 
-    Open VS Code, then open a terminal inside it (**Terminal** → **New Terminal**) and run:
-
-    ```powershell
-    # Navigate to C:\Temp (create it if it doesn't exist)
-    if (-not (Test-Path "C:\Temp")) { New-Item -ItemType Directory -Path "C:\Temp" }
-    cd C:\Temp
-
-    # Clone the repo
-    git clone https://github.com/microsoft/mcaps-iq.git
-    cd mcaps-iq
-    ```
-
-=== "macOS / Linux (manual)"
+=== "Clone via GitHub CLI"
 
     ```bash
-    cd ~
+    gh auth login          # Use your personal GitHub account, NOT _microsoft EMU
+    gh repo clone microsoft/MCAPS-IQ
+    cd MCAPS-IQ
+    ```
+
+=== "Clone via Git (with token)"
+
+    If you prefer plain `git clone`, you need a GitHub PAT with `repo` scope:
+
+    ```bash
     git clone https://github.com/microsoft/mcaps-iq.git
     cd mcaps-iq
     ```
 
-!!! tip "Where is the repo?"
-    Default locations: `C:\Temp\mcaps-iq` (Windows bootstrap), `~/mcaps-iq` (macOS bootstrap). You can change this to any folder you prefer.
+    Git will prompt for credentials — use your personal GitHub username and a [Personal Access Token](https://github.com/settings/tokens) as the password.
 
 ---
 
