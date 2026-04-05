@@ -137,6 +137,16 @@ This registers a **global `mcaps` command** via `npm link`. After setup, type `m
 
 For more issues, see [Troubleshooting Setup](troubleshooting.md).
 
+!!! tip "Still stuck? Ask Copilot to help"
+    If you're hitting persistent issues, open the Copilot chat panel (++cmd+shift+i++) and try one of these prompts:
+
+    - *"Help me debug my MCP server setup — msx won't start"*
+    - *"I'm getting a 401 error when starting the MSX server. Walk me through fixing GitHub Packages auth."*
+    - *"Run the environment check and tell me what's missing"*
+    - *"I ran the bootstrap script but az login failed. Help me sign in to Azure on VPN."*
+
+    Copilot has full context of the repo's setup scripts and can walk you through fixes interactively.
+
 ---
 
 ## Optional: Multi-Agent Squads (Experimental)
