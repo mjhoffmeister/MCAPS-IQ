@@ -12,10 +12,10 @@
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: #f5f5f5;
     color: #1b1b1b;
-    min-width: 1400px;
   }
   .page {
-    width: 1680px;
+    width: 100%;
+    max-width: 1680px;
     margin: 0 auto;
     background: #fff;
     box-shadow: 0 2px 24px rgba(0,0,0,.08);
@@ -64,6 +64,7 @@
     display: flex;
     gap: 12px;
     margin-top: 8px;
+    flex-wrap: wrap;
   }
   .hero-nav a {
     display: inline-flex;
@@ -105,6 +106,8 @@
     gap: 0;
     padding: 0 20px;
     position: relative;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .flow-node {
     display: flex;
@@ -227,6 +230,7 @@
     display: flex;
     gap: 24px;
     align-items: center;
+    flex-wrap: wrap;
   }
   .lr-0 .layer-body { background: var(--ms-blue-light); }
   .lr-1 .layer-body { background: var(--teal-light); }
@@ -409,6 +413,7 @@
     justify-content: center;
     gap: 24px;
     margin-bottom: 24px;
+    flex-wrap: wrap;
   }
   .mcp-card {
     background: rgba(255,255,255,.07);
@@ -514,6 +519,7 @@
     gap: 0;
     align-items: stretch;
     max-width: 1200px;
+    flex-wrap: wrap;
   }
   .rd-user {
     background: #f0f5ff;
@@ -639,6 +645,7 @@
   .chain-examples {
     display: flex;
     gap: 20px;
+    flex-wrap: wrap;
   }
   .chain-card {
     flex: 1;
@@ -754,6 +761,87 @@
   .section-divider {
     height: 4px;
     background: linear-gradient(90deg, var(--ms-blue), var(--teal), var(--green), var(--purple));
+  }
+
+  /* ── Responsive ────────────────────────────────────── */
+  @media (max-width: 1200px) {
+    .hero-banner { padding: 32px 24px 28px; }
+    .big-picture { padding: 28px 24px 22px; }
+    .layers-section { padding: 28px 24px 30px; }
+    .customize-section { padding: 28px 24px; }
+    .data-layer { padding: 28px 24px 22px; }
+    .routing-section { padding: 28px 24px; }
+    .chains-section { padding: 28px 24px 30px; }
+    .quick-ref { padding: 28px 24px 22px; }
+    .footer-note { padding: 12px 24px; }
+    .scenario-grid { grid-template-columns: repeat(2, 1fr); }
+    .layer-file-box { min-width: 220px; }
+    .mcp-card { min-width: 180px; }
+  }
+
+  @media (max-width: 900px) {
+    html { font-size: 13px; }
+    .hero-banner { padding: 24px 16px 20px; }
+    .hero-nav a { padding: 8px 12px; font-size: 0.8rem; }
+    .big-picture { padding: 22px 16px 18px; }
+    .flow-diagram { padding: 0; gap: 8px; }
+    .flow-arrow { min-width: 50px; }
+    .flow-arrow .fa-label { font-size: 0.62rem; }
+    .flow-node .fn-icon { width: 56px; height: 56px; font-size: 1.5rem; border-radius: 14px; }
+    .flow-node .fn-detail { max-width: 110px; font-size: 0.68rem; }
+    .layers-section { padding: 22px 16px 24px; }
+    .layer-body { padding: 14px 16px; gap: 14px; }
+    .layer-file-box { min-width: 0; max-width: none; }
+    .layer-badge { font-size: 0.68rem; min-width: 34px; padding: 10px 6px; }
+    .customize-section { padding: 22px 16px; }
+    .scenario-grid { grid-template-columns: 1fr; gap: 14px; }
+    .data-layer { padding: 22px 16px 18px; }
+    .mcp-card { min-width: 160px; max-width: none; }
+    .routing-section { padding: 22px 16px; }
+    .routing-demo { flex-direction: column; }
+    .rd-user { border-radius: 14px 14px 0 0; min-width: 0; }
+    .rd-engine { min-width: 0; }
+    .rd-results { border-radius: 0 0 14px 14px; }
+    .chains-section { padding: 22px 16px 24px; }
+    .chain-card { flex: 1 1 100%; }
+    .quick-ref { padding: 22px 16px 18px; }
+    .ref-table { font-size: 0.8rem; }
+    .ref-table th, .ref-table td { padding: 8px 10px; }
+    .footer-note { padding: 10px 16px; }
+  }
+
+  @media (max-width: 600px) {
+    html { font-size: 12px; }
+    .hero-banner { padding: 18px 12px 14px; gap: 10px; }
+    .hero-banner h1 { font-size: 1.6rem; }
+    .hero-nav { gap: 8px; }
+    .hero-nav a { padding: 6px 10px; font-size: 0.75rem; }
+    .big-picture { padding: 16px 12px 14px; }
+    .flow-node .fn-icon { width: 48px; height: 48px; font-size: 1.3rem; border-radius: 12px; }
+    .flow-node .fn-detail { display: none; }
+    .flow-arrow .fa-label { display: none; }
+    .flow-arrow { min-width: 30px; }
+    .layers-section { padding: 16px 12px 18px; }
+    .layer-badge { display: none; }
+    .layer-row { border-radius: 10px !important; border-bottom: 2px solid !important; margin-bottom: -2px; }
+    .layer-body { border-radius: 10px; padding: 12px; }
+    .layer-file-box { padding: 10px 12px; }
+    .customize-section { padding: 16px 12px; }
+    .scenario-card { padding: 16px; }
+    .data-layer { padding: 16px 12px 14px; }
+    .mcp-card { padding: 16px; min-width: 140px; }
+    .mcp-card .mc-tools { display: none; }
+    .routing-section { padding: 16px 12px; }
+    .rd-user { padding: 16px; }
+    .rd-engine { padding: 16px; }
+    .rd-results { padding: 16px; }
+    .rd-match .rdm-reason { display: none; }
+    .chains-section { padding: 16px 12px 18px; }
+    .chain-card { padding: 16px; }
+    .quick-ref { padding: 16px 12px 14px; }
+    .ref-table th:nth-child(4), .ref-table td:nth-child(4) { display: none; }
+    .ref-table th, .ref-table td { padding: 6px 8px; }
+    .footer-note { padding: 8px 12px; }
   }
 </style>
 </head>

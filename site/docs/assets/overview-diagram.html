@@ -12,10 +12,10 @@
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: #f5f5f5;
     color: #1b1b1b;
-    min-width: 1400px;
   }
   .page {
-    width: 1680px;
+    width: 100%;
+    max-width: 1680px;
     margin: 0 auto;
     background: #fff;
     box-shadow: 0 2px 24px rgba(0,0,0,.08);
@@ -380,7 +380,7 @@
   }
 
   /* ── Section 4: On-Demand ─────────────────────────── */
-  .flow-card.on-demand { flex: 1; min-width: 220px; max-width: 380px; }
+  .flow-card.on-demand { flex: 1; min-width: 200px; }
   .section-grid {
     display: flex;
     gap: 6px;
@@ -411,6 +411,7 @@
     gap: 20px;
     flex: 1;
     width: 100%;
+    flex-wrap: wrap;
   }
   .stage-panel {
     flex: 1;
@@ -469,6 +470,7 @@
     gap: 12px;
     width: 100%;
     margin-top: 4px;
+    flex-wrap: wrap;
   }
   .safety-callout {
     flex: 1;
@@ -506,6 +508,7 @@
     display: flex;
     gap: 24px;
     justify-content: center;
+    flex-wrap: wrap;
   }
   .source-card {
     background: rgba(255,255,255,.08);
@@ -555,6 +558,8 @@
     display: flex;
     align-items: center;
     gap: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .hub-box .hub-icon {
     font-size: 2.2rem;
@@ -564,6 +569,8 @@
     gap: 20px;
     font-size: 0.78rem;
     opacity: 0.8;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .hub-stats span { display: flex; flex-direction: column; align-items: center; }
   .hub-stats .num { font-size: 1.3rem; font-weight: 700; opacity: 1; color: var(--teal); }
@@ -587,9 +594,10 @@
     display: flex;
     gap: 18px;
     justify-content: center;
+    flex-wrap: wrap;
   }
   .role-card {
-    flex: 1;
+    flex: 0 1 calc(25% - 18px);
     max-width: 260px;
     min-width: 200px;
     background: #fff;
@@ -667,6 +675,7 @@
     padding: 20px 48px;
     background: #fff;
     border-top: 1px solid var(--gray-light);
+    flex-wrap: wrap;
   }
   .callout-box {
     flex: 1;
@@ -718,6 +727,82 @@
     color: var(--gray);
     background: #fafafa;
     border-top: 1px solid var(--gray-light);
+  }
+
+  /* ── Responsive ────────────────────────────────────── */
+  @media (max-width: 1200px) {
+    .value-banner { padding: 28px 24px 24px; }
+    .pillars { gap: 16px; }
+    .pillar { padding: 14px 16px; }
+    .prompt-bridge { padding: 20px 24px 14px; }
+    .flows-container { padding: 24px 12px 8px; }
+    .data-sources { padding: 24px 24px 20px; }
+    .role-ribbon { padding: 20px 24px 24px; }
+    .callouts-strip { padding: 16px 24px; }
+    .footer-note { padding: 12px 24px; }
+    .flow-card.morning { min-width: 320px; }
+    .flow-card.weekly { min-width: 320px; }
+    .source-card { min-width: 140px; padding: 14px 16px; }
+  }
+
+  @media (max-width: 900px) {
+    html { font-size: 13px; }
+    .value-banner { padding: 20px 16px 18px; }
+    .pillars { flex-direction: column; gap: 12px; }
+    .prompt-bridge { padding: 16px 16px 12px; }
+    .prompt-row { gap: 10px; }
+    .prompt-bubble { padding: 6px 12px; font-size: 0.82rem; }
+    .prompt-bubble .arrow-down { display: none; }
+    .flows-container { padding: 16px 8px 6px; }
+    .lane-label { font-size: 0.7rem; min-width: 28px; padding: 12px 6px; }
+    .lane-content { padding: 12px 12px; gap: 14px; }
+    .flow-card.morning { min-width: 0; }
+    .flow-card.weekly { min-width: 0; }
+    .flow-card.on-demand { min-width: 180px; }
+    .mode-cols { flex-direction: column; gap: 8px; }
+    .safety-grid { flex-direction: column; }
+    .stage-arrow-col {
+      flex-direction: row;
+      width: 100%;
+      height: auto;
+      font-size: 1.2rem;
+      justify-content: center;
+    }
+    .stage-arrow-col span.note { display: none; }
+    .stage-panel { min-width: 0; }
+    .callouts-strip { padding: 14px 16px; gap: 12px; }
+    .callout-box { flex: 1 1 calc(50% - 12px); min-width: 200px; }
+    .data-sources { padding: 20px 16px 16px; }
+    .source-card { min-width: 120px; padding: 12px 14px; }
+    .role-ribbon { padding: 18px 16px 20px; }
+    .role-card { flex: 0 1 calc(50% - 18px); min-width: 180px; }
+    .footer-note { padding: 10px 16px; }
+  }
+
+  @media (max-width: 600px) {
+    html { font-size: 12px; }
+    .value-banner { padding: 16px 12px 14px; gap: 14px; }
+    .value-banner h1 { font-size: 1.6rem; }
+    .pillar { padding: 12px; gap: 10px; }
+    .pillar-icon { width: 36px; height: 36px; font-size: 1.4rem; }
+    .prompt-bridge { padding: 12px 12px 10px; }
+    .prompt-row { gap: 8px; }
+    .prompt-bubble { font-size: 0.76rem; padding: 5px 10px; }
+    .flows-container { padding: 12px 4px 4px; }
+    .lane-label { display: none; }
+    .lane-content { border-left: 1.5px solid; border-radius: 10px; padding: 10px; gap: 10px; }
+    .source-tile { min-width: 100px; }
+    .source-tile .tile-body { padding: 10px; }
+    .source-tile .tile-sub { display: none; }
+    .callouts-strip { flex-direction: column; padding: 12px; }
+    .callout-box { flex: 1 1 100%; }
+    .sources-row { gap: 12px; }
+    .source-card { min-width: 100px; padding: 10px 12px; }
+    .source-card p { display: none; }
+    .hub-box { padding: 10px 16px; gap: 10px; }
+    .role-card { flex: 1 1 100%; max-width: none; }
+    .role-ribbon { padding: 14px 12px 16px; }
+    .footer-note { padding: 8px 12px; }
   }
 </style>
 </head>
@@ -1110,7 +1195,7 @@
       <div class="hub-stats">
         <span><span class="num">43</span>skills</span>
         <span><span class="num">20+</span>slash prompts</span>
-        <span><span class="num">7</span>MCAPS roles</span>
+        <span><span class="num">8</span>MCAPS roles</span>
         <span><span class="num">5</span>data sources</span>
       </div>
     </div>
@@ -1218,6 +1303,22 @@
         <li>Consumption growth through adoption</li>
       </ul>
       <div class="role-prompt">What's the full account landscape for Fabrikam? Show me cross-role pipeline and EDE coverage.</div>
+    </div>
+    <!-- IA -->
+    <div class="role-card">
+      <div class="role-header">
+        <div class="role-icon" style="background:#C4820E;">🏭</div>
+        <div>
+          <h4>Industry Advisor</h4>
+          <div class="role-sub">Industry-focused pipeline creator</div>
+        </div>
+      </div>
+      <ul class="role-workflows">
+        <li>Industry use case specialization</li>
+        <li>Proactive Stage 1 pipeline creation</li>
+        <li>Industry partner sales &amp; co-innovation</li>
+      </ul>
+      <div class="role-prompt">What industry hero use cases can we land at Woodgrove? Show me AI Halo opportunities and partner ISVs.</div>
     </div>
     <!-- ATU Sales Director -->
     <div class="role-card">
