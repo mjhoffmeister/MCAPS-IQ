@@ -52,9 +52,74 @@ function Refresh-Path {
 }
 
 function Resolve-CodeCmd {
-  if (Test-Command "code-insiders") { return "code-insiders" }
-  if (Test-Command "code") { return "code" }
+  # Check PATH first (Insiders takes priority)
+  foreach ($candidate in @("code-insiders", "code")) {
+    if (Test-Command $candidate) { return $candidate }
+  }
+
+  # VS Code's bin dir is often missing from PATH after a fresh winget install.
+  # Probe known locations and patch $env:Path for the rest of this session.
+  $probeDirs = @(
+    "$env:LOCALAPPDATA\Programs\Microsoft VS Code Insiders\bin"
+    "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin"
+    "$env:ProgramFiles\Microsoft VS Code Insiders\bin"
+    "$env:ProgramFiles\Microsoft VS Code\bin"
+    "${env:ProgramFiles(x86)}\Microsoft VS Code\bin"
+  )
+  foreach ($dir in $probeDirs) {
+    if (Test-Path (Join-Path $dir "code-insiders.cmd")) {
+      $env:Path = "$dir;$env:Path"
+      return "code-insiders"
+    }
+    if (Test-Path (Join-Path $dir "code.cmd")) {
+      $env:Path = "$dir;$env:Path"
+      return "code"
+    }
+  }
+
   return $null
+}
+
+# Get VS Code version from product.json on disk — never launches Code.exe.
+function Get-CodeVersion {
+  param([string]$Cmd)
+  $isInsiders = $Cmd -eq "code-insiders"
+  $installRoots = if ($isInsiders) {
+    @("$env:LOCALAPPDATA\Programs\Microsoft VS Code Insiders",
+      "$env:ProgramFiles\Microsoft VS Code Insiders")
+  } else {
+    @("$env:LOCALAPPDATA\Programs\Microsoft VS Code",
+      "$env:ProgramFiles\Microsoft VS Code",
+      "${env:ProgramFiles(x86)}\Microsoft VS Code")
+  }
+  foreach ($root in $installRoots) {
+    if (-not (Test-Path $root)) { continue }
+    # product.json lives inside a versioned subdirectory (e.g. e7fb5e96c0/)
+    $productFiles = Get-ChildItem $root -Recurse -Filter "product.json" -Depth 3 -ErrorAction SilentlyContinue |
+                    Where-Object { $_.FullName -match 'resources[\\/]app[\\/]product\.json$' } |
+                    Select-Object -First 1
+    if ($productFiles) {
+      try {
+        $ver = (Get-Content $productFiles.FullName -Raw | ConvertFrom-Json).version
+        if ($ver) { return $ver }
+      } catch {}
+    }
+  }
+  return "unknown"
+}
+
+# Check if a VS Code extension is installed by scanning the extensions directory.
+function Test-CodeExtension {
+  param([string]$ExtensionId, [string]$Cmd)
+  $extDir = if ($Cmd -eq "code-insiders") {
+    "$env:USERPROFILE\.vscode-insiders\extensions"
+  } else {
+    "$env:USERPROFILE\.vscode\extensions"
+  }
+  if (-not (Test-Path $extDir)) { return $false }
+  $found = Get-ChildItem $extDir -Directory -Name -ErrorAction SilentlyContinue |
+           Where-Object { $_ -match "^$([regex]::Escape($ExtensionId))-" }
+  return [bool]$found
 }
 
 function Test-Winget-Installed {
@@ -95,31 +160,47 @@ if (Test-Command "pwsh") {
   } else {
     Write-Warn "PowerShell $pwshVer found — need 7+"
     if (-not $CheckOnly) {
-      Install-Via-Winget "Microsoft.PowerShell" "PowerShell 7"
+      $null = Install-Via-Winget "Microsoft.PowerShell" "PowerShell 7"
       Refresh-Path
     } else { $allGood = $false }
   }
 } else {
   Write-Warn "PowerShell 7 (pwsh) not found"
   if (-not $CheckOnly) {
-    Install-Via-Winget "Microsoft.PowerShell" "PowerShell 7"
+    $null = Install-Via-Winget "Microsoft.PowerShell" "PowerShell 7"
     Refresh-Path
     if (Test-Command "pwsh") { Write-Ok "PowerShell 7 installed" } else { Write-Fail "PowerShell 7 install failed"; $allGood = $false }
   } else { $allGood = $false }
 }
 
 # -- VS Code (stable or Insiders) --
+# Resolve once and cache for the rest of the script (extension check + final open).
 $codeCmd = Resolve-CodeCmd
 if ($codeCmd) {
-  $codeVer = & $codeCmd --version 2>$null | Select-Object -First 1
+  $codeVer = Get-CodeVersion $codeCmd
   $codeLabel = if ($codeCmd -eq "code-insiders") { "VS Code Insiders" } else { "VS Code" }
   Write-Ok "$codeLabel $codeVer"
 } else {
   Write-Warn "VS Code not found"
   if (-not $CheckOnly) {
-    Install-Via-Winget "Microsoft.VisualStudioCode" "VS Code"
+    # Try Insiders first, then stable
+    $null = Install-Via-Winget "Microsoft.VisualStudioCode.Insiders" "VS Code Insiders"
+    Refresh-Path
     $codeCmd = Resolve-CodeCmd
-    if ($codeCmd) { Write-Ok "VS Code installed" } else { Write-Fail "VS Code install failed"; $allGood = $false }
+    if (-not $codeCmd) {
+      $null = Install-Via-Winget "Microsoft.VisualStudioCode" "VS Code"
+      Refresh-Path
+      $codeCmd = Resolve-CodeCmd
+    }
+    if ($codeCmd) {
+      $codeVer = Get-CodeVersion $codeCmd
+      $codeLabel = if ($codeCmd -eq "code-insiders") { "VS Code Insiders" } else { "VS Code" }
+      Write-Ok "$codeLabel $codeVer (resolved via path probe)"
+    } else {
+      Write-Fail "VS Code install failed — could not find 'code' command"
+      Write-Fail "  Try closing and reopening your terminal, then re-run this script"
+      $allGood = $false
+    }
   } else { $allGood = $false }
 }
 
@@ -130,7 +211,7 @@ if (Test-Command "git") {
 } else {
   Write-Warn "Git not found"
   if (-not $CheckOnly) {
-    Install-Via-Winget "Git.Git" "Git"
+    $null = Install-Via-Winget "Git.Git" "Git"
     Refresh-Path
     if (Test-Command "git") { Write-Ok "Git installed" } else { Write-Fail "Git install failed"; $allGood = $false }
   } else { $allGood = $false }
@@ -145,14 +226,14 @@ if (Test-Command "node") {
   } else {
     Write-Warn "Node.js $nodeVer found — need v18+"
     if (-not $CheckOnly) {
-      Install-Via-Winget "OpenJS.NodeJS.LTS" "Node.js LTS"
+      $null = Install-Via-Winget "OpenJS.NodeJS.LTS" "Node.js LTS"
       Refresh-Path
     } else { $allGood = $false }
   }
 } else {
   Write-Warn "Node.js not found"
   if (-not $CheckOnly) {
-    Install-Via-Winget "OpenJS.NodeJS.LTS" "Node.js LTS"
+    $null = Install-Via-Winget "OpenJS.NodeJS.LTS" "Node.js LTS"
     Refresh-Path
     if (Test-Command "node") { Write-Ok "Node.js installed" } else { Write-Fail "Node.js install failed"; $allGood = $false }
   } else { $allGood = $false }
@@ -165,7 +246,7 @@ if (Test-Command "gh") {
 } else {
   Write-Warn "GitHub CLI not found"
   if (-not $CheckOnly) {
-    Install-Via-Winget "GitHub.cli" "GitHub CLI"
+    $null = Install-Via-Winget "GitHub.cli" "GitHub CLI"
     # winget sometimes needs explicit PATH addition
     $ghPath = "C:\Program Files\GitHub CLI"
     if (Test-Path $ghPath) { $env:Path += ";$ghPath" }
@@ -181,23 +262,22 @@ if (Test-Command "az") {
 } else {
   Write-Warn "Azure CLI not found"
   if (-not $CheckOnly) {
-    Install-Via-Winget "Microsoft.AzureCLI" "Azure CLI"
+    $null = Install-Via-Winget "Microsoft.AzureCLI" "Azure CLI"
     Refresh-Path
     if (Test-Command "az") { Write-Ok "Azure CLI installed" } else { Write-Fail "Azure CLI install failed"; $allGood = $false }
   } else { $allGood = $false }
 }
 
-# -- Copilot extension --
-$codeCmd = Resolve-CodeCmd
+# -- Copilot extension (filesystem check — no Code.exe launch) --
 if ($codeCmd) {
-  $extensions = & $codeCmd --list-extensions 2>$null
-  if ($extensions -match "GitHub\.copilot-chat") {
+  if (Test-CodeExtension "github.copilot-chat" $codeCmd) {
     Write-Ok "GitHub Copilot Chat extension installed"
   } else {
     Write-Warn "GitHub Copilot Chat extension not found"
     if (-not $CheckOnly) {
       Write-Host "  Installing Copilot Chat extension..." -ForegroundColor Gray
-      & $codeCmd --install-extension GitHub.copilot-chat 2>$null
+      # --install-extension is the one CLI call we can't avoid — it needs Code.exe
+      & $codeCmd --install-extension GitHub.copilot-chat --force 2>$null | Out-Null
       Write-Ok "Copilot Chat extension installed"
     } else { $allGood = $false }
   }
@@ -294,7 +374,7 @@ if ($obsidianInstalled) {
 
   if ($installObsidian) {
     Write-Step "Installing Obsidian"
-    Install-Via-Winget "Obsidian.Obsidian" "Obsidian"
+    $null = Install-Via-Winget "Obsidian.Obsidian" "Obsidian"
     Refresh-Path
     $obsidianNow = (Test-Command "obsidian") -or
                    (Test-Path "$env:LOCALAPPDATA\Obsidian\Obsidian.exe") -or
@@ -315,7 +395,28 @@ if ($obsidianInstalled) {
 # ── Step 5: Open VS Code ─────────────────────────────────────────────
 Write-Step "Setup complete!"
 
-Write-Host @"
+# Adjust next-steps guidance based on whether we'll auto-open
+$alreadyInCode = $env:TERM_PROGRAM -eq "vscode"
+
+if ($alreadyInCode) {
+  Write-Host @"
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │   MCAPS IQ is ready!                                        │
+  │                                                             │
+  │   You're already in VS Code — no extra window needed.       │
+  │                                                             │
+  │   Next steps:                                               │
+  │     1. Open .vscode/mcp.json and click 'Start' on msx      │
+  │     2. Open Copilot Chat (Ctrl+Shift+I)                     │
+  │     3. Try: "Who am I in MSX?"                              │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+
+"@ -ForegroundColor Green
+} else {
+  Write-Host @"
 
   ┌─────────────────────────────────────────────────────────────┐
   │                                                             │
@@ -331,9 +432,10 @@ Write-Host @"
 
 "@ -ForegroundColor Green
 
-$codeCmd = Resolve-CodeCmd
-if ($codeCmd) {
-  & $codeCmd .
-} else {
-  Write-Warn "VS Code not on PATH — open the workspace manually"
+  # Open VS Code with the workspace (uses cached $codeCmd from prereq check)
+  if ($codeCmd) {
+    & $codeCmd . 2>$null
+  } else {
+    Write-Warn "VS Code not on PATH — open the workspace manually"
+  }
 }
