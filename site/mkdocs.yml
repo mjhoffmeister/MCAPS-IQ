@@ -127,12 +127,12 @@ nav:
     - "Day 2: Read Your Pipeline": guided/day-2-pipeline.md
     - "Day 3: Multi-Skill Chains": guided/day-3-chains.md
     - "Day 5: The Lightbulb Moment": guided/day-5-lightbulb.md
-  - Prompts & Workflows:
+  - Prompts & Skills:
     - prompts/index.md
-    - Slash Commands: prompts/slash-commands.md
+    - All Prompts: prompts/slash-commands.md
     - By Role: prompts/by-role.md
-    - Multi-Skill Chains: prompts/multi-skill-chains.md
-    - Power BI Analytics: prompts/powerbi.md
+    - Workflow Chains: prompts/multi-skill-chains.md
+    - Power BI Reports: prompts/powerbi.md
   - How It Works:
     - architecture/index.md
     - System Overview: architecture/overview.md

@@ -1,6 +1,6 @@
 ---
-title: Slash Commands
-description: Complete visual catalog of all 27 slash commands with data source badges, skill chains, and role indicators.
+title: All Prompts
+description: Complete visual catalog of all 27 prompts with data source badges, skill chains, and role indicators.
 tags:
   - prompts
   - slash-commands
@@ -8,9 +8,9 @@ hide:
   - toc
 ---
 
-# Slash Commands
+# All Prompts
 
-Type `/` in the VS Code Copilot chat panel to see available commands. Each one detects your role and tailors the experience.
+Type `/` in the VS Code Copilot chat panel or just describe what you need in plain English. Each prompt auto-loads the right [skills](index.md#prompts-vs-skills) behind the scenes and tailors the experience to your role.
 
 <div class="source-legend" markdown>
   <div class="sl-item"><div class="sl-dot" style="background: var(--mcaps-blue);"></div> CRM</div>
@@ -621,9 +621,9 @@ Focus:       /portfolio-prioritization  →  where to spend GHCP sales effort
 
 ---
 
-## Creating Your Own Slash Commands
+## Creating Your Own Commands
 
-Files in `.github/prompts/` automatically appear as slash commands in VS Code. Create one for any workflow you repeat often.
+Files in `.github/prompts/` automatically appear as `/` commands in VS Code. Create one for any workflow you repeat often.
 
 **Example:** `.github/prompts/quarterly-review-prep.prompt.md`
 

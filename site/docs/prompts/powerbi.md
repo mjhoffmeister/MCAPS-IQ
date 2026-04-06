@@ -1,5 +1,5 @@
 ---
-title: Power BI Prompts
+title: Power BI Reports
 description: 7 PBI prompts pulling from MSXI, OctoDash, CMI, and SE Productivity models — each with semantic model details and trigger keywords.
 tags:
   - prompts
@@ -7,7 +7,7 @@ tags:
   - analytics
 ---
 
-# Power BI Prompts
+# Power BI Reports
 
 The **Power BI Remote MCP** connects Copilot to your Power BI semantic models. Pull ACR telemetry, incentive baselines, consumption scorecards, and pipeline analytics — all from the chat window. No DAX knowledge required.
 
@@ -27,7 +27,7 @@ The **Power BI Remote MCP** connects Copilot to your Power BI semantic models. P
   <div class="ch-count">7 prompts · 5 semantic models</div>
 </div>
 
-All prompts delegate to the `pbi-analyst` subagent for DAX execution. You can invoke them via slash command or let the agent auto-route from keywords.
+All prompts delegate to the `pbi-analyst` subagent for DAX execution. You can invoke them via `/` or let the agent auto-route from keywords.
 
 <!-- ── Azure ──────────────────────────────────────────── -->
 

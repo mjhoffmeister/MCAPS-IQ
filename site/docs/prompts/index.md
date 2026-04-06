@@ -1,8 +1,9 @@
 ---
-title: Prompts & Workflows
-description: Visual catalog of all slash commands, role prompts, skill chains, and Power BI workflows — organized by category with data source indicators.
+title: Prompts & Skills
+description: How prompts, skills, and workflows fit together — plus a visual catalog of everything you can ask Copilot to do.
 tags:
   - prompts
+  - skills
   - workflows
   - catalog
 hide:
@@ -11,18 +12,69 @@ hide:
 
 <div class="prompt-hero" markdown>
 
-# Prompts & Workflows
+# Prompts & Skills
 
-Everything you can say to Copilot — organized visually so you can find the right prompt in seconds. Type `/` in chat or describe what you need in plain English.
+Everything you can ask Copilot to do — organized so you can find the right prompt in seconds.
 
 <div class="ph-stats">
-  <div class="ph-stat"><span class="num">27</span><span class="label">Slash Commands</span></div>
+  <div class="ph-stat"><span class="num">27</span><span class="label">Prompts</span></div>
   <div class="ph-stat"><span class="num">43</span><span class="label">Skills</span></div>
   <div class="ph-stat"><span class="num">7</span><span class="label">Roles</span></div>
   <div class="ph-stat"><span class="num">5</span><span class="label">Data Sources</span></div>
 </div>
 
 </div>
+
+---
+
+## Prompts vs Skills
+
+<div class="grid cards" markdown>
+
+-   :material-slash-forward:{ .lg .middle } __Prompts — what you invoke__
+
+    ---
+
+    Type `/daily` in chat or just say "start my day" in plain English. Prompts are pre-built guided flows — each one is a `.prompt.md` file in `.github/prompts/`. You choose when to run them.
+
+    :material-arrow-right: [Browse all 27 prompts](slash-commands.md)
+
+-   :material-brain:{ .lg .middle } __Skills — what the agent loads automatically__
+
+    ---
+
+    Domain knowledge modules (MCEM stages, CRM schema, role rules, etc.) that Copilot auto-selects based on keywords in your request. You never invoke them directly — they activate behind the scenes.
+
+    :material-arrow-right: [See skill routing by role](by-role.md)
+
+-   :material-link-variant:{ .lg .middle } __Workflows — prompts + skills in sequence__
+
+    ---
+
+    When a prompt triggers multiple skills across data sources in sequence. Flow diagrams show what runs and in what order.
+
+    :material-arrow-right: [Explore workflow chains](multi-skill-chains.md)
+
+</div>
+
+```mermaid
+graph LR
+    A["💬 <b>You run a prompt</b><br/><small>/daily or plain English</small>"] --> B["🧠 <b>Skills auto-activate</b><br/><small>matched by keywords</small>"]
+    B --> C["⛓️ <b>Workflow chains</b><br/><small>skills run in sequence</small>"]
+    C --> D["🔌 <b>MCP tools query</b><br/><small>CRM · M365 · Vault · PBI</small>"]
+    D --> E["✨ <b>Synthesized output</b><br/><small>tables · actions · risks</small>"]
+    
+    style A fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style B fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
+    style C fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:2px
+    style D fill:#5C2D91,color:#fff,stroke:#462170,stroke-width:2px
+    style E fill:#FFB900,color:#1B1B1B,stroke:#e0a700,stroke-width:2px
+
+    linkStyle default stroke:#9e9e9e,stroke-width:2.5px
+```
+
+!!! tip "You don't need to memorize any of this"
+    Just describe what you need. The agent figures out the right skills, tools, and data sources automatically. These pages exist as reference — not required reading.
 
 <div class="source-legend" markdown>
   <div class="sl-item"><div class="sl-dot" style="background: var(--mcaps-blue);"></div> CRM / MSX</div>
@@ -35,41 +87,41 @@ Everything you can say to Copilot — organized visually so you can find the rig
 
 ---
 
-## Quick Navigation
+## Browse by Category
 
 <div class="grid cards" markdown>
 
--   :material-slash-forward:{ .lg .middle } __[Slash Commands](slash-commands.md)__
+-   :material-slash-forward:{ .lg .middle } __[All Prompts](slash-commands.md)__
 
     ---
 
-    All 27 built-in guided flows. Type `/` in Copilot chat. Organized by category with data source indicators and skill chains.
+    Full catalog of 27 prompts with data source badges, skill chains, and role indicators. Start here.
 
 -   :material-account-group:{ .lg .middle } __[By Role](by-role.md)__
 
     ---
 
-    Visual role cards for Specialist, SE, CSA, CSAM, AE, ATS, and ATU Sales Director — with example prompts and skill routing.
+    Role cards for Specialist, SE, CSA, CSAM, AE, ATS, and SD — with example prompts and the skills each role triggers most.
 
--   :material-link-variant:{ .lg .middle } __[Multi-Skill Chains](multi-skill-chains.md)__
-
-    ---
-
-    One prompt triggers 3–4 skills in sequence. Flow diagrams show skill chains, data sources, and output format.
-
--   :material-chart-bar:{ .lg .middle } __[Power BI Analytics](powerbi.md)__
+-   :material-link-variant:{ .lg .middle } __[Workflow Chains](multi-skill-chains.md)__
 
     ---
 
-    7 PBI prompts pulling from MSXI, OctoDash, CMI, and SE Productivity models. Each shows DAX workflows and report structure.
+    Multi-skill flow diagrams — see exactly which skills chain together and which data sources each workflow touches.
+
+-   :material-chart-bar:{ .lg .middle } __[Power BI Reports](powerbi.md)__
+
+    ---
+
+    7 PBI-specific prompts querying MSXI, OctoDash, CMI, and SE Productivity semantic models.
 
 </div>
 
 ---
 
-## Prompt Landscape at a Glance
+## Prompt Catalog at a Glance
 
-Every slash command grouped by when and how you'd use it. Colored badges show which data sources each prompt touches.
+Every prompt grouped by when and how you'd use it. Colored badges show which data sources each one touches.
 
 <!-- ── Daily & Weekly Rhythm ──────────────────────────── -->
 
@@ -463,34 +515,11 @@ Every slash command grouped by when and how you'd use it. Colored badges show wh
 
 ---
 
-## How Prompts Connect to Skills
-
-```mermaid
-graph LR
-    A["💬 <b>You say something</b><br/><small>in plain English</small>"] --> B["🧠 <b>Keyword Match</b><br/><small>skills auto-selected</small>"]
-    B --> C["⛓️ <b>Skills Chain</b><br/><small>run in sequence</small>"]
-    C --> D["🔌 <b>MCP Queries</b><br/><small>CRM · M365 · Vault · PBI</small>"]
-    D --> E["✨ <b>Synthesized Output</b><br/><small>tables · actions · risks</small>"]
-    
-    style A fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
-    style B fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
-    style C fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:2px
-    style D fill:#5C2D91,color:#fff,stroke:#462170,stroke-width:2px
-    style E fill:#FFB900,color:#1B1B1B,stroke:#e0a700,stroke-width:2px
-
-    linkStyle default stroke:#9e9e9e,stroke-width:2.5px
-```
-
-!!! tip "You don't need to memorize any of this"
-    Just describe what you need. The agent figures out the right skills, tools, and data sources automatically. These pages exist as reference — not required reading.
-
----
-
-## Deep Dive Pages
+## All Pages
 
 | Page | What You'll Find |
 |------|-----------------|
-| [Slash Commands](slash-commands.md) | Complete catalog with data source badges, skill chains, and role indicators |
-| [By Role](by-role.md) | Visual role cards showing which prompts/skills each role uses most |
-| [Multi-Skill Chains](multi-skill-chains.md) | Flow diagrams for complex multi-skill workflows |
-| [Power BI Analytics](powerbi.md) | All 7 PBI prompts with semantic model details and trigger keywords |
+| [All Prompts](slash-commands.md) | Full catalog of 27 prompts with data source badges, skill chains, and role indicators |
+| [By Role](by-role.md) | Role cards showing which prompts and skills each role uses most |
+| [Workflow Chains](multi-skill-chains.md) | Flow diagrams for complex multi-skill workflows |
+| [Power BI Reports](powerbi.md) | 7 PBI prompts with semantic model details and trigger keywords |

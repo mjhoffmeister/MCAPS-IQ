@@ -58,6 +58,17 @@ I'm a Specialist. What should I focus on today?
     - Cross-team account leadership
     - Executive sponsor engagement
 
+-   :material-factory:{ .lg .middle } __[Industry Advisor (IA)](../prompts/by-role.md#industry-advisor)__
+
+    ---
+
+    **Industry-focused opportunity creator & pipeline accelerator**
+
+    - Industry use case specialization
+    - Proactive Stage 1 pipeline creation
+    - Industry partner sales & co-innovation
+    - Multi-account ROTH expansion
+
 -   :material-chart-line:{ .lg .middle } __[Specialist (STU)](../prompts/by-role.md#specialist)__
 
     ---

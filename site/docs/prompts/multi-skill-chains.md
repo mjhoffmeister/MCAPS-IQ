@@ -1,18 +1,18 @@
 ---
-title: Multi-Skill Chains
+title: Workflow Chains
 description: Flow diagrams for complex multi-skill workflows — one prompt triggers 3–4 skills in sequence with data sources and output format.
 tags:
-  - prompts
+  - workflows
   - chains
   - advanced
 ---
 
-# Multi-Skill Chains
+# Workflow Chains
 
 One prompt, 3–4 skills, comprehensive output. These are realistic "day in the life" prompts where the full orchestration shines.
 
 !!! info "How chains work"
-    You don't name the skills. Copilot matches your intent via keyword matching against each skill's `description` field, then runs them in the order defined by chain declarations.
+    You don't name the skills — they activate implicitly. Copilot matches your intent via keyword matching against each skill's `description` field, then runs them in the order defined by chain declarations. See [Prompts vs Skills](index.md#prompts-vs-skills) for the full picture.
 
 <div class="source-legend" markdown>
   <div class="sl-item"><div class="sl-dot" style="background: var(--mcaps-blue);"></div> CRM</div>

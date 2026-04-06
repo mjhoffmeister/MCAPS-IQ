@@ -16,7 +16,7 @@ hide:
 
 # Prompts by Role
 
-Copy-paste any prompt into the Copilot chat. Each triggers skills automatically — you don't name them, just describe what you need.
+Copy-paste any example into the Copilot chat. Each triggers the right [skills](index.md#prompts-vs-skills) automatically — you don't name them, just describe what you need.
 
 !!! tip "New here?"
     Start with `/getting-started` or `/my-role` instead. Come back to these once you're comfortable.
