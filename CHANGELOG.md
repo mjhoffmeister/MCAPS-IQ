@@ -2,6 +2,42 @@
 
 All notable changes to MCAPS-IQ are documented in this file.
 
+## [0.3.0] — 2026-04-06
+
+### Features
+
+- **Bootstrap scripts** — cross-platform onboarding via `bootstrap.sh` (macOS/Linux) and `bootstrap.ps1` (Windows/PowerShell 7) with CI checks, VS Code/Obsidian detection, and winget fallback (#73)
+- **ATU role cards** — added AE, ATS, IA, and ATU Sales Director role cards with outcomes, habits, and measures; enhanced role chooser (#60)
+- **Vault sync engine** — bulk CRM→vault sync script (`scripts/helpers/vault-sync.js`) for batch opportunity, milestone, and people note rendering; enhanced vault routing and sync skill
+- **M365 data helpers** — normalizer/scorer pipeline for calendar and mail MCP responses (`normalize-calendar.js`, `normalize-mail.js`, `score-meetings.js`, `build-workiq-query.js`)
+- **Pattern library skill** — capture, catalog, and reuse proven implementation patterns (code, dashboards, queries, workflows)
+- **Squads integration** — 13-agent squad framework with setup scripts, role mapping to existing skills, and installation docs
+- **Vault note templates** — added customer, milestone, opportunity, and people note templates for CRM→vault sync
+- **SE activity tracking** — create-and-close task rule for hands-on-keyboard activity logging
+- **ESLint configuration** — added linting config and scripts for code quality gates
+- **Shared patterns & person prompts** — cross-role shared definitions, create-person prompt, partner motion patterns
+
+### Documentation
+
+- **Getting started overhaul** — streamlined 3-step onboarding flow, visual bootstrap guides, Copilot troubleshooting prompts, private-repo clone-first flow
+- **MkDocs restructure** — reorganized navigation, removed `navigation.expand`, promoted bootstrap as primary install path
+- **Skill & agent descriptions** — updated tool descriptions for clarity, enhanced VS Code prompt support
+
+### Bug Fixes
+
+- **Per-process MCP registries** — scoped npm registries per server process to prevent cross-contamination (#58)
+- **Dataview outlinks** — corrected outlinks flattening in project note queries
+- **path-to-regexp** — updated to v8.4.1 for security and functionality
+- **Bootstrap fixes** — PS variable declaration order, shellcheck scoping, Python `lib/` gitignore pattern
+- **Missing skill stubs** — created 3 missing stubs to resolve lint errors
+
+### Chores & Cleanup
+
+- **Legacy skill removal** — removed monolithic skills; transitioned to atomic skill architecture
+- **`msx-crm` → `msx` rename** — unified CRM tool namespace across docs and config
+- **Removed local MCP server definitions** — simplified to npx-only startup with `@microsoft/msx-mcp-server`
+- **GitHub Packages auth** — new auth script and `gh` CLI instructions for private package access
+
 ## [0.2.0] — 2026-03-24
 
 ### Architecture & Infrastructure
