@@ -2,19 +2,16 @@
 name: obsidian-viz
 description: "Obsidian visualization agent — creates dashboards, reports, charts, kanban boards, timelines, diagrams, and scorecards from vault data. Consumes dataviewjs, Meta Bind, Charts View, Kanban, Markwhen, Mermaid, Excalidraw, Style Settings, Templater, Tasks, and Cron plugins. USE FOR: build dashboard, create chart, make kanban board, render timeline, design scorecard, add KPI cards, visualize pipeline, create report, add sparklines, progress bars, RAG grids, status pills, calendar views, mermaid diagrams, excalidraw visuals, CSS snippets. DO NOT USE FOR: CRM sync, M365 operations, Power BI queries, general vault management."
 tools:
-  # VS Code built-in
-  - vscode
+  # VS Code — no runCommand, installExtension, etc.
   - vscode/memory
   - vscode/askQuestions
-  # File operations
-  - edit
+  # File operations — edit + create vault files; no rename or directory mutation
   - edit/editFiles
   - edit/createFile
-  - read
+  # Read — file contents and images only
   - read/readFile
   - read/viewImage
-  # Search
-  - search
+  # Search — scoped to vault exploration
   - search/codebase
   - search/fileSearch
   - search/listDirectory

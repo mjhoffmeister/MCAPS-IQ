@@ -5,8 +5,9 @@ tools:
   - read
   - todo
   - search
-  - edit
+  # File operations — persist rendered reports; no rename or directory
   - edit/editFiles
+  - edit/createFile
   - powerbi-remote/*
 
 ---

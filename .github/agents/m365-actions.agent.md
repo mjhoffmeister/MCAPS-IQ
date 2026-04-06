@@ -2,11 +2,13 @@
 name: m365-actions
 description: "M365 execution sub-agent: reads and writes Teams messages, calendar events, emails, SharePoint/OneDrive files, and Word documents. Receives delegated tasks with pre-resolved identifiers (UPN, chatId, channelId) from the parent agent. Triggers: send message, send email, create meeting, schedule meeting, reply to email, forward email, post in channel, search SharePoint, upload file, create Word doc, read inbox, list calendar, find meeting time."
 tools:
-  - execute
-  - edit
+  # Scoped: save raw JSON to /tmp/ via shell redirect — no send_to_terminal or other execute sub-tools
+  - execute/runInTerminal
+  # Scoped: create temp files only — cannot edit existing workspace files
+  - edit/createFile
   - read
-  - search
   - agent
+  # M365 MCP tools
   - "teams/*"
   - "calendar/*"
   - "mail/*"
