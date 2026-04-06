@@ -2,8 +2,9 @@
 name: mcaps
 description: "AI-powered sales operations agent for MCAPS account teams. Strengthens cross-role communication and strategic alignment across CRM, M365, knowledge vault, and Power BI. Supports Specialist, Solution Engineer, CSA, and CSAM workflows through the MCEM lifecycle."
 tools:
-  # VS Code — memory only; no runCommand, installExtension, etc.
+  # VS Code — memory + structured prompts; no runCommand, installExtension, etc.
   - vscode/memory
+  - vscode/askQuestions
   # File operations — edit + create; no rename, directory, or notebook mutation
   - edit/editFiles
   - edit/createFile
