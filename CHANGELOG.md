@@ -2,6 +2,13 @@
 
 All notable changes to MCAPS-IQ are documented in this file.
 
+## [0.3.1] — 2026-04-06
+
+### Security
+
+- **Incomplete string escaping** — `escapePipes()` in `vault-sync.js` now escapes backslashes before pipes and collapses newlines, preventing Markdown table injection (CodeQL alert #9)
+- **Workflow permissions** — added least-privilege `permissions` blocks to `bootstrap.yml`, `eval.yml`, and `lint-context.yml`; `eval-offline` gets scoped `pull-requests: write` for PR comments, `eval-live` gets `id-token: write` for Azure OIDC (CodeQL alerts #1–8)
+
 ## [0.3.0] — 2026-04-06
 
 ### Features
