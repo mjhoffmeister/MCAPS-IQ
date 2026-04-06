@@ -29,6 +29,9 @@ on:
       - '.github/workflows/bootstrap.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # ── Phase 1: Script syntax validation (fast, all OSes) ──────────────
   lint-scripts:

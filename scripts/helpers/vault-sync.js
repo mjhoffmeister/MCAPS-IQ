@@ -182,7 +182,10 @@ function formatACRMonthly(val) {
 }
 
 function escapePipes(s) {
-  return (s || "").replace(/\|/g, "\\|");
+  return (s || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/[\r\n]+/g, " ");
 }
 
 function msxLink(etn, guid) {
