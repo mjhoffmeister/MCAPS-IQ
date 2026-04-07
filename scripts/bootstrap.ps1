@@ -392,7 +392,74 @@ if ($obsidianInstalled) {
   }
 }
 
-# ── Step 5: Open VS Code ─────────────────────────────────────────────
+# ── Step 4b: Configure Obsidian vault path ────────────────────────────
+# Check if .env already has OBSIDIAN_VAULT_PATH configured
+$existingVault = $null
+if (Test-Path ".env") {
+  $envContent = Get-Content ".env" -Raw -ErrorAction SilentlyContinue
+  if ($envContent -match '(?m)^OBSIDIAN_VAULT_PATH=(.+)$') {
+    $existingVault = $Matches[1].Trim().Trim('"', "'")
+  }
+}
+
+if ($existingVault) {
+  Write-Ok "Obsidian vault already configured: $existingVault"
+} elseif (-not $NoObsidian) {
+  Write-Step "Configuring Obsidian vault location"
+  Write-Host ""
+  Write-Host "  The agent uses an Obsidian vault for persistent memory." -ForegroundColor Cyan
+  Write-Host "  Enter the path to your existing vault, or press Enter to" -ForegroundColor Cyan
+  Write-Host "  use the default (.vault\ inside this repo, already gitignored)." -ForegroundColor Cyan
+  Write-Host ""
+  $vaultInput = Read-Host "  Vault path [.vault]"
+
+  if ([string]::IsNullOrWhiteSpace($vaultInput)) {
+    $vaultPath = Join-Path (Get-Location) ".vault"
+  } else {
+    # Expand ~ to home directory
+    if ($vaultInput.StartsWith("~")) {
+      $vaultInput = $vaultInput -replace '^~', $HOME
+    }
+    $vaultPath = [System.IO.Path]::GetFullPath($vaultInput)
+  }
+
+  # Create the vault directory if it doesn't exist
+  if (-not (Test-Path $vaultPath)) {
+    New-Item -ItemType Directory -Path $vaultPath -Force | Out-Null
+    Write-Ok "Created vault directory: $vaultPath"
+  }
+
+  # Write to .env (create or append)
+  if (Test-Path ".env") {
+    Add-Content -Path ".env" -Value "`nOBSIDIAN_VAULT_PATH=$vaultPath"
+  } else {
+    Set-Content -Path ".env" -Value "# -- Obsidian Vault --`nOBSIDIAN_VAULT_PATH=$vaultPath"
+  }
+  Write-Ok "Vault path saved to .env: $vaultPath"
+
+  # Scaffold the vault structure
+  if (Test-Path "scripts\setup-vault.js") {
+    & node scripts/setup-vault.js $vaultPath 2>$null
+    Write-Ok "Vault structure initialized"
+  }
+
+  # Persist to shell profile so it's available everywhere
+  if (Test-Path "scripts\setup-vault-env.js") {
+    & node scripts/setup-vault-env.js $vaultPath 2>$null
+  }
+}
+
+# ── Step 5: Install dependencies & mcaps CLI ─────────────────────────
+Write-Step "Installing dependencies and mcaps CLI"
+try {
+  & npm install 2>$null
+  & npm link 2>$null
+  Write-Ok "mcaps CLI installed globally — run 'mcaps' from anywhere"
+} catch {
+  Write-Warn "npm install/link failed — you can still use VS Code normally"
+}
+
+# ── Step 6: Open VS Code ─────────────────────────────────────────────
 Write-Step "Setup complete!"
 
 # Adjust next-steps guidance based on whether we'll auto-open

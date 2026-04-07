@@ -38,7 +38,17 @@ These are the only two tools you need to install manually — the bootstrap scri
 brew install git gh
 ```
 
-**Windows (PowerShell):**
+**Windows (PowerShell 7):**
+
+First, open **PowerShell 7**. Press the Windows key, type `power`, and select **PowerShell 7 (x64)**.
+
+> [!WARNING]
+> **PowerShell 7 is required.** The bootstrap script in Step 2 requires PowerShell 7 — Windows PowerShell 5.x will not work. If you don't see PowerShell 7 in the Start menu, install it first:
+> ```powershell
+> winget install --id Microsoft.PowerShell --source winget
+> ```
+> After the install completes, **close your current terminal** and reopen using **PowerShell 7 (x64)** before continuing.
+
 ```powershell
 winget install Git.Git GitHub.cli
 ```
@@ -77,7 +87,14 @@ The bootstrap script checks your system and installs any missing tools automatic
 ./scripts/bootstrap.sh --skip-clone
 ```
 
-**Windows (PowerShell):**
+**Windows (PowerShell 7):**
+
+If this is your first time running scripts, allow PowerShell to execute local scripts:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+Then run the bootstrap:
 ```powershell
 .\scripts\bootstrap.ps1 -SkipClone
 ```
@@ -87,7 +104,13 @@ The bootstrap script checks your system and installs any missing tools automatic
 powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
 ```
 
-The script installs PowerShell 7 (Windows), VS Code, Node.js 18+, Azure CLI, the Copilot extension, configures GitHub Packages auth, signs you in to Azure, and opens VS Code.
+The script installs VS Code, Node.js 18+, Azure CLI, the Copilot extension, configures GitHub Packages auth, signs you in to Azure, installs the **`mcaps` CLI** (available globally), configures your **Obsidian vault** (prompts for location — press Enter for the default `.vault/` in the repo), and opens VS Code.
+
+> [!NOTE]
+> **Windows `winget` commands may fail intermittently.** If a `winget install` command errors out, just re-run it — transient failures are common and usually resolve on retry.
+
+> [!NOTE]
+> **Already have Node.js installed?** Make sure it's up to date (`node --version` should be v18+). Older versions can cause `npx` failures when starting MCP servers. Update with `winget upgrade OpenJS.NodeJS.LTS` (Windows) or `brew upgrade node` (macOS).
 
 > [!TIP]
 > **Just want to check what's missing?** Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
@@ -118,6 +141,13 @@ Who am I in MSX?
 **That's it — you're up and running.**
 
 > **Something not working?** Run `Cmd+Shift+P` → `Tasks: Run Task` → `Setup: Check Environment` to diagnose.
+
+> [!WARNING]
+> **Copilot keeps asking you to log in to Azure?** The validation script (`npm run check`) may show Azure as logged in, but Copilot chat can still prompt you to run `az login`. If Copilot gets stuck in a loop asking you to press Enter after `az login --tenant=...`, run the login manually in a terminal first:
+> ```bash
+> az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
+> ```
+> Then **reload VS Code** (`Cmd+Shift+P` → "Developer: Reload Window") so Copilot picks up the fresh session.
 
 ### Use from any terminal: the `mcaps` command
 

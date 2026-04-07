@@ -336,7 +336,70 @@ else
   fi
 fi
 
-# ── Step 5: Open VS Code ─────────────────────────────────────────────
+# ── Step 4b: Configure Obsidian vault path ────────────────────────────
+# Check if .env already has OBSIDIAN_VAULT_PATH configured
+EXISTING_VAULT=""
+if [[ -f ".env" ]]; then
+  EXISTING_VAULT="$(grep -E '^OBSIDIAN_VAULT_PATH=' .env 2>/dev/null | head -1 | sed 's/^OBSIDIAN_VAULT_PATH=//' | sed 's/^["'"'"']//;s/["'"'"']$//')"
+fi
+
+if [[ -n "$EXISTING_VAULT" ]]; then
+  ok "Obsidian vault already configured: $EXISTING_VAULT"
+elif [[ "$OBSIDIAN_OPT" != "no" ]]; then
+  step "Configuring Obsidian vault location"
+  printf '\n'
+  printf '  \033[36mThe agent uses an Obsidian vault for persistent memory.\033[0m\n'
+  printf '  \033[36mEnter the path to your existing vault, or press Enter to\033[0m\n'
+  printf '  \033[36muse the default (.vault/ inside this repo, already gitignored).\033[0m\n'
+  printf '\n'
+  printf '  Vault path [.vault]: '
+  read -r VAULT_INPUT </dev/tty || VAULT_INPUT=""
+
+  if [[ -z "$VAULT_INPUT" ]]; then
+    VAULT_PATH="$(pwd)/.vault"
+  else
+    # Expand ~ to home directory
+    VAULT_PATH="${VAULT_INPUT/#\~/$HOME}"
+    # Resolve to absolute path
+    VAULT_PATH="$(cd "$(dirname "$VAULT_PATH")" 2>/dev/null && pwd)/$(basename "$VAULT_PATH")" 2>/dev/null || VAULT_PATH="$VAULT_INPUT"
+  fi
+
+  # Create the vault directory if it doesn't exist
+  if [[ ! -d "$VAULT_PATH" ]]; then
+    mkdir -p "$VAULT_PATH"
+    ok "Created vault directory: $VAULT_PATH"
+  fi
+
+  # Write to .env (create or append)
+  if [[ -f ".env" ]]; then
+    printf '\nOBSIDIAN_VAULT_PATH=%s\n' "$VAULT_PATH" >> .env
+  else
+    printf '# ── Obsidian Vault ──────────────────────────────────────────────\nOBSIDIAN_VAULT_PATH=%s\n' "$VAULT_PATH" > .env
+  fi
+  ok "Vault path saved to .env: $VAULT_PATH"
+
+  # Scaffold the vault structure
+  if [[ -f "scripts/setup-vault.js" ]]; then
+    node scripts/setup-vault.js "$VAULT_PATH" 2>/dev/null || true
+    ok "Vault structure initialized"
+  fi
+
+  # Persist to shell profile so it's available everywhere
+  if [[ -f "scripts/setup-vault-env.js" ]]; then
+    node scripts/setup-vault-env.js "$VAULT_PATH" 2>/dev/null || true
+  fi
+fi
+
+# ── Step 5: Install dependencies & mcaps CLI ─────────────────────────
+step "Installing dependencies and mcaps CLI"
+npm install 2>/dev/null
+if has_cmd npx; then
+  npm link 2>/dev/null && ok "mcaps CLI installed globally — run 'mcaps' from anywhere" || warn "npm link failed — you can still use VS Code normally"
+else
+  warn "npm/npx not available — skipping mcaps CLI install"
+fi
+
+# ── Step 6: Open VS Code ─────────────────────────────────────────────
 step "Setup complete!"
 
 printf '\n'

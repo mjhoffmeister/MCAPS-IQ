@@ -142,15 +142,15 @@ Some steps (like running the environment check or `az login`) require a terminal
 
 ---
 
-## Optional: Local Tooling & `mcaps` Command
+## The `mcaps` Command
 
-The default setup runs MCP servers via `npx`/HTTP — no local install needed. But if you want local eval/docs tooling or a global `mcaps` command:
+The bootstrap script automatically runs `npm install` and `npm link`, which registers a **global `mcaps` command**. After setup, type `mcaps` from **any directory** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full toolkit.
+
+If the bootstrap didn't complete this step (you'll see a warning), run it manually:
 
 ```bash
-npm install
+npm install && npm link
 ```
-
-This registers a **global `mcaps` command** via `npm link`. After setup, type `mcaps` from **any directory** to launch a [Copilot CLI](../integrations/copilot-cli.md) session with the full toolkit.
 
 ---
 

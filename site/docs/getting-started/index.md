@@ -66,8 +66,14 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
       <figcaption>Search for "power" in the Start menu and click <strong>PowerShell 7 (x64)</strong>.</figcaption>
     </figure>
 
-    !!! tip "Don't have PowerShell 7?"
-        If you only see **Windows PowerShell** (version 5.x), that works too — but the bootstrap script in Step 3 will install PowerShell 7 for you automatically.
+    !!! warning "PowerShell 7 is required"
+        The bootstrap script in Step 3 **requires PowerShell 7** to run — Windows PowerShell 5.x will not work. If you don't see **PowerShell 7 (x64)** in the Start menu, install it now:
+
+        ```powershell
+        winget install --id Microsoft.PowerShell --source winget
+        ```
+
+        After the install completes, **close your current terminal** and reopen using **PowerShell 7 (x64)** before continuing. Do not proceed with Windows PowerShell 5.x.
 
     ??? warning "Don't have `winget`?"
         If `winget --version` returns an error, install it:
@@ -156,7 +162,7 @@ cd MCAPS-IQ
 
 ## Step 3: Run the Bootstrap Script
 
-The bootstrap script checks your system and installs any remaining tools automatically — **VS Code**, **Node.js 18+**, **Azure CLI**, **PowerShell 7** (Windows), the **Copilot extension**, GitHub Packages auth, and Azure sign-in.
+The bootstrap script checks your system and installs any remaining tools automatically — **VS Code**, **Node.js 18+**, **Azure CLI**, the **Copilot extension**, GitHub Packages auth, Azure sign-in, the **`mcaps` CLI command**, and **Obsidian vault initialization** (you'll be prompted for a vault location — press Enter to use the default `.vault/` directory inside the repo).
 
 === "macOS / Linux"
 
@@ -165,6 +171,14 @@ The bootstrap script checks your system and installs any remaining tools automat
     ```
 
 === "Windows (PowerShell)"
+
+    If this is your first time running scripts, allow PowerShell to execute local scripts:
+
+    ```powershell
+    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+    ```
+
+    Then run the bootstrap:
 
     ```powershell
     .\scripts\bootstrap.ps1 -SkipClone
@@ -178,6 +192,12 @@ The bootstrap script checks your system and installs any remaining tools automat
 
 !!! tip "Just want to check what's missing?"
     Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
+
+!!! note "Windows `winget` commands may fail intermittently"
+    If a `winget install` command errors out during the bootstrap, just re-run the script — transient failures are common and usually resolve on retry.
+
+!!! note "Already have Node.js installed?"
+    Make sure it's up to date (`node --version` should be v18+). Older versions can cause `npx` failures when starting MCP servers. Update with `winget upgrade OpenJS.NodeJS.LTS` (Windows) or `brew upgrade node` (macOS).
 
 ### What to Expect
 
@@ -206,6 +226,15 @@ The bootstrap script checks for each prerequisite and installs anything missing.
 
 !!! warning "Commands not found after install?"
     If tools like `node`, `az`, or `gh` aren't recognized after the bootstrap script installs them, **close and reopen your PowerShell window** to pick up the updated PATH. If that doesn't help, **restart your PC** — some installers (especially MSI-based ones like Node.js and Azure CLI) require a full restart for PATH changes to propagate.
+
+!!! warning "Copilot keeps asking you to log in to Azure?"
+    The validation script (`npm run check`) may show Azure as logged in, but Copilot chat can still prompt you to run `az login`. If Copilot gets stuck in a loop asking you to press Enter after `az login --tenant=...`, run the login manually in a terminal first:
+
+    ```bash
+    az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
+    ```
+
+    Then **reload VS Code** (++cmd+shift+p++ → **"Developer: Reload Window"**) so Copilot picks up the fresh session.
 
 ---
 
