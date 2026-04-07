@@ -393,12 +393,18 @@ if ($obsidianInstalled) {
 }
 
 # ── Step 4b: Configure Obsidian vault path ────────────────────────────
-# Check if .env already has OBSIDIAN_VAULT_PATH configured
+# Check if vault is already configured — match setup-vault.js resolution order:
+#   1. Live env vars (set by setup-vault-env.js in the shell profile)
+#   2. .env file in the repo root
 $existingVault = $null
-if (Test-Path ".env") {
-  $envContent = Get-Content ".env" -Raw -ErrorAction SilentlyContinue
-  if ($envContent -match '(?m)^OBSIDIAN_VAULT_PATH=(.+)$') {
-    $existingVault = $Matches[1].Trim().Trim('"', "'")
+if ($env:OBSIDIAN_VAULT)      { $existingVault = $env:OBSIDIAN_VAULT }
+elseif ($env:OBSIDIAN_VAULT_PATH) { $existingVault = $env:OBSIDIAN_VAULT_PATH }
+if (-not $existingVault -and (Test-Path ".env")) {
+  foreach ($line in (Get-Content ".env" -ErrorAction SilentlyContinue)) {
+    if ($line -match '^\s*OBSIDIAN_VAULT_PATH\s*=\s*(.+)') {
+      $existingVault = $Matches[1].Trim().Trim('"', "'")
+      break
+    }
   }
 }
 
@@ -475,7 +481,7 @@ if ($alreadyInCode) {
   │   You're already in VS Code — no extra window needed.       │
   │                                                             │
   │   Next steps:                                               │
-  │     1. Open .vscode/mcp.json and click 'Start' on msx      │
+  │     1. Open .vscode/mcp.json and click 'Start' on msx       │
   │     2. Open Copilot Chat (Ctrl+Shift+I)                     │
   │     3. Try: "Who am I in MSX?"                              │
   │                                                             │
