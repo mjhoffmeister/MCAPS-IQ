@@ -62,10 +62,11 @@ Cross-role context flows automatically — handoffs, coverage gaps, and relation
 </div>
 
 <div class="stat-strip" markdown>
-<div class="stat"><span class="num">43</span><span class="label">Skills</span></div>
-<div class="stat"><span class="num">20+</span><span class="label">Slash Prompts</span></div>
-<div class="stat"><span class="num">7</span><span class="label">MCAPS Roles</span></div>
-<div class="stat"><span class="num">5</span><span class="label">Data Sources</span></div>
+<div class="stat"><span class="num">52</span><span class="label">Skills</span></div>
+<div class="stat"><span class="num">28</span><span class="label">Slash Prompts</span></div>
+<div class="stat"><span class="num">5</span><span class="label">Agents</span></div>
+<div class="stat"><span class="num">8</span><span class="label">MCAPS Roles</span></div>
+<div class="stat"><span class="num">9</span><span class="label">MCP Servers</span></div>
 </div>
 
 <div class="diagram-embed">
