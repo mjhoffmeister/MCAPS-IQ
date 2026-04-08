@@ -3,7 +3,7 @@
 # MCAPS IQ Bootstrap — macOS / Linux
 #
 # One-liner:
-#   curl -fsSL https://raw.githubusercontent.com/JinLee794/MCAPS-IQ/main/scripts/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Microsoft/MCAPS-IQ/main/scripts/bootstrap.sh | bash
 #
 # Or run locally after cloning:
 #   ./scripts/bootstrap.sh
@@ -230,7 +230,7 @@ if [[ "$SKIP_CLONE" == "false" ]]; then
     popd >/dev/null
   else
     mkdir -p "$(dirname "$CLONE_DIR")"
-    git clone https://github.com/JinLee794/MCAPS-IQ.git "$CLONE_DIR"
+    git clone https://github.com/Microsoft/MCAPS-IQ.git "$CLONE_DIR"
     ok "Cloned to $CLONE_DIR"
   fi
   cd "$CLONE_DIR"

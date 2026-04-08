@@ -223,8 +223,8 @@ This is lighter than a full extension (Option B) because the heavy lifting is do
 
 **Phase 1 (immediate) — SHIPPED:** **Option A — Bootstrap Script.** Single-paste setup for Windows (PowerShell) and macOS/Linux (bash). CI validates across OS matrix (ubuntu, macOS, Windows) x Node versions (18, 20, 22).
 
-- Windows: `irm https://raw.githubusercontent.com/JinLee794/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex`
-- macOS: `curl -fsSL https://raw.githubusercontent.com/JinLee794/MCAPS-IQ/main/scripts/bootstrap.sh | bash`
+- Windows: `irm https://raw.githubusercontent.com/Microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex`
+- macOS: `curl -fsSL https://raw.githubusercontent.com/Microsoft/MCAPS-IQ/main/scripts/bootstrap.sh | bash`
 - Both support `--check-only` / `-CheckOnly` for prerequisite verification without installing.
 - CI workflow: `.github/workflows/bootstrap.yml` (lint → prereq check → bootstrap dry run)
 

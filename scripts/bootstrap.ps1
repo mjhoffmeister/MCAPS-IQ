@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   Paste this into any PowerShell terminal:
-    irm https://raw.githubusercontent.com/JinLee794/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
+    irm https://raw.githubusercontent.com/Microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
 
   Or run locally after cloning:
     .\scripts\bootstrap.ps1
@@ -301,7 +301,7 @@ if (-not $SkipClone) {
     if (-not (Test-Path (Split-Path $CloneDir))) {
       New-Item -ItemType Directory -Path (Split-Path $CloneDir) -Force | Out-Null
     }
-    git clone https://github.com/JinLee794/MCAPS-IQ.git $CloneDir
+    git clone https://github.com/Microsoft/MCAPS-IQ.git $CloneDir
     Write-Ok "Cloned to $CloneDir"
   }
   Set-Location $CloneDir
