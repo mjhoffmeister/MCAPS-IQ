@@ -67,9 +67,16 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
     ```
 
     !!! warning "After those installs finish, close this terminal and open PowerShell 7"
-        Press ++win++, type `pwsh`, and select **PowerShell 7 (x64)** (black icon).
+        Press ++win++, type `pwsh`, and select **PowerShell 7 (x64)** (black icon, not the blue "Windows PowerShell"):
+
+        <figure markdown="span">
+          ![Windows Start menu showing PowerShell 7 (x64)](../assets/PowerShell7.png){ loading=lazy width="300" }
+          <figcaption>Press <kbd>Win</kbd>, type <code>pwsh</code>, and select <strong>PowerShell 7 (x64)</strong>.</figcaption>
+        </figure>
+
         Do **not** reopen the blue "Windows PowerShell" — that's the old 5.x version and won't work for Step 2 onward.
-        This restart is required so that `git`, `gh`, and `pwsh` are all on your PATH.
+
+        **Already have PowerShell 7?** You still need to close and reopen it after installing Git and GitHub CLI so that `git` and `gh` are on your PATH.
 
     ??? tip "How to tell PowerShell 7 from Windows PowerShell"
 

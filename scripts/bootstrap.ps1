@@ -102,7 +102,7 @@ function Get-CodeVersion {
       try {
         $ver = (Get-Content $productFiles.FullName -Raw | ConvertFrom-Json).version
         if ($ver) { return $ver }
-      } catch {}
+      } catch { <# non-critical — fall through to "unknown" #> }
     }
   }
   return "unknown"
