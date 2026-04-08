@@ -396,7 +396,11 @@ fi
 step "Installing dependencies and mcaps CLI"
 npm install 2>/dev/null
 if has_cmd npx; then
-  npm link 2>/dev/null && ok "mcaps CLI installed globally — run 'mcaps' from anywhere" || warn "npm link failed — you can still use VS Code normally"
+  if npm link 2>/dev/null; then
+    ok "mcaps CLI installed globally — run 'mcaps' from anywhere"
+  else
+    warn "npm link failed — you can still use VS Code normally"
+  fi
 else
   warn "npm/npx not available — skipping mcaps CLI install"
 fi
@@ -405,7 +409,6 @@ fi
 if has_cmd agency; then
   ok "Agency CLI already installed"
 else
-  INSTALL_AGENCY=false
   printf '\n'
   printf '  \033[36mAgency CLI provides additional MCP server management capabilities.\033[0m\n'
   printf '  \033[36mRecommended for the full agent experience.\033[0m\n'
