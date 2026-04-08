@@ -49,8 +49,8 @@ has_brew() { has_cmd brew; }
 
 # Resolve VS Code CLI — prefer code-insiders over stable
 resolve_code_cmd() {
-  if has_cmd code-insiders; then echo "code-insiders";
-  elif has_cmd code; then echo "code";
+  if has_cmd code; then echo "code";
+  elif has_cmd code-insiders; then echo "code-insiders";
   else echo ""; fi
 }
 

@@ -52,28 +52,28 @@ function Refresh-Path {
 }
 
 function Resolve-CodeCmd {
-  # Check PATH first (Insiders takes priority)
-  foreach ($candidate in @("code-insiders", "code")) {
+  # Check PATH first (stable takes priority)
+  foreach ($candidate in @("code", "code-insiders")) {
     if (Test-Command $candidate) { return $candidate }
   }
 
   # VS Code's bin dir is often missing from PATH after a fresh winget install.
   # Probe known locations and patch $env:Path for the rest of this session.
   $probeDirs = @(
-    "$env:LOCALAPPDATA\Programs\Microsoft VS Code Insiders\bin"
     "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin"
-    "$env:ProgramFiles\Microsoft VS Code Insiders\bin"
+    "$env:LOCALAPPDATA\Programs\Microsoft VS Code Insiders\bin"
     "$env:ProgramFiles\Microsoft VS Code\bin"
+    "$env:ProgramFiles\Microsoft VS Code Insiders\bin"
     "${env:ProgramFiles(x86)}\Microsoft VS Code\bin"
   )
   foreach ($dir in $probeDirs) {
-    if (Test-Path (Join-Path $dir "code-insiders.cmd")) {
-      $env:Path = "$dir;$env:Path"
-      return "code-insiders"
-    }
     if (Test-Path (Join-Path $dir "code.cmd")) {
       $env:Path = "$dir;$env:Path"
       return "code"
+    }
+    if (Test-Path (Join-Path $dir "code-insiders.cmd")) {
+      $env:Path = "$dir;$env:Path"
+      return "code-insiders"
     }
   }
 
@@ -183,12 +183,12 @@ if ($codeCmd) {
 } else {
   Write-Warn "VS Code not found"
   if (-not $CheckOnly) {
-    # Try Insiders first, then stable
-    $null = Install-Via-Winget "Microsoft.VisualStudioCode.Insiders" "VS Code Insiders"
+    # Try stable first, then Insiders
+    $null = Install-Via-Winget "Microsoft.VisualStudioCode" "VS Code"
     Refresh-Path
     $codeCmd = Resolve-CodeCmd
     if (-not $codeCmd) {
-      $null = Install-Via-Winget "Microsoft.VisualStudioCode" "VS Code"
+      $null = Install-Via-Winget "Microsoft.VisualStudioCode.Insiders" "VS Code Insiders"
       Refresh-Path
       $codeCmd = Resolve-CodeCmd
     }

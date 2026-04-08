@@ -38,32 +38,35 @@ These are the only two tools you need to install manually — the bootstrap scri
 brew install git gh
 ```
 
-**Windows (PowerShell 7):**
+**Windows:**
 
-First, open **PowerShell 7**. Press the Windows key, type `power`, and select **PowerShell 7 (x64)**.
-
-> [!WARNING]
-> **PowerShell 7 is required.** The bootstrap script in Step 2 requires PowerShell 7 — Windows PowerShell 5.x will not work. If you don't see PowerShell 7 in the Start menu, install it first:
-> ```powershell
-> winget install --id Microsoft.PowerShell --source winget
-> ```
-> After the install completes, **close your current terminal** and reopen using **PowerShell 7 (x64)** before continuing.
+Open any PowerShell terminal (press the Windows key, type `powershell`) and run everything at once:
 
 ```powershell
+winget install --id Microsoft.PowerShell --source winget
 winget install Git.Git GitHub.cli
 ```
+
+> [!WARNING]
+> **After those installs finish, close this terminal and open PowerShell 7.**
+> Press the Windows key, type `pwsh`, and select **PowerShell 7 (x64)** (black icon).
+> Do **not** reopen the blue "Windows PowerShell" — that's the old 5.x version and won't work for Step 1 onward.
+> This restart is required so that `git`, `gh`, and `pwsh` are all on your PATH.
+
+> [!TIP]
+> **How to tell them apart:**
+> | | PowerShell 7 ✅ | Windows PowerShell ❌ |
+> |---|---|---|
+> | **Icon** | Black | Blue |
+> | **Start menu** | "PowerShell 7 (x64)" or "pwsh" | "Windows PowerShell" |
+> | **Header** | `PowerShell 7.x.x` | `Windows PowerShell` / `Copyright (C) Microsoft` |
 
 > [!TIP]
 > **Don't have `winget`?** If `winget --version` returns an error, install it:
 > ```powershell
 > Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
-> ```
-> Then update to the latest version:
-> ```powershell
 > winget install -e --id Microsoft.AppInstaller --source winget --accept-source-agreements --accept-package-agreements
 > ```
-
-> **Heads-up:** If you install Git or `gh` while VS Code is open, **close and reopen VS Code entirely**. VS Code terminals inherit the system PATH from launch — newly installed tools won't be visible until you restart.
 
 ### Step 1: Authenticate and clone
 
@@ -98,22 +101,6 @@ Then run the bootstrap:
 ```powershell
 .\scripts\bootstrap.ps1 -SkipClone
 ```
-
-**Windows (cmd.exe):**
-```cmd
-powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
-```
-
-The script installs VS Code, Node.js 18+, Azure CLI, the Copilot extension, configures GitHub Packages auth, signs you in to Azure, installs the **`mcaps` CLI** (available globally), configures your **Obsidian vault** (prompts for location — press Enter for the default `.vault/` in the repo), and opens VS Code.
-
-> [!NOTE]
-> **Windows `winget` commands may fail intermittently.** If a `winget install` command errors out, just re-run it — transient failures are common and usually resolve on retry.
-
-> [!NOTE]
-> **Already have Node.js installed?** Make sure it's up to date (`node --version` should be v18+). Older versions can cause `npx` failures when starting MCP servers. Update with `winget upgrade OpenJS.NodeJS.LTS` (Windows) or `brew upgrade node` (macOS).
-
-> [!TIP]
-> **Just want to check what's missing?** Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
 
 ### Step 3: Open and start
 

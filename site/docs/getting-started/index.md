@@ -59,47 +59,33 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
 
 === "Windows"
 
-    First, open **PowerShell 7**. Press the ++win++ key (or click Start), type `power`, and select **PowerShell 7 (x64)**:
+    Open any PowerShell terminal (press ++win++, type `powershell`) and run everything at once:
 
-    <figure markdown="span">
-      ![Open PowerShell 7 from the Start menu](../assets/PowerShell7.png){ loading=lazy width="300" }
-      <figcaption>Search for "power" in the Start menu and click <strong>PowerShell 7 (x64)</strong>.</figcaption>
-    </figure>
+    ```powershell
+    winget install --id Microsoft.PowerShell --source winget
+    winget install Git.Git GitHub.cli
+    ```
 
-    !!! warning "PowerShell 7 is required"
-        The bootstrap script in Step 3 **requires PowerShell 7** to run — Windows PowerShell 5.x will not work. If you don't see **PowerShell 7 (x64)** in the Start menu, install it now:
+    !!! warning "After those installs finish, close this terminal and open PowerShell 7"
+        Press ++win++, type `pwsh`, and select **PowerShell 7 (x64)** (black icon).
+        Do **not** reopen the blue "Windows PowerShell" — that's the old 5.x version and won't work for Step 2 onward.
+        This restart is required so that `git`, `gh`, and `pwsh` are all on your PATH.
 
-        ```powershell
-        winget install --id Microsoft.PowerShell --source winget
-        ```
+    ??? tip "How to tell PowerShell 7 from Windows PowerShell"
 
-        After the install completes, **close your current terminal** and reopen using **PowerShell 7 (x64)** before continuing. Do not proceed with Windows PowerShell 5.x.
+        | | PowerShell 7 :white_check_mark: | Windows PowerShell :x: |
+        |---|---|---|
+        | **Icon** | Black | Blue |
+        | **Start menu** | "PowerShell 7 (x64)" or "pwsh" | "Windows PowerShell" |
+        | **Header** | `PowerShell 7.x.x` | `Windows PowerShell` / `Copyright (C) Microsoft` |
 
     ??? warning "Don't have `winget`?"
         If `winget --version` returns an error, install it:
 
         ```powershell
         Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
-        ```
-
-        Then update to the latest version:
-
-        ```powershell
         winget install -e --id Microsoft.AppInstaller --source winget --accept-source-agreements --accept-package-agreements
         ```
-
-    Then run:
-
-    ```powershell
-    winget install Git.Git --silent --accept-package-agreements --accept-source-agreements
-    winget install GitHub.cli --silent --accept-package-agreements --accept-source-agreements
-    ```
-
-    Then refresh your PATH so the new tools are recognized:
-
-    ```powershell
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    ```
 
 === "macOS"
 
