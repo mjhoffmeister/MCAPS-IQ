@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Go from zero to your first Copilot-powered MSX query in 5 minutes.
+description: Go from zero to your first Copilot-powered MSX query in 15 minutes.
 tags:
   - getting-started
   - setup
@@ -11,8 +11,8 @@ hide:
 
 # Getting Started
 
-!!! success "5 minutes to your first result"
-    You'll go from a fresh clone to asking Copilot about your MSX pipeline in about 5 minutes. No coding, no configuration files to hand-edit.
+!!! success "15 minutes to your first result"
+    You'll go from a fresh clone to asking Copilot about your MSX pipeline in about 15 minutes. No coding, no configuration files to hand-edit.
 
 ## The Setup Path
 
@@ -302,6 +302,18 @@ graph LR
     1. **Create a free GitHub account** at [github.com/signup](https://github.com/signup) if you don't have one
     2. **Link it to Microsoft EMU**: Go to [aka.ms/copilot](https://aka.ms/copilot) and sign in with `@microsoft.com`. Follow the prompts to link.
     3. **Verify billing**: At [github.com/settings/copilot/features](https://github.com/settings/copilot/features), confirm **"Usage billed to"** shows **"Microsoft GitHub Copilot feature flag"**
+
+---
+
+## Keep It Private
+
+!!! danger "Do not make your fork public or connect untrusted MCP servers"
+
+    This repo connects to **live enterprise systems** — CRM, M365, Power BI — using your corporate credentials. A public fork exposes your instructions, query patterns, and internal business logic.
+
+    - **Fork into a private repo** inside your org. Never make it public.
+    - **Never add third-party or internet-facing MCP servers** to `.vscode/mcp.json` unless you fully trust them. MCP servers run with your credentials and can read/write data on your behalf — a malicious server can exfiltrate CRM data, emails, and calendar content.
+    - **Audit every MCP server** you connect: know who operates it, where data is sent, and what permissions it requests.
 
 ---
 

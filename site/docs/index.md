@@ -15,7 +15,7 @@ hide:
 
 **Talk to Copilot in plain English to manage your MSX pipeline.**{ .tagline }
 
-[:octicons-rocket-16: Get Started in 5 Minutes](getting-started/index.md){ .md-button .md-button--primary }
+[:octicons-rocket-16: Get Started in 15 minutes](getting-started/index.md){ .md-button .md-button--primary }
 [:octicons-book-16: Guided Experience](guided/index.md){ .md-button }
 
 </div>

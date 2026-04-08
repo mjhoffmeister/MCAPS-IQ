@@ -1,4 +1,4 @@
-![alt text](docs/assets/avatar.png)
+![alt text](site/docs/assets/avatar.png)
 
 # MCAPS IQ
 
@@ -22,7 +22,7 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 
 ---
 
-## Quick Start (5 Minutes)
+## Quick Start (15 minutes)
 
 **Before you begin**, make sure you have:
 
@@ -250,8 +250,21 @@ See [Write Operations &amp; Safety](site/docs/architecture/safety.md) for full d
 
 ---
 
-> [!NOTE]
-> **This is a showcase of GitHub Copilot's extensibility.** The core value here is GitHub Copilot and the agentic era it enables. This project tackles MCAPS internal tooling as the problem domain, but the pattern is universal: connect Copilot to your enterprise systems through MCP servers, layer in domain expertise via instructions and skills, and let your team operate complex workflows in plain language. Fork the pattern and build your own version.
+## Make It Yours
+
+This is a showcase of GitHub Copilot's extensibility. The core value is GitHub Copilot and the agentic patterns it enables — this project just tackles MCAPS as the problem domain. The pattern is universal: connect Copilot to your enterprise systems through MCP servers, layer in domain expertise via instructions and skills, and let your team operate complex workflows in plain language.
+
+**Fork the repo and build your own version.** Swap in your CRM, your data sources, your domain rules.
+
+> [!CAUTION]
+> **Keep your fork private and internal.**
+>
+> This repo connects to live enterprise systems — CRM, M365, Power BI — using your corporate credentials. A public fork **exposes your instructions, skills, query patterns, and internal business logic** to the internet.
+>
+> - **Fork into a private repo** inside your org. Do not make it public.
+> - **Never add third-party or internet-facing MCP servers** to `.vscode/mcp.json` unless you fully trust them. MCP servers run with your credentials and can read/write data on your behalf. A malicious or compromised server can exfiltrate CRM data, emails, and calendar content.
+> - **Audit every MCP server** you connect — know who operates it, where data is sent, and what permissions it requests.
+> - When in doubt, keep it local. The built-in servers (`msx`, `oil`, `workiq`, `powerbi-remote`) are designed to run locally against Microsoft APIs with your own auth. That's the trust model.
 
 ---
 
