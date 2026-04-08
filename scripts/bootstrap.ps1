@@ -5,7 +5,7 @@
 
 .DESCRIPTION
   Paste this into any PowerShell terminal:
-    irm https://raw.githubusercontent.com/JinLee794/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
+    irm https://raw.githubusercontent.com/Microsoft/MCAPS-IQ/main/scripts/bootstrap.ps1 | iex
 
   Or run locally after cloning:
     .\scripts\bootstrap.ps1
@@ -52,28 +52,28 @@ function Refresh-Path {
 }
 
 function Resolve-CodeCmd {
-  # Check PATH first (Insiders takes priority)
-  foreach ($candidate in @("code-insiders", "code")) {
+  # Check PATH first (stable takes priority)
+  foreach ($candidate in @("code", "code-insiders")) {
     if (Test-Command $candidate) { return $candidate }
   }
 
   # VS Code's bin dir is often missing from PATH after a fresh winget install.
   # Probe known locations and patch $env:Path for the rest of this session.
   $probeDirs = @(
-    "$env:LOCALAPPDATA\Programs\Microsoft VS Code Insiders\bin"
     "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin"
-    "$env:ProgramFiles\Microsoft VS Code Insiders\bin"
+    "$env:LOCALAPPDATA\Programs\Microsoft VS Code Insiders\bin"
     "$env:ProgramFiles\Microsoft VS Code\bin"
+    "$env:ProgramFiles\Microsoft VS Code Insiders\bin"
     "${env:ProgramFiles(x86)}\Microsoft VS Code\bin"
   )
   foreach ($dir in $probeDirs) {
-    if (Test-Path (Join-Path $dir "code-insiders.cmd")) {
-      $env:Path = "$dir;$env:Path"
-      return "code-insiders"
-    }
     if (Test-Path (Join-Path $dir "code.cmd")) {
       $env:Path = "$dir;$env:Path"
       return "code"
+    }
+    if (Test-Path (Join-Path $dir "code-insiders.cmd")) {
+      $env:Path = "$dir;$env:Path"
+      return "code-insiders"
     }
   }
 
@@ -102,7 +102,9 @@ function Get-CodeVersion {
       try {
         $ver = (Get-Content $productFiles.FullName -Raw | ConvertFrom-Json).version
         if ($ver) { return $ver }
-      } catch {}
+      } catch {
+        Write-Verbose "Could not parse product.json: $_"
+      }
     }
   }
   return "unknown"
@@ -183,12 +185,12 @@ if ($codeCmd) {
 } else {
   Write-Warn "VS Code not found"
   if (-not $CheckOnly) {
-    # Try Insiders first, then stable
-    $null = Install-Via-Winget "Microsoft.VisualStudioCode.Insiders" "VS Code Insiders"
+    # Try stable first, then Insiders
+    $null = Install-Via-Winget "Microsoft.VisualStudioCode" "VS Code"
     Refresh-Path
     $codeCmd = Resolve-CodeCmd
     if (-not $codeCmd) {
-      $null = Install-Via-Winget "Microsoft.VisualStudioCode" "VS Code"
+      $null = Install-Via-Winget "Microsoft.VisualStudioCode.Insiders" "VS Code Insiders"
       Refresh-Path
       $codeCmd = Resolve-CodeCmd
     }
@@ -301,7 +303,7 @@ if (-not $SkipClone) {
     if (-not (Test-Path (Split-Path $CloneDir))) {
       New-Item -ItemType Directory -Path (Split-Path $CloneDir) -Force | Out-Null
     }
-    git clone https://github.com/JinLee794/MCAPS-IQ.git $CloneDir
+    git clone https://github.com/Microsoft/MCAPS-IQ.git $CloneDir
     Write-Ok "Cloned to $CloneDir"
   }
   Set-Location $CloneDir
@@ -392,7 +394,117 @@ if ($obsidianInstalled) {
   }
 }
 
-# ── Step 5: Open VS Code ─────────────────────────────────────────────
+# ── Step 4b: Configure Obsidian vault path ────────────────────────────
+# Check if vault is already configured — match setup-vault.js resolution order:
+#   1. Live env vars (set by setup-vault-env.js in the shell profile)
+#   2. .env file in the repo root
+$existingVault = $null
+if ($env:OBSIDIAN_VAULT)      { $existingVault = $env:OBSIDIAN_VAULT }
+elseif ($env:OBSIDIAN_VAULT_PATH) { $existingVault = $env:OBSIDIAN_VAULT_PATH }
+if (-not $existingVault -and (Test-Path ".env")) {
+  foreach ($line in (Get-Content ".env" -ErrorAction SilentlyContinue)) {
+    if ($line -match '^\s*OBSIDIAN_VAULT_PATH\s*=\s*(.+)') {
+      $existingVault = $Matches[1].Trim().Trim('"', "'")
+      break
+    }
+  }
+}
+
+if ($existingVault) {
+  Write-Ok "Obsidian vault already configured: $existingVault"
+} elseif (-not $NoObsidian) {
+  Write-Step "Configuring Obsidian vault location"
+  Write-Host ""
+  Write-Host "  The agent uses an Obsidian vault for persistent memory." -ForegroundColor Cyan
+  Write-Host ""
+  Write-Host "  If you already have an Obsidian vault, paste its full path below." -ForegroundColor White
+  Write-Host "  If you don't know what this is, just press Enter — a local vault" -ForegroundColor Yellow
+  Write-Host "  will be created at .vault\ inside this repo (already gitignored)." -ForegroundColor Yellow
+  Write-Host ""
+  $vaultInput = Read-Host "  Vault path (press Enter for default)"
+
+  if ([string]::IsNullOrWhiteSpace($vaultInput)) {
+    $vaultPath = Join-Path (Get-Location) ".vault"
+  } else {
+    # Expand ~ to home directory
+    if ($vaultInput.StartsWith("~")) {
+      $vaultInput = $vaultInput -replace '^~', $HOME
+    }
+    $vaultPath = [System.IO.Path]::GetFullPath($vaultInput)
+  }
+
+  # Create the vault directory if it doesn't exist
+  if (-not (Test-Path $vaultPath)) {
+    New-Item -ItemType Directory -Path $vaultPath -Force | Out-Null
+    Write-Ok "Created vault directory: $vaultPath"
+  }
+
+  # Write to .env (create or append)
+  if (Test-Path ".env") {
+    Add-Content -Path ".env" -Value "`nOBSIDIAN_VAULT_PATH=$vaultPath"
+  } else {
+    Set-Content -Path ".env" -Value "# -- Obsidian Vault --`nOBSIDIAN_VAULT_PATH=$vaultPath"
+  }
+  Write-Ok "Vault path saved to .env: $vaultPath"
+
+  # Scaffold the vault structure
+  if (Test-Path "scripts\setup-vault.js") {
+    & node scripts/setup-vault.js $vaultPath 2>$null
+    Write-Ok "Vault structure initialized"
+  }
+
+  # Persist to shell profile so it's available everywhere
+  if (Test-Path "scripts\setup-vault-env.js") {
+    & node scripts/setup-vault-env.js $vaultPath 2>$null
+  }
+}
+
+# ── Step 5: Install dependencies & mcaps CLI ─────────────────────────
+Write-Step "Installing dependencies and mcaps CLI"
+try {
+  & npm install 2>$null
+  & npm link 2>$null
+  Write-Ok "mcaps CLI installed globally — run 'mcaps' from anywhere"
+} catch {
+  Write-Warn "npm install/link failed — you can still use VS Code normally"
+}
+
+# ── Step 5b: Agency CLI (optional) ───────────────────────────────────
+if (Test-Command "agency") {
+  Write-Ok "Agency CLI already installed"
+} else {
+  Write-Host ""
+  Write-Host "  Agency CLI provides additional MCP server management capabilities." -ForegroundColor Cyan
+  Write-Host "  Recommended for the full agent experience." -ForegroundColor Cyan
+  Write-Host ""
+  $agencyAnswer = Read-Host "  Install Agency CLI? [Y/n]"
+  if ($agencyAnswer -match '^[nN]') {
+    Write-Ok "Skipping Agency CLI — install later:"
+    Write-Warn '  iex "& { $(irm aka.ms/InstallTool.ps1)} agency"'
+  } else {
+    Write-Step "Installing Agency CLI"
+    try {
+      $psExe = if (Test-Command "pwsh") { "pwsh" } else { "powershell.exe" }
+      $psScript = @(
+        'iex "& { $(irm aka.ms/InstallTool.ps1)} agency"'
+        '$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")'
+      ) -join "; "
+      & $psExe -NoProfile -ExecutionPolicy Bypass -Command $psScript
+      Refresh-Path
+      if (Test-Command "agency") {
+        Write-Ok "Agency CLI installed"
+      } else {
+        Write-Warn "Agency CLI install completed — restart your terminal to use it"
+      }
+    } catch {
+      Write-Warn "Agency CLI install failed — retry later:"
+      Write-Warn '  iex "& { $(irm aka.ms/InstallTool.ps1)} agency"'
+      Write-Warn "  Details: https://aka.ms/agency"
+    }
+  }
+}
+
+# ── Step 6: Open VS Code ─────────────────────────────────────────────
 Write-Step "Setup complete!"
 
 # Adjust next-steps guidance based on whether we'll auto-open
@@ -408,7 +520,7 @@ if ($alreadyInCode) {
   │   You're already in VS Code — no extra window needed.       │
   │                                                             │
   │   Next steps:                                               │
-  │     1. Open .vscode/mcp.json and click 'Start' on msx      │
+  │     1. Open .vscode/mcp.json and click 'Start' on msx       │
   │     2. Open Copilot Chat (Ctrl+Shift+I)                     │
   │     3. Try: "Who am I in MSX?"                              │
   │                                                             │

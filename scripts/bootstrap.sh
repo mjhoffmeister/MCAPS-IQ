@@ -3,7 +3,7 @@
 # MCAPS IQ Bootstrap — macOS / Linux
 #
 # One-liner:
-#   curl -fsSL https://raw.githubusercontent.com/JinLee794/MCAPS-IQ/main/scripts/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Microsoft/MCAPS-IQ/main/scripts/bootstrap.sh | bash
 #
 # Or run locally after cloning:
 #   ./scripts/bootstrap.sh
@@ -49,8 +49,8 @@ has_brew() { has_cmd brew; }
 
 # Resolve VS Code CLI — prefer code-insiders over stable
 resolve_code_cmd() {
-  if has_cmd code-insiders; then echo "code-insiders";
-  elif has_cmd code; then echo "code";
+  if has_cmd code; then echo "code";
+  elif has_cmd code-insiders; then echo "code-insiders";
   else echo ""; fi
 }
 
@@ -230,7 +230,7 @@ if [[ "$SKIP_CLONE" == "false" ]]; then
     popd >/dev/null
   else
     mkdir -p "$(dirname "$CLONE_DIR")"
-    git clone https://github.com/JinLee794/MCAPS-IQ.git "$CLONE_DIR"
+    git clone https://github.com/Microsoft/MCAPS-IQ.git "$CLONE_DIR"
     ok "Cloned to $CLONE_DIR"
   fi
   cd "$CLONE_DIR"
@@ -336,7 +336,106 @@ else
   fi
 fi
 
-# ── Step 5: Open VS Code ─────────────────────────────────────────────
+# ── Step 4b: Configure Obsidian vault path ────────────────────────────
+# Check if .env already has OBSIDIAN_VAULT_PATH configured
+EXISTING_VAULT=""
+if [[ -f ".env" ]]; then
+  EXISTING_VAULT="$(grep -E '^OBSIDIAN_VAULT_PATH=' .env 2>/dev/null | head -1 | sed 's/^OBSIDIAN_VAULT_PATH=//' | sed 's/^["'"'"']//;s/["'"'"']$//')"
+fi
+
+if [[ -n "$EXISTING_VAULT" ]]; then
+  ok "Obsidian vault already configured: $EXISTING_VAULT"
+elif [[ "$OBSIDIAN_OPT" != "no" ]]; then
+  step "Configuring Obsidian vault location"
+  printf '\n'
+  printf '  \033[36mThe agent uses an Obsidian vault for persistent memory.\033[0m\n'
+  printf '\n'
+  printf '  If you already have an Obsidian vault, paste its full path below.\n'
+  printf '  \033[33mIf you don'\''t know what this is, just press Enter — a local vault\033[0m\n'
+  printf '  \033[33mwill be created at .vault/ inside this repo (already gitignored).\033[0m\n'
+  printf '\n'
+  printf '  Vault path (press Enter for default): '
+  read -r VAULT_INPUT </dev/tty || VAULT_INPUT=""
+
+  if [[ -z "$VAULT_INPUT" ]]; then
+    VAULT_PATH="$(pwd)/.vault"
+  else
+    # Expand ~ to home directory
+    VAULT_PATH="${VAULT_INPUT/#\~/$HOME}"
+    # Resolve to absolute path
+    VAULT_PATH="$(cd "$(dirname "$VAULT_PATH")" 2>/dev/null && pwd)/$(basename "$VAULT_PATH")" 2>/dev/null || VAULT_PATH="$VAULT_INPUT"
+  fi
+
+  # Create the vault directory if it doesn't exist
+  if [[ ! -d "$VAULT_PATH" ]]; then
+    mkdir -p "$VAULT_PATH"
+    ok "Created vault directory: $VAULT_PATH"
+  fi
+
+  # Write to .env (create or append)
+  if [[ -f ".env" ]]; then
+    printf '\nOBSIDIAN_VAULT_PATH=%s\n' "$VAULT_PATH" >> .env
+  else
+    printf '# ── Obsidian Vault ──────────────────────────────────────────────\nOBSIDIAN_VAULT_PATH=%s\n' "$VAULT_PATH" > .env
+  fi
+  ok "Vault path saved to .env: $VAULT_PATH"
+
+  # Scaffold the vault structure
+  if [[ -f "scripts/setup-vault.js" ]]; then
+    node scripts/setup-vault.js "$VAULT_PATH" 2>/dev/null || true
+    ok "Vault structure initialized"
+  fi
+
+  # Persist to shell profile so it's available everywhere
+  if [[ -f "scripts/setup-vault-env.js" ]]; then
+    node scripts/setup-vault-env.js "$VAULT_PATH" 2>/dev/null || true
+  fi
+fi
+
+# ── Step 5: Install dependencies & mcaps CLI ─────────────────────────
+step "Installing dependencies and mcaps CLI"
+npm install 2>/dev/null
+if has_cmd npx; then
+  if npm link 2>/dev/null; then
+    ok "mcaps CLI installed globally — run 'mcaps' from anywhere"
+  else
+    warn "npm link failed — you can still use VS Code normally"
+  fi
+else
+  warn "npm/npx not available — skipping mcaps CLI install"
+fi
+
+# ── Step 5b: Agency CLI (optional) ───────────────────────────────────
+if has_cmd agency; then
+  ok "Agency CLI already installed"
+else
+  printf '\n'
+  printf '  \033[36mAgency CLI provides additional MCP server management capabilities.\033[0m\n'
+  printf '  \033[36mRecommended for the full agent experience.\033[0m\n'
+  printf '\n'
+  printf '  Install Agency CLI? [Y/n] '
+  read -r AGENCY_ANSWER </dev/tty || AGENCY_ANSWER="y"
+  case "$AGENCY_ANSWER" in
+    [nN]|[nN][oO]) ok "Skipping Agency CLI — install later: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency" ;;
+    *)
+      step "Installing Agency CLI"
+      if curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency 2>/dev/null; then
+        # Refresh PATH
+        export PATH="$HOME/.local/bin:$PATH"
+        if has_cmd agency; then
+          ok "Agency CLI installed"
+        else
+          warn "Agency CLI install completed — restart your terminal to use it"
+        fi
+      else
+        warn "Agency CLI install failed — retry later: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency"
+        warn "Details: https://aka.ms/agency"
+      fi
+      ;;
+  esac
+fi
+
+# ── Step 6: Open VS Code ─────────────────────────────────────────────
 step "Setup complete!"
 
 printf '\n'

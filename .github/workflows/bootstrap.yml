@@ -45,25 +45,22 @@ jobs:
         env:
           SHELLCHECK_OPTS: '--severity=warning'
 
-      - name: PowerShell syntax check — bootstrap.ps1
+      - name: PSScriptAnalyzer — PowerShell scripts
         shell: pwsh
         run: |
-          $tokens = $null
-          $errors = $null
-          $null = [System.Management.Automation.Language.Parser]::ParseFile(
-            "${{ github.workspace }}/scripts/bootstrap.ps1",
-            [ref]$tokens,
-            [ref]$errors
-          )
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.ToString() }
-            exit 1
+          $settings = ".github/linters/PSScriptAnalyzerSettings.psd1"
+          $results  = @()
+          $results += Invoke-ScriptAnalyzer -Path scripts/bootstrap.ps1 -Settings $settings
+          $results += Invoke-ScriptAnalyzer -Path scripts/init.ps1 -Settings $settings
+          if ($results.Count -gt 0) {
+            $results | Format-Table -AutoSize
+            throw "$($results.Count) PSScriptAnalyzer issue(s) found"
           }
-          Write-Host "✔ bootstrap.ps1 syntax OK"
+          Write-Host "✔ PowerShell scripts pass PSScriptAnalyzer"
 
   # ── Phase 2: init.js --check across OS matrix ──────────────────────
   check-prereqs:
-    name: "Prereq check — ${{ matrix.os }}"
+    name: "Prereq check — ${{ matrix.os }} / node ${{ matrix.node }}"
     needs: lint-scripts
     strategy:
       fail-fast: false

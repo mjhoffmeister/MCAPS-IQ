@@ -1,4 +1,4 @@
-![alt text](docs/assets/avatar.png)
+![alt text](site/docs/assets/avatar.png)
 
 # MCAPS IQ
 
@@ -22,7 +22,7 @@ MCAPS IQ connects GitHub Copilot (in VS Code) to your MSX CRM and Microsoft 365 
 
 ---
 
-## Quick Start (5 Minutes)
+## Quick Start (15 minutes)
 
 **Before you begin**, make sure you have:
 
@@ -38,22 +38,35 @@ These are the only two tools you need to install manually — the bootstrap scri
 brew install git gh
 ```
 
-**Windows (PowerShell):**
+**Windows:**
+
+Open any PowerShell terminal (press the Windows key, type `powershell`) and run everything at once:
+
 ```powershell
+winget install --id Microsoft.PowerShell --source winget
 winget install Git.Git GitHub.cli
 ```
+
+> [!WARNING]
+> **After those installs finish, close this terminal and open PowerShell 7.**
+> Press the Windows key, type `pwsh`, and select **PowerShell 7 (x64)** (black icon).
+> Do **not** reopen the blue "Windows PowerShell" — that's the old 5.x version and won't work for Step 1 onward.
+> This restart is required so that `git`, `gh`, and `pwsh` are all on your PATH.
+
+> [!TIP]
+> **How to tell them apart:**
+> | | PowerShell 7 ✅ | Windows PowerShell ❌ |
+> |---|---|---|
+> | **Icon** | Black | Blue |
+> | **Start menu** | "PowerShell 7 (x64)" or "pwsh" | "Windows PowerShell" |
+> | **Header** | `PowerShell 7.x.x` | `Windows PowerShell` / `Copyright (C) Microsoft` |
 
 > [!TIP]
 > **Don't have `winget`?** If `winget --version` returns an error, install it:
 > ```powershell
 > Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
-> ```
-> Then update to the latest version:
-> ```powershell
 > winget install -e --id Microsoft.AppInstaller --source winget --accept-source-agreements --accept-package-agreements
 > ```
-
-> **Heads-up:** If you install Git or `gh` while VS Code is open, **close and reopen VS Code entirely**. VS Code terminals inherit the system PATH from launch — newly installed tools won't be visible until you restart.
 
 ### Step 1: Authenticate and clone
 
@@ -77,20 +90,17 @@ The bootstrap script checks your system and installs any missing tools automatic
 ./scripts/bootstrap.sh --skip-clone
 ```
 
-**Windows (PowerShell):**
+**Windows (PowerShell 7):**
+
+If this is your first time running scripts, allow PowerShell to execute local scripts:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+Then run the bootstrap:
 ```powershell
 .\scripts\bootstrap.ps1 -SkipClone
 ```
-
-**Windows (cmd.exe):**
-```cmd
-powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
-```
-
-The script installs PowerShell 7 (Windows), VS Code, Node.js 18+, Azure CLI, the Copilot extension, configures GitHub Packages auth, signs you in to Azure, and opens VS Code.
-
-> [!TIP]
-> **Just want to check what's missing?** Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
 
 ### Step 3: Open and start
 
@@ -118,6 +128,13 @@ Who am I in MSX?
 **That's it — you're up and running.**
 
 > **Something not working?** Run `Cmd+Shift+P` → `Tasks: Run Task` → `Setup: Check Environment` to diagnose.
+
+> [!WARNING]
+> **Copilot keeps asking you to log in to Azure?** The validation script (`npm run check`) may show Azure as logged in, but Copilot chat can still prompt you to run `az login`. If Copilot gets stuck in a loop asking you to press Enter after `az login --tenant=...`, run the login manually in a terminal first:
+> ```bash
+> az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
+> ```
+> Then **reload VS Code** (`Cmd+Shift+P` → "Developer: Reload Window") so Copilot picks up the fresh session.
 
 ### Use from any terminal: the `mcaps` command
 
@@ -166,12 +183,16 @@ Skills and agents from the repo are included, though some workflows (e.g., `morn
 
 The system tailors its behavior based on your MCAPS role. Type `/my-role` in Copilot chat to find yours automatically, or jump to the prompts for your role:
 
-| Role                               | Focus                                                                |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| **Specialist**               | Pipeline creation, deal qualification, Stage 2-3 progression         |
-| **Solution Engineer**        | Technical proofs, task hygiene, architecture reviews                 |
-| **Cloud Solution Architect** | Execution readiness, architecture handoff, delivery ownership        |
-| **CSAM**                     | Milestone health, adoption tracking, commit gates, value realization |
+| Role                               | Focus                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| **Account Executive (AE)**         | Customer relationship ownership, strategic planning, pipeline generation           |
+| **Account Technology Strategist (ATS)** | AI & Security strategy, technology relationship, technical team orchestration |
+| **ATU Sales Director**             | Sales leadership, pipeline governance, team coaching, MACC execution               |
+| **Specialist**                     | Pipeline creation, deal qualification, Stage 2-3 progression                       |
+| **Solution Engineer (SE)**         | Technical proofs, task hygiene, HoK engagement, POC/Pilot/Demo                     |
+| **Industry Advisor (IA)**          | Industry use cases, Stage 1 pipeline creation, partner co-innovation               |
+| **Cloud Solution Architect (CSA)** | Architecture feasibility, execution readiness, delivery ownership                  |
+| **CSAM**                           | Milestone health, adoption tracking, commit gates, value realization               |
 
 See [all scenario prompts by role →](site/docs/prompts/scenario-prompts.md)
 
@@ -233,8 +254,21 @@ See [Write Operations &amp; Safety](site/docs/architecture/safety.md) for full d
 
 ---
 
-> [!NOTE]
-> **This is a showcase of GitHub Copilot's extensibility.** The core value here is GitHub Copilot and the agentic era it enables. This project tackles MCAPS internal tooling as the problem domain, but the pattern is universal: connect Copilot to your enterprise systems through MCP servers, layer in domain expertise via instructions and skills, and let your team operate complex workflows in plain language. Fork the pattern and build your own version.
+## Make It Yours
+
+This is a showcase of GitHub Copilot's extensibility. The core value is GitHub Copilot and the agentic patterns it enables — this project just tackles MCAPS as the problem domain. The pattern is universal: connect Copilot to your enterprise systems through MCP servers, layer in domain expertise via instructions and skills, and let your team operate complex workflows in plain language.
+
+**Fork the repo and build your own version.** Swap in your CRM, your data sources, your domain rules.
+
+> [!CAUTION]
+> **Keep your fork private and internal.**
+>
+> This repo connects to live enterprise systems — CRM, M365, Power BI — using your corporate credentials. A public fork **exposes your instructions, skills, query patterns, and internal business logic** to the internet.
+>
+> - **Fork into a private repo** inside your org. Do not make it public.
+> - **Never add third-party or internet-facing MCP servers** to `.vscode/mcp.json` unless you fully trust them. MCP servers run with your credentials and can read/write data on your behalf. A malicious or compromised server can exfiltrate CRM data, emails, and calendar content.
+> - **Audit every MCP server** you connect — know who operates it, where data is sent, and what permissions it requests.
+> - When in doubt, keep it local. The built-in servers (`msx`, `oil`, `workiq`, `powerbi-remote`) are designed to run locally against Microsoft APIs with your own auth. That's the trust model.
 
 ---
 

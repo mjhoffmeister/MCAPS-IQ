@@ -33,7 +33,7 @@ node lint-context.mjs
 - Eval harness: `evals/` and `.github/eval/`
 - Product docs: `site/docs/`
 
-See architecture references: `ARCHITECTURE.md`, `docs/architecture.md`, and `site/docs/architecture/`.
+See architecture references: `ARCHITECTURE.md` and `site/docs/architecture/`.
 
 ### Critical Conventions
 
@@ -58,7 +58,7 @@ node scripts/verify-instructions.js --generate
 - Setup and operational flow: `README.md`
 - Contribution workflow and PR checks: `CONTRIBUTING.md`
 - Safety model: `SECURITY.md` and `site/docs/architecture/safety.md`
-- Prompt catalog and guided scenarios: `site/docs/prompts/` and `docs/scenario-prompts.md`
+- Prompt catalog and guided scenarios: `site/docs/prompts/`
 
 ## Intent (Resolve First)
 

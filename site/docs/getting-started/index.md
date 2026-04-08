@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Go from zero to your first Copilot-powered MSX query in 5 minutes.
+description: Go from zero to your first Copilot-powered MSX query in 15 minutes.
 tags:
   - getting-started
   - setup
@@ -11,8 +11,8 @@ hide:
 
 # Getting Started
 
-!!! success "5 minutes to your first result"
-    You'll go from a fresh clone to asking Copilot about your MSX pipeline in about 5 minutes. No coding, no configuration files to hand-edit.
+!!! success "15 minutes to your first result"
+    You'll go from a fresh clone to asking Copilot about your MSX pipeline in about 15 minutes. No coding, no configuration files to hand-edit.
 
 ## The Setup Path
 
@@ -59,41 +59,40 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
 
 === "Windows"
 
-    First, open **PowerShell 7**. Press the ++win++ key (or click Start), type `power`, and select **PowerShell 7 (x64)**:
+    Open any PowerShell terminal (press ++win++, type `powershell`) and run everything at once:
 
-    <figure markdown="span">
-      ![Open PowerShell 7 from the Start menu](../assets/PowerShell7.png){ loading=lazy width="300" }
-      <figcaption>Search for "power" in the Start menu and click <strong>PowerShell 7 (x64)</strong>.</figcaption>
-    </figure>
+    ```powershell
+    winget install --id Microsoft.PowerShell --source winget
+    winget install Git.Git GitHub.cli
+    ```
 
-    !!! tip "Don't have PowerShell 7?"
-        If you only see **Windows PowerShell** (version 5.x), that works too — but the bootstrap script in Step 3 will install PowerShell 7 for you automatically.
+    !!! warning "After those installs finish, close this terminal and open PowerShell 7"
+        Press ++win++, type `pwsh`, and select **PowerShell 7 (x64)** (black icon, not the blue "Windows PowerShell"):
+
+        <figure markdown="span">
+          ![Windows Start menu showing PowerShell 7 (x64)](../assets/PowerShell7.png){ loading=lazy width="300" }
+          <figcaption>Press <kbd>Win</kbd>, type <code>pwsh</code>, and select <strong>PowerShell 7 (x64)</strong>.</figcaption>
+        </figure>
+
+        Do **not** reopen the blue "Windows PowerShell" — that's the old 5.x version and won't work for Step 2 onward.
+
+        **Already have PowerShell 7?** You still need to close and reopen it after installing Git and GitHub CLI so that `git` and `gh` are on your PATH.
+
+    ??? tip "How to tell PowerShell 7 from Windows PowerShell"
+
+        | | PowerShell 7 :white_check_mark: | Windows PowerShell :x: |
+        |---|---|---|
+        | **Icon** | Black | Blue |
+        | **Start menu** | "PowerShell 7 (x64)" or "pwsh" | "Windows PowerShell" |
+        | **Header** | `PowerShell 7.x.x` | `Windows PowerShell` / `Copyright (C) Microsoft` |
 
     ??? warning "Don't have `winget`?"
         If `winget --version` returns an error, install it:
 
         ```powershell
         Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
-        ```
-
-        Then update to the latest version:
-
-        ```powershell
         winget install -e --id Microsoft.AppInstaller --source winget --accept-source-agreements --accept-package-agreements
         ```
-
-    Then run:
-
-    ```powershell
-    winget install Git.Git --silent --accept-package-agreements --accept-source-agreements
-    winget install GitHub.cli --silent --accept-package-agreements --accept-source-agreements
-    ```
-
-    Then refresh your PATH so the new tools are recognized:
-
-    ```powershell
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    ```
 
 === "macOS"
 
@@ -156,7 +155,7 @@ cd MCAPS-IQ
 
 ## Step 3: Run the Bootstrap Script
 
-The bootstrap script checks your system and installs any remaining tools automatically — **VS Code**, **Node.js 18+**, **Azure CLI**, **PowerShell 7** (Windows), the **Copilot extension**, GitHub Packages auth, and Azure sign-in.
+The bootstrap script checks your system and installs any remaining tools automatically — **VS Code**, **Node.js 18+**, **Azure CLI**, the **Copilot extension**, GitHub Packages auth, Azure sign-in, the **`mcaps` CLI command**, and **Obsidian vault initialization** (you'll be prompted for a vault location — press Enter to use the default `.vault/` directory inside the repo).
 
 === "macOS / Linux"
 
@@ -165,6 +164,14 @@ The bootstrap script checks your system and installs any remaining tools automat
     ```
 
 === "Windows (PowerShell)"
+
+    If this is your first time running scripts, allow PowerShell to execute local scripts:
+
+    ```powershell
+    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+    ```
+
+    Then run the bootstrap:
 
     ```powershell
     .\scripts\bootstrap.ps1 -SkipClone
@@ -178,6 +185,12 @@ The bootstrap script checks your system and installs any remaining tools automat
 
 !!! tip "Just want to check what's missing?"
     Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
+
+!!! note "Windows `winget` commands may fail intermittently"
+    If a `winget install` command errors out during the bootstrap, just re-run the script — transient failures are common and usually resolve on retry.
+
+!!! note "Already have Node.js installed?"
+    Make sure it's up to date (`node --version` should be v18+). Older versions can cause `npx` failures when starting MCP servers. Update with `winget upgrade OpenJS.NodeJS.LTS` (Windows) or `brew upgrade node` (macOS).
 
 ### What to Expect
 
@@ -206,6 +219,15 @@ The bootstrap script checks for each prerequisite and installs anything missing.
 
 !!! warning "Commands not found after install?"
     If tools like `node`, `az`, or `gh` aren't recognized after the bootstrap script installs them, **close and reopen your PowerShell window** to pick up the updated PATH. If that doesn't help, **restart your PC** — some installers (especially MSI-based ones like Node.js and Azure CLI) require a full restart for PATH changes to propagate.
+
+!!! warning "Copilot keeps asking you to log in to Azure?"
+    The validation script (`npm run check`) may show Azure as logged in, but Copilot chat can still prompt you to run `az login`. If Copilot gets stuck in a loop asking you to press Enter after `az login --tenant=...`, run the login manually in a terminal first:
+
+    ```bash
+    az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47
+    ```
+
+    Then **reload VS Code** (++cmd+shift+p++ → **"Developer: Reload Window"**) so Copilot picks up the fresh session.
 
 ---
 
@@ -287,6 +309,18 @@ graph LR
     1. **Create a free GitHub account** at [github.com/signup](https://github.com/signup) if you don't have one
     2. **Link it to Microsoft EMU**: Go to [aka.ms/copilot](https://aka.ms/copilot) and sign in with `@microsoft.com`. Follow the prompts to link.
     3. **Verify billing**: At [github.com/settings/copilot/features](https://github.com/settings/copilot/features), confirm **"Usage billed to"** shows **"Microsoft GitHub Copilot feature flag"**
+
+---
+
+## Keep It Private
+
+!!! danger "Do not make your fork public or connect untrusted MCP servers"
+
+    This repo connects to **live enterprise systems** — CRM, M365, Power BI — using your corporate credentials. A public fork exposes your instructions, query patterns, and internal business logic.
+
+    - **Fork into a private repo** inside your org. Never make it public.
+    - **Never add third-party or internet-facing MCP servers** to `.vscode/mcp.json` unless you fully trust them. MCP servers run with your credentials and can read/write data on your behalf — a malicious server can exfiltrate CRM data, emails, and calendar content.
+    - **Audit every MCP server** you connect: know who operates it, where data is sent, and what permissions it requests.
 
 ---
 

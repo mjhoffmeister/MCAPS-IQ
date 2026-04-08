@@ -418,12 +418,14 @@ function isDirectRun() {
 }
 
 if (isDirectRun()) {
-  try {
-    await ensureGithubPackagesAuth({
-      checkOnly: process.argv.includes("--check"),
-    });
-  } catch (error) {
-    process.stderr.write(`[auth:packages] ${error.message}\n`);
-    process.exit(1);
-  }
+  (async () => {
+    try {
+      await ensureGithubPackagesAuth({
+        checkOnly: process.argv.includes("--check"),
+      });
+    } catch (error) {
+      process.stderr.write(`[auth:packages] ${error.message}\n`);
+      process.exit(1);
+    }
+  })();
 }
