@@ -2,6 +2,31 @@
 
 All notable changes to MCAPS-IQ are documented in this file.
 
+## [0.3.2] — 2026-04-08
+
+### Features
+
+- **SL4 subscription detail prompt** — added Azure consumption deep-dive prompt for SL4-level subscription detail (#79)
+- **PSScriptAnalyzer integration** — added PSScriptAnalyzer settings and updated bootstrap script validation process (#76)
+
+### Bug Fixes
+
+- **Bootstrap URL fix** — corrected bootstrap script URLs to point to the Microsoft repository
+- **PowerShell bootstrap hardening** — improved error handling during mcaps CLI installation, enhanced product version parsing error logging in `Get-CodeVersion`
+- **Windows detection** — improved PowerShell detection and Windows installation instructions
+- **Vault path configuration** — improved Obsidian vault path configuration and refactored GitHub packages auth error handling
+
+### Documentation
+
+- **Role descriptions** — updated role descriptions in README to reflect current positions and responsibilities
+- **Getting started refresh** — updated setup time estimates, removed outdated documentation files, enhanced security guidelines for private repositories and trusted MCP servers
+- **TOON integration spec** — added token-efficient data serialization specification for MCP tools with benchmarks and phased rollout plan
+- **Bootstrap guides** — updated PowerShell installation instructions and Windows setup guidance
+
+### Chores & Cleanup
+
+- **Removed outdated packaging spec** — removed outdated packaging options spec document
+
 ## [0.3.1] — 2026-04-06
 
 ### Security
