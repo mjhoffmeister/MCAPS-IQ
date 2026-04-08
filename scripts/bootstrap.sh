@@ -349,10 +349,12 @@ elif [[ "$OBSIDIAN_OPT" != "no" ]]; then
   step "Configuring Obsidian vault location"
   printf '\n'
   printf '  \033[36mThe agent uses an Obsidian vault for persistent memory.\033[0m\n'
-  printf '  \033[36mEnter the path to your existing vault, or press Enter to\033[0m\n'
-  printf '  \033[36muse the default (.vault/ inside this repo, already gitignored).\033[0m\n'
   printf '\n'
-  printf '  Vault path [.vault]: '
+  printf '  If you already have an Obsidian vault, paste its full path below.\n'
+  printf '  \033[33mIf you don'\''t know what this is, just press Enter — a local vault\033[0m\n'
+  printf '  \033[33mwill be created at .vault/ inside this repo (already gitignored).\033[0m\n'
+  printf '\n'
+  printf '  Vault path (press Enter for default): '
   read -r VAULT_INPUT </dev/tty || VAULT_INPUT=""
 
   if [[ -z "$VAULT_INPUT" ]]; then
@@ -397,6 +399,37 @@ if has_cmd npx; then
   npm link 2>/dev/null && ok "mcaps CLI installed globally — run 'mcaps' from anywhere" || warn "npm link failed — you can still use VS Code normally"
 else
   warn "npm/npx not available — skipping mcaps CLI install"
+fi
+
+# ── Step 5b: Agency CLI (optional) ───────────────────────────────────
+if has_cmd agency; then
+  ok "Agency CLI already installed"
+else
+  INSTALL_AGENCY=false
+  printf '\n'
+  printf '  \033[36mAgency CLI provides additional MCP server management capabilities.\033[0m\n'
+  printf '  \033[36mRecommended for the full agent experience.\033[0m\n'
+  printf '\n'
+  printf '  Install Agency CLI? [Y/n] '
+  read -r AGENCY_ANSWER </dev/tty || AGENCY_ANSWER="y"
+  case "$AGENCY_ANSWER" in
+    [nN]|[nN][oO]) ok "Skipping Agency CLI — install later: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency" ;;
+    *)
+      step "Installing Agency CLI"
+      if curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency 2>/dev/null; then
+        # Refresh PATH
+        export PATH="$HOME/.local/bin:$PATH"
+        if has_cmd agency; then
+          ok "Agency CLI installed"
+        else
+          warn "Agency CLI install completed — restart your terminal to use it"
+        fi
+      else
+        warn "Agency CLI install failed — retry later: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency"
+        warn "Details: https://aka.ms/agency"
+      fi
+      ;;
+  esac
 fi
 
 # ── Step 6: Open VS Code ─────────────────────────────────────────────

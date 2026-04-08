@@ -414,10 +414,12 @@ if ($existingVault) {
   Write-Step "Configuring Obsidian vault location"
   Write-Host ""
   Write-Host "  The agent uses an Obsidian vault for persistent memory." -ForegroundColor Cyan
-  Write-Host "  Enter the path to your existing vault, or press Enter to" -ForegroundColor Cyan
-  Write-Host "  use the default (.vault\ inside this repo, already gitignored)." -ForegroundColor Cyan
   Write-Host ""
-  $vaultInput = Read-Host "  Vault path [.vault]"
+  Write-Host "  If you already have an Obsidian vault, paste its full path below." -ForegroundColor White
+  Write-Host "  If you don't know what this is, just press Enter — a local vault" -ForegroundColor Yellow
+  Write-Host "  will be created at .vault\ inside this repo (already gitignored)." -ForegroundColor Yellow
+  Write-Host ""
+  $vaultInput = Read-Host "  Vault path (press Enter for default)"
 
   if ([string]::IsNullOrWhiteSpace($vaultInput)) {
     $vaultPath = Join-Path (Get-Location) ".vault"
@@ -463,6 +465,41 @@ try {
   Write-Ok "mcaps CLI installed globally — run 'mcaps' from anywhere"
 } catch {
   Write-Warn "npm install/link failed — you can still use VS Code normally"
+}
+
+# ── Step 5b: Agency CLI (optional) ───────────────────────────────────
+if (Test-Command "agency") {
+  Write-Ok "Agency CLI already installed"
+} else {
+  Write-Host ""
+  Write-Host "  Agency CLI provides additional MCP server management capabilities." -ForegroundColor Cyan
+  Write-Host "  Recommended for the full agent experience." -ForegroundColor Cyan
+  Write-Host ""
+  $agencyAnswer = Read-Host "  Install Agency CLI? [Y/n]"
+  if ($agencyAnswer -match '^[nN]') {
+    Write-Ok "Skipping Agency CLI — install later:"
+    Write-Warn '  iex "& { $(irm aka.ms/InstallTool.ps1)} agency"'
+  } else {
+    Write-Step "Installing Agency CLI"
+    try {
+      $psExe = if (Test-Command "pwsh") { "pwsh" } else { "powershell.exe" }
+      $psScript = @(
+        'iex "& { $(irm aka.ms/InstallTool.ps1)} agency"'
+        '$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")'
+      ) -join "; "
+      & $psExe -NoProfile -ExecutionPolicy Bypass -Command $psScript
+      Refresh-Path
+      if (Test-Command "agency") {
+        Write-Ok "Agency CLI installed"
+      } else {
+        Write-Warn "Agency CLI install completed — restart your terminal to use it"
+      }
+    } catch {
+      Write-Warn "Agency CLI install failed — retry later:"
+      Write-Warn '  iex "& { $(irm aka.ms/InstallTool.ps1)} agency"'
+      Write-Warn "  Details: https://aka.ms/agency"
+    }
+  }
 }
 
 # ── Step 6: Open VS Code ─────────────────────────────────────────────
