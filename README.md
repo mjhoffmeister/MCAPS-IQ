@@ -183,12 +183,16 @@ Skills and agents from the repo are included, though some workflows (e.g., `morn
 
 The system tailors its behavior based on your MCAPS role. Type `/my-role` in Copilot chat to find yours automatically, or jump to the prompts for your role:
 
-| Role                               | Focus                                                                |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| **Specialist**               | Pipeline creation, deal qualification, Stage 2-3 progression         |
-| **Solution Engineer**        | Technical proofs, task hygiene, architecture reviews                 |
-| **Cloud Solution Architect** | Execution readiness, architecture handoff, delivery ownership        |
-| **CSAM**                     | Milestone health, adoption tracking, commit gates, value realization |
+| Role                               | Focus                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| **Account Executive (AE)**         | Customer relationship ownership, strategic planning, pipeline generation           |
+| **Account Technology Strategist (ATS)** | AI & Security strategy, technology relationship, technical team orchestration |
+| **ATU Sales Director**             | Sales leadership, pipeline governance, team coaching, MACC execution               |
+| **Specialist**                     | Pipeline creation, deal qualification, Stage 2-3 progression                       |
+| **Solution Engineer (SE)**         | Technical proofs, task hygiene, HoK engagement, POC/Pilot/Demo                     |
+| **Industry Advisor (IA)**          | Industry use cases, Stage 1 pipeline creation, partner co-innovation               |
+| **Cloud Solution Architect (CSA)** | Architecture feasibility, execution readiness, delivery ownership                  |
+| **CSAM**                           | Milestone health, adoption tracking, commit gates, value realization               |
 
 See [all scenario prompts by role →](site/docs/prompts/scenario-prompts.md)
 
