@@ -61,6 +61,7 @@ eggs/
 .eggs/
 lib/
 !scripts/lib/
+!.github/extensions/*/lib/
 lib64/
 parts/
 sdist/
@@ -112,3 +113,6 @@ squad-*
 # Playwright MCP temp data
 .playwright-mcp/
 .vault/
+
+# MCAPS IQ Dashboard local settings (may contain priority account TPIDs)
+.mcaps-iq-settings.json
