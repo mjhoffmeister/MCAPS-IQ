@@ -6,7 +6,7 @@
  * from the CLI session to the browser-based dashboard.
  */
 
-import { joinSession } from '@github/copilot-sdk/extension';
+import { CopilotClient } from '@github/copilot-sdk';
 import { join } from 'path';
 import { exec, execSync } from 'child_process';
 import { randomUUID } from 'crypto';
@@ -23,6 +23,12 @@ let sessionClient = null;
 let serverPort = DEFAULT_PORT;
 const sessionId = randomUUID();
 let filterOptions = { showCode: false, verbosity: 'normal' };
+
+// ── Tool approval state ────────────────────────────────────────
+
+let autoApprove = true; // default: approve all tools (matches original behavior)
+const pendingApprovals = new Map(); // toolCallId → { resolve, timer }
+const pendingUserInputs = new Map(); // requestId → { resolve, timer }
 
 function openBrowser(url) {
   const cmd = process.platform === 'win32' ? `start "" "${url}"`
@@ -49,6 +55,28 @@ function parseAgentDescription(description) {
     return { emoji: match[1], agentName: match[2].trim(), task: match[3].trim() };
   }
   return { emoji: '🔧', agentName: 'agent', task: description };
+}
+
+// ── Copilot SDK client (shared for session + model discovery) ──
+
+let copilotClient = null;
+
+// ── Model discovery ────────────────────────────────────────────
+
+async function fetchAndPushModels() {
+  if (!sessionClient || !sessionClient.isConnected() || !copilotClient) return;
+  try {
+    const models = await copilotClient.listModels();
+    const compact = models.map(m => ({
+      id: m.id,
+      name: m.name,
+      capabilities: m.capabilities || {},
+      supportedReasoningEfforts: m.supportedReasoningEfforts || null
+    }));
+    sessionClient.pushEvent('models:update', { models: compact });
+  } catch {
+    // Model listing not available — dashboard falls back to empty list
+  }
 }
 
 // ── Dashboard init ─────────────────────────────────────────────
@@ -85,9 +113,45 @@ async function initDashboard(source) {
       if (data.verbosity) filterOptions.verbosity = data.verbosity;
     });
 
+    sessionClient.onToolApproval((data) => {
+      const { toolCallId, decision } = data;
+      const pending = pendingApprovals.get(toolCallId);
+      if (!pending) return;
+      clearTimeout(pending.timer);
+      pendingApprovals.delete(toolCallId);
+      pending.resolve(decision === 'approve'
+        ? { kind: 'approved' }
+        : { kind: 'denied-interactively-by-user' });
+    });
+
+    sessionClient.onAutoApproveChange((value) => {
+      autoApprove = !!value;
+    });
+
+    sessionClient.onStop(async () => {
+      try {
+        await session.abort();
+        sessionClient?.pushEvent('session:stopped', { timestamp: Date.now() });
+      } catch (err) {
+        // Session may already be idle — not an error
+      }
+    });
+
+    sessionClient.onUserInputResponse((data) => {
+      const { requestId, answer, wasFreeform } = data;
+      const pending = pendingUserInputs.get(requestId);
+      if (!pending) return;
+      clearTimeout(pending.timer);
+      pendingUserInputs.delete(requestId);
+      pending.resolve({ answer: answer || '', wasFreeform: wasFreeform !== false });
+    });
+
     if (source === 'startup' && isNew) {
       openBrowser(`http://127.0.0.1:${serverPort}`);
     }
+
+    // Fetch available models from the copilot SDK and push to server
+    fetchAndPushModels().catch(() => {});
 
     await session.log(`📊 MCAPS IQ Dashboard available at http://127.0.0.1:${serverPort}`);
   } catch (err) {
@@ -98,7 +162,69 @@ async function initDashboard(source) {
 
 // ── Extension entry point ──────────────────────────────────────
 
-const session = await joinSession({
+// Inline joinSession() so we retain a reference to the CopilotClient
+// (needed for listModels and other client-level APIs).
+const cliSessionId = process.env.SESSION_ID;
+if (!cliSessionId) {
+  throw new Error('Extension must run as a child process of the Copilot CLI (SESSION_ID missing).');
+}
+copilotClient = new CopilotClient({ isChildProcess: true });
+
+const session = await copilotClient.resumeSession(cliSessionId, {
+  disableResume: true,
+  onUserInputRequest: async (request) => {
+    // If dashboard is connected, route to UI
+    if (sessionClient && sessionClient.isConnected()) {
+      const requestId = randomUUID();
+      sessionClient.pushEvent('user-input:request', {
+        requestId,
+        question: request.question || '',
+        choices: request.choices || null,
+        allowFreeform: request.allowFreeform !== false,
+        timestamp: Date.now()
+      });
+
+      return new Promise((resolve) => {
+        const USER_INPUT_TIMEOUT_MS = 300_000; // 5 minutes
+        const timer = setTimeout(() => {
+          pendingUserInputs.delete(requestId);
+          resolve({ answer: '', wasFreeform: true });
+        }, USER_INPUT_TIMEOUT_MS);
+        pendingUserInputs.set(requestId, { resolve, timer });
+      });
+    }
+    // Fallback: empty answer if dashboard not connected
+    return { answer: '', wasFreeform: true };
+  },
+
+  onPermissionRequest: (request) => {
+    // Auto-approve if toggle is on or dashboard is not connected
+    if (autoApprove || !sessionClient || !sessionClient.isConnected()) {
+      return { kind: 'approved' };
+    }
+
+    // Push approval request to the dashboard and wait for response
+    const toolCallId = request.toolCallId || randomUUID();
+    sessionClient.pushEvent('tool:approval-request', {
+      toolCallId,
+      toolName: request.toolName || null,
+      kind: request.kind,
+      fileName: request.fileName || null,
+      commandText: request.fullCommandText || null,
+      timestamp: Date.now()
+    });
+
+    return new Promise((resolve) => {
+      const APPROVAL_TIMEOUT_MS = 120_000; // 2 minutes
+      const timer = setTimeout(() => {
+        pendingApprovals.delete(toolCallId);
+        // Timeout → deny to be safe
+        resolve({ kind: 'denied-interactively-by-user' });
+      }, APPROVAL_TIMEOUT_MS);
+      pendingApprovals.set(toolCallId, { resolve, timer });
+    });
+  },
+
   hooks: {
     async onSessionStart(input) {
       await initDashboard(input?.source);
@@ -107,6 +233,10 @@ const session = await joinSession({
 
     async onSessionEnd() {
       if (sessionClient) {
+        try {
+          // Push idle state so dashboard stops showing "agent is working" immediately
+          sessionClient.pushEvent('session:idle', { backgroundTasks: [] });
+        } catch { /* noop */ }
         try { sessionClient.close(); } catch { /* noop */ }
         sessionClient = null;
       }
@@ -160,15 +290,27 @@ session.on('tool.execution_start', (event) => {
   const { toolCallId, toolName, arguments: args } = event.data;
   const detail = deriveToolDetail(toolName, args);
 
+  // Truncate args for transport — keep enough for useful display
+  let argsSnapshot = null;
+  try {
+    const raw = typeof args === 'string' ? args : JSON.stringify(args);
+    argsSnapshot = raw && raw.length > 2000 ? raw.slice(0, 2000) + '…' : raw;
+  } catch { /* noop */ }
+
   sessionClient?.pushEvent('tool:start', {
-    id: toolCallId, toolName, detail, startTime: Date.now()
+    id: toolCallId, toolName, detail, startTime: Date.now(), arguments: argsSnapshot
   });
 
   if (toolName === 'task' && args) {
-    const desc = typeof args === 'string' ? args : args.description || args.prompt || '';
+    const parsed = typeof args === 'string' ? args : args;
+    const desc = typeof parsed === 'string' ? parsed : parsed.description || parsed.prompt || '';
     const { emoji, agentName, task } = parseAgentDescription(desc);
+    // Prefer explicit agentName from tool args over parsed name
+    const resolvedAgent = (typeof parsed === 'object' && parsed.agentName)
+      ? parsed.agentName
+      : agentName;
     sessionClient?.pushEvent('task:start', {
-      id: toolCallId, agentName, description: task, emoji, startTime: Date.now()
+      id: toolCallId, agentName: resolvedAgent, description: task, emoji, startTime: Date.now()
     });
   }
 });
@@ -177,8 +319,15 @@ session.on('tool.execution_complete', (event) => {
   if (!event?.data) return;
   const { toolCallId, toolName, success, result, error } = event.data;
 
+  // Truncate result for transport
+  let resultSnapshot = null;
+  try {
+    const raw = error ? `Error: ${error}` : (typeof result === 'string' ? result : JSON.stringify(result));
+    resultSnapshot = raw && raw.length > 1500 ? raw.slice(0, 1500) + '…' : raw;
+  } catch { /* noop */ }
+
   sessionClient?.pushEvent('tool:complete', {
-    id: toolCallId, toolName, success: success !== false
+    id: toolCallId, toolName, success: success !== false, result: resultSnapshot
   });
 
   if (toolName === 'task') {

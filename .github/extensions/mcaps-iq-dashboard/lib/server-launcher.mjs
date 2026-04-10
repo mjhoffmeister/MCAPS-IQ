@@ -57,15 +57,26 @@ export async function ensureServer({ port, publicDir, repoRoot }) {
     try { unlinkSync(lockPath); } catch { /* noop */ }
   }
 
-  // Spawn detached server
-  const child = spawn(process.execPath, [SERVER_SCRIPT], {
+  // Spawn detached server — use explicit `node` so this works even when
+  // process.execPath points to the Copilot CLI binary instead of Node.
+  // Set NODE_PATH so the server can resolve deps from the repo's node_modules.
+  const nodeBin = process.env.COPILOT_NODE_PATH || 'node';
+  const nodeModulesDir = join(repoRoot, 'node_modules');
+  const errLogPath = join(getLockBaseDir(), 'mcaps-iq', 'locks', 'server-stderr.log');
+  const { openSync } = await import('fs');
+  const errFd = openSync(errLogPath, 'w');
+
+  const child = spawn(nodeBin, [SERVER_SCRIPT], {
     detached: true,
-    stdio: 'ignore',
+    stdio: ['ignore', 'ignore', errFd],
     env: {
       ...process.env,
       MCAPS_IQ_PORT: String(port),
       MCAPS_IQ_PUBLIC_DIR: publicDir,
-      MCAPS_IQ_REPO_ROOT: repoRoot
+      MCAPS_IQ_REPO_ROOT: repoRoot,
+      NODE_PATH: process.env.NODE_PATH
+        ? `${nodeModulesDir}:${process.env.NODE_PATH}`
+        : nodeModulesDir
     }
   });
   child.unref();
@@ -85,5 +96,9 @@ export async function ensureServer({ port, publicDir, repoRoot }) {
     }
   }
 
-  throw new Error(`MCAPS IQ Dashboard server failed to start on port ${port}`);
+  // Read stderr for diagnostics
+  let errDetail = '';
+  try { errDetail = readFileSync(errLogPath, 'utf8').trim(); } catch { /* noop */ }
+  const detail = errDetail ? `: ${errDetail.split('\n').pop()}` : '';
+  throw new Error(`MCAPS IQ Dashboard server failed to start on port ${port}${detail}`);
 }

@@ -45,6 +45,8 @@
         toolCalls: [],
         backgroundTasks: [],
         thinking: [],
+        pendingApprovals: [],
+        pendingUserInputs: [],
         session: {
           startTime: Date.now(),
           isIdle: true,
@@ -56,7 +58,8 @@
           title: null,
           derivedTitle: null,
           model: null,
-          firstUserMessage: null
+          firstUserMessage: null,
+          autoApprove: true
         }
       };
     }
@@ -89,8 +92,10 @@
         if (state.sessions[sessionId]) {
           state.sessions[sessionId].metadata.status = 'ended';
           state.sessions[sessionId].metadata.endedAt = Date.now();
+          state.sessions[sessionId].session.isIdle = true;
         }
         emit('session:end', { sessionId: sessionId });
+        updateAttentionBar();
         break;
 
       case 'response': {
@@ -105,7 +110,7 @@
 
       case 'tool:start': {
         var s2 = ensureSession(sessionId);
-        s2.toolCalls.push({ id: msg.id, toolName: msg.toolName, detail: msg.detail, startTime: msg.startTime || Date.now(), endTime: null, success: null });
+        s2.toolCalls.push({ id: msg.id, toolName: msg.toolName, detail: msg.detail, arguments: msg.arguments || null, startTime: msg.startTime || Date.now(), endTime: null, success: null, result: null });
         if (s2.toolCalls.length > 100) s2.toolCalls.shift();
         emit('tool:start', { sessionId: sessionId, toolName: msg.toolName });
         updateFooterCounts();
@@ -115,7 +120,7 @@
       case 'tool:complete': {
         var s3 = ensureSession(sessionId);
         var tc = s3.toolCalls.find(function (t) { return t.id === msg.id; });
-        if (tc) { tc.endTime = Date.now(); tc.success = msg.success !== false; }
+        if (tc) { tc.endTime = Date.now(); tc.success = msg.success !== false; tc.result = msg.result || null; }
         emit('tool:complete', { sessionId: sessionId, toolName: msg.toolName });
         updateFooterCounts();
         break;
@@ -182,6 +187,81 @@
         emit('session:turn', { sessionId: sessionId });
         break;
       }
+
+      // Schedule events (from cron scheduler)
+      case 'schedule:fired':
+      case 'schedule:created':
+      case 'schedule:updated':
+      case 'schedule:deleted':
+      case 'schedule:once:created':
+      case 'schedule:once:cancelled':
+        emit(msg.type, msg);
+        break;
+
+      case 'tool:approval-request': {
+        var sa = ensureSession(sessionId);
+        sa.pendingApprovals.push({
+          toolCallId: msg.toolCallId,
+          toolName: msg.toolName || null,
+          kind: msg.kind || 'unknown',
+          fileName: msg.fileName || null,
+          commandText: msg.commandText || null,
+          timestamp: msg.timestamp || Date.now(),
+          status: 'pending'
+        });
+        if (sa.pendingApprovals.length > 50) sa.pendingApprovals.shift();
+        emit('tool:approval-request', { sessionId: sessionId, toolCallId: msg.toolCallId });
+        updateAttentionBar();
+        break;
+      }
+
+      case 'tool:approval-resolved': {
+        var sb = ensureSession(sessionId);
+        var pa = sb.pendingApprovals.find(function (a) { return a.toolCallId === msg.toolCallId; });
+        if (pa) pa.status = msg.decision || 'resolved';
+        emit('tool:approval-resolved', { sessionId: sessionId, toolCallId: msg.toolCallId });
+        updateAttentionBar();
+        break;
+      }
+
+      case 'auto-approve:update': {
+        var sc = ensureSession(sessionId);
+        sc.session.autoApprove = !!msg.autoApprove;
+        emit('auto-approve:update', { sessionId: sessionId, autoApprove: msg.autoApprove });
+        break;
+      }
+
+      case 'session:stopped': {
+        var sd = ensureSession(sessionId);
+        sd.session.isIdle = true;
+        emit('session:stopped', { sessionId: sessionId });
+        break;
+      }
+
+      case 'user-input:request': {
+        var se = ensureSession(sessionId);
+        se.pendingUserInputs.push({
+          requestId: msg.requestId,
+          question: msg.question || '',
+          choices: msg.choices || null,
+          allowFreeform: msg.allowFreeform !== false,
+          timestamp: msg.timestamp || Date.now(),
+          status: 'pending'
+        });
+        if (se.pendingUserInputs.length > 20) se.pendingUserInputs.shift();
+        emit('user-input:request', { sessionId: sessionId, requestId: msg.requestId });
+        updateAttentionBar();
+        break;
+      }
+
+      case 'user-input:resolved': {
+        var sf = ensureSession(sessionId);
+        var ui = sf.pendingUserInputs.find(function (u) { return u.requestId === msg.requestId; });
+        if (ui) ui.status = 'answered';
+        emit('user-input:resolved', { sessionId: sessionId, requestId: msg.requestId });
+        updateAttentionBar();
+        break;
+      }
     }
   }
 
@@ -191,6 +271,67 @@
     applyMessage: applyMessage,
     ensureSession: ensureSession,
     emit: emit
+  };
+
+  // ── Vault Customer Tracking ────────────────────────────────
+  // Fetches vault-tracked customers once on startup. Views use
+  // VaultCustomers.isTracked(name) to prioritize / badge.
+  // The set includes both vault short names AND CRM legal names
+  // (from frontmatter aliases) so matching works regardless of
+  // which name the CRM API returns.
+
+  var _vaultCustomers = null; // null = not fetched, [] = fetched but empty
+  var _vaultCustomerSet = new Set(); // lowercased names + aliases for fast lookup
+  var _vaultFetchPromise = null;
+
+  function fetchVaultCustomers() {
+    if (_vaultFetchPromise) return _vaultFetchPromise;
+    _vaultFetchPromise = fetch('/api/vault/customers')
+      .then(function (r) { return r.ok ? r.json() : { customers: [] }; })
+      .then(function (data) {
+        _vaultCustomers = data.customers || [];
+        _vaultCustomerSet = new Set();
+        _vaultCustomers.forEach(function (c) {
+          _vaultCustomerSet.add(c.name.toLowerCase());
+          // Index all aliases (including CRM legal names)
+          if (Array.isArray(c.aliases)) {
+            c.aliases.forEach(function (a) {
+              _vaultCustomerSet.add(a.toLowerCase());
+            });
+          }
+        });
+        emit('vault:customers', _vaultCustomers);
+        return _vaultCustomers;
+      })
+      .catch(function () {
+        _vaultCustomers = [];
+        _vaultCustomerSet = new Set();
+        return [];
+      });
+    return _vaultFetchPromise;
+  }
+
+  // Auto-fetch on startup
+  fetchVaultCustomers();
+
+  window.VaultCustomers = {
+    /** @returns {boolean} true if this customer name (or CRM alias) is tracked in the vault */
+    isTracked: function (name) {
+      if (!name || _vaultCustomerSet.size === 0) return false;
+      return _vaultCustomerSet.has(name.toLowerCase());
+    },
+    /** @returns {string[]} list of tracked customer names */
+    getNames: function () {
+      return (_vaultCustomers || []).map(function (c) { return c.name; });
+    },
+    /** @returns {{ name, path, lastModified, opportunityCount, milestoneCount, hasTeam, aliases }[]} */
+    getAll: function () { return _vaultCustomers || []; },
+    /** @returns {boolean} true once fetch has completed */
+    isLoaded: function () { return _vaultCustomers !== null; },
+    /** @returns {Promise} resolves when data is loaded */
+    ready: function () { return _vaultFetchPromise || Promise.resolve([]); },
+    /** Force re-fetch */
+    refresh: function () { _vaultFetchPromise = null; return fetchVaultCustomers(); }
   };
 
   // ── WebSocket Connection ───────────────────────────────────
@@ -262,6 +403,163 @@
       }
     }
   };
+
+  // ── Tool Approval Actions ──────────────────────────────────
+
+  window.ToolApproval = {
+    /** Send approve/deny decision for a pending tool call */
+    respond: function (sessionId, toolCallId, decision) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: 'tool:approval-response',
+        sessionId: sessionId,
+        data: { toolCallId: toolCallId, decision: decision }
+      }));
+      // Optimistically update local state
+      var s = state.sessions[sessionId];
+      if (s) {
+        var pa = s.pendingApprovals.find(function (a) { return a.toolCallId === toolCallId; });
+        if (pa) pa.status = decision === 'approve' ? 'approved' : 'denied';
+      }
+      emit('tool:approval-resolved', { sessionId: sessionId, toolCallId: toolCallId, decision: decision });
+      updateAttentionBar();
+    },
+
+    /** Toggle auto-approve for a session */
+    setAutoApprove: function (sessionId, value) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: 'auto-approve:update',
+        sessionId: sessionId,
+        data: { autoApprove: !!value }
+      }));
+      // Optimistic update
+      var s = state.sessions[sessionId];
+      if (s) s.session.autoApprove = !!value;
+      emit('auto-approve:update', { sessionId: sessionId, autoApprove: !!value });
+    },
+
+    /** Approve all pending approvals for a session */
+    approveAll: function (sessionId) {
+      var s = state.sessions[sessionId];
+      if (!s) return;
+      s.pendingApprovals.filter(function (a) { return a.status === 'pending'; }).forEach(function (a) {
+        window.ToolApproval.respond(sessionId, a.toolCallId, 'approve');
+      });
+    },
+
+    /** Deny all pending approvals for a session */
+    denyAll: function (sessionId) {
+      var s = state.sessions[sessionId];
+      if (!s) return;
+      s.pendingApprovals.filter(function (a) { return a.status === 'pending'; }).forEach(function (a) {
+        window.ToolApproval.respond(sessionId, a.toolCallId, 'deny');
+      });
+    }
+  };
+
+  // ── Session Control Actions ────────────────────────────────
+
+  window.SessionControl = {
+    /** Abort the currently processing message in a session */
+    stop: function (sessionId) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: 'session:stop',
+        sessionId: sessionId,
+        data: { timestamp: Date.now() }
+      }));
+    }
+  };
+
+  // ── User Input Actions ─────────────────────────────────────
+
+  window.UserInput = {
+    /** Send user's answer to a pending input request */
+    respond: function (sessionId, requestId, answer, wasFreeform) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: 'user-input:response',
+        sessionId: sessionId,
+        data: { requestId: requestId, answer: answer, wasFreeform: wasFreeform !== false }
+      }));
+      // Optimistic update
+      var s = state.sessions[sessionId];
+      if (s) {
+        var req = s.pendingUserInputs.find(function (u) { return u.requestId === requestId; });
+        if (req) req.status = 'answered';
+      }
+      emit('user-input:resolved', { sessionId: sessionId, requestId: requestId });
+      updateAttentionBar();
+    },
+
+    /** Get all pending user input requests across sessions */
+    getPending: function () {
+      var results = [];
+      Object.keys(state.sessions).forEach(function (sid) {
+        var s = state.sessions[sid];
+        if (!s || !s.pendingUserInputs) return;
+        s.pendingUserInputs.forEach(function (u) {
+          if (u.status === 'pending') results.push({ sid: sid, input: u });
+        });
+      });
+      return results;
+    }
+  };
+
+  // ── Global Attention Bar ───────────────────────────────────
+  // Counts all pending items (approvals + user inputs) and updates
+  // the persistent attention bar in the header area.
+
+  function countAttentionItems() {
+    var approvals = 0;
+    var inputs = 0;
+    Object.keys(state.sessions).forEach(function (sid) {
+      var s = state.sessions[sid];
+      if (!s) return;
+      if (s.pendingApprovals) {
+        s.pendingApprovals.forEach(function (a) { if (a.status === 'pending') approvals++; });
+      }
+      if (s.pendingUserInputs) {
+        s.pendingUserInputs.forEach(function (u) { if (u.status === 'pending') inputs++; });
+      }
+    });
+    return { approvals: approvals, inputs: inputs, total: approvals + inputs };
+  }
+
+  function updateAttentionBar() {
+    var bar = document.getElementById('attention-bar');
+    if (!bar) return;
+    var counts = countAttentionItems();
+    if (counts.total === 0) {
+      bar.classList.remove('attention-bar--visible');
+      bar.innerHTML = '';
+      return;
+    }
+
+    var parts = [];
+    if (counts.inputs > 0) {
+      parts.push('<span class="attention-item attention-item--input">'
+        + '<span class="attention-icon">💬</span>'
+        + counts.inputs + ' input' + (counts.inputs !== 1 ? 's' : '') + ' needed'
+        + '</span>');
+    }
+    if (counts.approvals > 0) {
+      parts.push('<span class="attention-item attention-item--approval">'
+        + '<span class="attention-icon">🔒</span>'
+        + counts.approvals + ' approval' + (counts.approvals !== 1 ? 's' : '') + ' pending'
+        + '</span>');
+    }
+
+    bar.innerHTML = '<div class="attention-bar__content">'
+      + '<span class="attention-bar__pulse"></span>'
+      + parts.join('')
+      + '<a class="attention-bar__action" href="#/sessions">Go to Sessions →</a>'
+      + '</div>';
+    bar.classList.add('attention-bar--visible');
+  }
+
+  window.AttentionBar = { update: updateAttentionBar, count: countAttentionItems };
 
   // ── Dispatch Copilot Action ────────────────────────────────
 
@@ -360,8 +658,10 @@
       home: window.homeView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Home loading…</div>'; } },
       sessions: window.sessionsView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Sessions loading…</div>'; } },
       opportunities: window.opportunitiesView || { mount: function (c) { c.innerHTML = '<div class="placeholder"><h2>📋 Opportunities</h2><p>Loading…</p></div>'; } },
-      accounts: { mount: function (c) { c.innerHTML = '<div class="placeholder"><h2>🏢 Accounts</h2><p>Coming in Phase 3 — priority account view.</p></div>'; } },
+      accounts: window.accountsView || { mount: function (c) { c.innerHTML = '<div class="placeholder"><h2>🏢 Accounts</h2><p>Loading…</p></div>'; } },
       skills: window.skillsView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Skills loading…</div>'; } },
+      'mcp-servers': window.mcpServersView || { mount: function (c) { c.innerHTML = '<div class="placeholder">MCP Servers loading…</div>'; } },
+      schedules: window.schedulesView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Schedules loading…</div>'; } },
       settings: window.settingsView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Settings loading…</div>'; } }
     }
   });

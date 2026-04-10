@@ -60,6 +60,8 @@ function createSessionState(metadata = {}) {
     backgroundTasks: [],
     toolCalls: [],
     thinking: [],
+    pendingApprovals: [],
+    pendingUserInputs: [],
     session: {
       startTime,
       isIdle: true,
@@ -71,7 +73,8 @@ function createSessionState(metadata = {}) {
       title: null,
       derivedTitle: null,
       model: null,
-      firstUserMessage: null
+      firstUserMessage: null,
+      autoApprove: true
     }
   };
 }
@@ -125,6 +128,7 @@ export function createMultiSessionState() {
       if (session) {
         session.metadata.status = 'ended';
         session.metadata.endedAt = Date.now();
+        session.session.isIdle = true;
         emit('session:end', { sessionId });
       }
     },
@@ -154,9 +158,11 @@ export function createMultiSessionState() {
             id: data.id,
             toolName: data.toolName,
             detail: data.detail,
+            arguments: data.arguments || null,
             startTime: data.startTime || Date.now(),
             endTime: null,
-            success: null
+            success: null,
+            result: null
           });
           if (session.toolCalls.length > MAX_TOOL_CALLS) session.toolCalls.shift();
           break;
@@ -166,6 +172,7 @@ export function createMultiSessionState() {
           if (tc) {
             tc.endTime = Date.now();
             tc.success = data.success !== false;
+            tc.result = data.result || null;
           }
           break;
         }
@@ -222,6 +229,41 @@ export function createMultiSessionState() {
         case 'session:turn': {
           session.session.turnCount++;
           session.session.isIdle = false;
+          break;
+        }
+        case 'tool:approval-request': {
+          session.pendingApprovals.push({
+            toolCallId: data.toolCallId,
+            toolName: data.toolName || null,
+            kind: data.kind || 'unknown',
+            fileName: data.fileName || null,
+            commandText: data.commandText || null,
+            timestamp: data.timestamp || Date.now(),
+            status: 'pending'
+          });
+          if (session.pendingApprovals.length > 50) session.pendingApprovals.shift();
+          break;
+        }
+        case 'tool:approval-resolved': {
+          const approval = session.pendingApprovals.find(a => a.toolCallId === data.toolCallId);
+          if (approval) approval.status = data.decision || 'resolved';
+          break;
+        }
+        case 'user-input:request': {
+          session.pendingUserInputs.push({
+            requestId: data.requestId,
+            question: data.question || '',
+            choices: data.choices || null,
+            allowFreeform: data.allowFreeform !== false,
+            timestamp: data.timestamp || Date.now(),
+            status: 'pending'
+          });
+          if (session.pendingUserInputs.length > 20) session.pendingUserInputs.shift();
+          break;
+        }
+        case 'user-input:resolved': {
+          const uiReq = session.pendingUserInputs.find(u => u.requestId === data.requestId);
+          if (uiReq) uiReq.status = 'answered';
           break;
         }
       }

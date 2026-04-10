@@ -18,8 +18,25 @@
   var container = null;
   var currentSettings = null;
   var saveStatus = null; // 'saving' | 'saved' | 'error' | null
+  var detectedRole = null; // from CRM whoami
+  var whoamiData = null;   // raw whoami response
 
   // ── Render helpers ────────────────────────────────────────────
+
+  function renderDetectedRoleBanner(selectedRole) {
+    if (!detectedRole || detectedRole === selectedRole) return '';
+    var match = ROLES.find(function (r) { return r.value === detectedRole; });
+    if (!match) return '';
+    var userName = whoamiData && whoamiData.fullName ? whoamiData.fullName : 'You';
+    return `
+      <div class="mcaps-role-detected">
+        <span class="mcaps-role-detected__icon">🔍</span>
+        <div class="mcaps-role-detected__text">
+          CRM identifies <strong>${userName}</strong> as <strong>${match.label}</strong>
+        </div>
+        <button class="mcaps-role-detected__apply" id="mcaps-apply-detected-role">Apply</button>
+      </div>`;
+  }
 
   function renderRoleRadios(selectedRole) {
     return ROLES.map(function (r) {
@@ -93,6 +110,7 @@
             <p class="mcaps-settings-section__desc">
               Determines which Quick Actions and workflow defaults you see on the Home page.
             </p>
+            ${renderDetectedRoleBanner(role)}
             <div class="mcaps-role-radios">
               ${renderRoleRadios(role)}
             </div>
@@ -167,6 +185,20 @@
   function attachHandlers(accounts) {
     if (!container) return;
     var accountsCopy = accounts.slice();
+
+    // Apply detected role from CRM whoami
+    var applyBtn = document.getElementById('mcaps-apply-detected-role');
+    if (applyBtn && detectedRole) {
+      applyBtn.addEventListener('click', function () {
+        var radio = container.querySelector('input[name="role"][value="' + detectedRole + '"]');
+        if (radio) {
+          radio.checked = true;
+          // Re-render to hide the banner
+          if (currentSettings) currentSettings.role = detectedRole;
+          render();
+        }
+      });
+    }
 
     // Remove account buttons
     container.querySelectorAll('.mcaps-account-remove').forEach(function (btn) {
@@ -306,6 +338,45 @@
       });
   }
 
+  // ── CRM role detection ────────────────────────────────────────
+
+  var ROLE_TITLE_MAP = {
+    'account executive': 'ae',
+    'specialist': 'specialist',
+    'solution engineer': 'se',
+    'cloud solution architect': 'csa',
+    'customer success': 'csam',
+    'account technology strategist': 'ats',
+    'industry advisor': 'ia',
+    'sales director': 'sd'
+  };
+
+  function inferRoleFromWhoami(data) {
+    if (!data) return null;
+    var title = (data.title || data.jobTitle || data.role || '').toLowerCase();
+    for (var key in ROLE_TITLE_MAP) {
+      if (title.indexOf(key) !== -1) return ROLE_TITLE_MAP[key];
+    }
+    // Check businessUnitName or other hints
+    var bu = (data.businessUnitName || '').toLowerCase();
+    if (bu.indexOf('specialist') !== -1) return 'specialist';
+    if (bu.indexOf('customer success') !== -1) return 'csam';
+    return null;
+  }
+
+  function loadWhoami() {
+    fetch('/api/crm/whoami')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (data && !data.error) {
+          whoamiData = data;
+          detectedRole = inferRoleFromWhoami(data);
+          if (detectedRole && container) render();
+        }
+      })
+      .catch(function () { /* CRM unavailable — silent */ });
+  }
+
   // ── Data loading ─────────────────────────────────────────────
 
   function loadSettings() {
@@ -321,6 +392,7 @@
     container = el;
     container.innerHTML = '<div class="mcaps-settings mcaps-loading-state"><span class="mcaps-spinner"></span>Loading…</div>';
     loadSettings();
+    loadWhoami();
   }
 
   function unmount() {

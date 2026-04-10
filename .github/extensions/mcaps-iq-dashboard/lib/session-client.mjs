@@ -10,6 +10,10 @@ export function createSessionClient({ port, sessionId, metadata }) {
   let ws = null;
   let chatHandler = null;
   let filterHandler = null;
+  let toolApprovalHandler = null;
+  let autoApproveHandler = null;
+  let stopHandler = null;
+  let userInputHandler = null;
   let reconnectTimer = null;
   let reconnectDelay = 1000;
   const MAX_DELAY = 30000;
@@ -45,6 +49,18 @@ export function createSessionClient({ port, sessionId, metadata }) {
           }
           if (msg.type === 'filter:update' && filterHandler) {
             filterHandler(msg.data || msg);
+          }
+          if (msg.type === 'tool:approval-response' && toolApprovalHandler) {
+            toolApprovalHandler(msg.data || msg);
+          }
+          if (msg.type === 'auto-approve:update' && autoApproveHandler) {
+            autoApproveHandler(msg.data?.autoApprove ?? msg.autoApprove);
+          }
+          if (msg.type === 'session:stop' && stopHandler) {
+            stopHandler(msg.data || {});
+          }
+          if (msg.type === 'user-input:response' && userInputHandler) {
+            userInputHandler(msg.data || {});
           }
         } catch { /* ignore parse errors */ }
       });
@@ -83,6 +99,10 @@ export function createSessionClient({ port, sessionId, metadata }) {
 
   function onChat(handler) { chatHandler = handler; }
   function onFilterChange(handler) { filterHandler = handler; }
+  function onToolApproval(handler) { toolApprovalHandler = handler; }
+  function onAutoApproveChange(handler) { autoApproveHandler = handler; }
+  function onStop(handler) { stopHandler = handler; }
+  function onUserInputResponse(handler) { userInputHandler = handler; }
 
   function close() {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
@@ -99,5 +119,5 @@ export function createSessionClient({ port, sessionId, metadata }) {
     return ws && ws.readyState === WebSocket.OPEN;
   }
 
-  return { connect, pushEvent, onChat, onFilterChange, close, isConnected };
+  return { connect, pushEvent, onChat, onFilterChange, onToolApproval, onAutoApproveChange, onStop, onUserInputResponse, close, isConnected };
 }

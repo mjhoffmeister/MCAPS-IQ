@@ -9,10 +9,13 @@ import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { resolve, join } from 'path';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { exec } from 'child_process';
 
 import { createMultiSessionState } from './multi-session-state.mjs';
 import { readAllCapabilities } from './skills-reader.mjs';
 import { createCrmClient } from './crm-client.mjs';
+import { createCronScheduler, validateCron, describeCron } from './cron-scheduler.mjs';
+import { createOilClient } from './oil-client.mjs';
 
 const PORT = Number(process.env.MCAPS_IQ_PORT || 3850);
 const PUBLIC_DIR = process.env.MCAPS_IQ_PUBLIC_DIR || join(import.meta.dirname, '..', 'public');
@@ -47,6 +50,46 @@ function writeSettings(settings) {
   writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2));
 }
 
+// ── Cron Scheduler ─────────────────────────────────────────────
+
+const SCHEDULES_PATH = join(REPO_ROOT, '.mcaps-iq-schedules.json');
+
+const scheduler = createCronScheduler({
+  filePath: SCHEDULES_PATH,
+  onTrigger: (schedule) => {
+    console.log(`[mcaps-iq] Cron fired: "${schedule.name}" → ${schedule.prompt}`);
+    // Send prompt to the most recent active session (if any)
+    const targetWs = findActiveSessionWs();
+    if (targetWs) {
+      targetWs.send(JSON.stringify({
+        type: 'chat:forward',
+        message: schedule.prompt
+      }));
+    }
+    // Broadcast to viewers so UI updates
+    broadcast('schedule:fired', {
+      scheduleId: schedule.id,
+      name: schedule.name,
+      prompt: schedule.prompt,
+      firedAt: new Date().toISOString(),
+      hadSession: !!targetWs
+    });
+  },
+  onError: (err, schedule) => {
+    console.error(`[mcaps-iq] Cron error for "${schedule?.name}":`, err.message);
+  }
+});
+
+/** Find the WebSocket for the most recently registered session. */
+function findActiveSessionWs() {
+  // Pick last-registered session that is still open
+  let lastWs = null;
+  for (const [, ws] of sessionClients) {
+    if (ws.readyState === 1 /* WebSocket.OPEN */) lastWs = ws;
+  }
+  return lastWs;
+}
+
 // ── Express app ────────────────────────────────────────────────
 
 const app = express();
@@ -73,6 +116,14 @@ app.get('/api/health', (_req, res) => {
     viewers: viewerClients.size,
     uptime: process.uptime()
   });
+});
+
+// ── API: Models (populated by extension via WS event) ──────────
+
+let cachedModels = [];
+
+app.get('/api/models', (_req, res) => {
+  res.json({ models: cachedModels });
 });
 
 // ── API: State ─────────────────────────────────────────────────
@@ -171,6 +222,126 @@ app.post('/api/settings/priority-accounts', (req, res) => {
   }
 });
 
+// ── API: Schedules ─────────────────────────────────────────────
+
+// Static-path routes MUST come before parameterized /:id routes
+
+app.get('/api/schedules', (_req, res) => {
+  try {
+    const list = scheduler.list();
+    res.json({ schedules: list });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/schedules', (req, res) => {
+  try {
+    const { name, cron, prompt, enabled } = req.body || {};
+    if (!cron || !prompt) {
+      return res.status(400).json({ error: 'cron and prompt are required' });
+    }
+    const schedule = scheduler.add({ name, cron, prompt, enabled });
+    broadcast('schedule:created', { schedule });
+    res.json(schedule);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/schedules/validate', (req, res) => {
+  const { cron } = req.body || {};
+  if (!cron) return res.status(400).json({ error: 'cron is required' });
+  const err = validateCron(cron);
+  res.json({
+    valid: !err,
+    error: err || undefined,
+    description: !err ? describeCron(cron) : undefined
+  });
+});
+
+app.post('/api/schedules/once', (req, res) => {
+  try {
+    const { prompt, name, runAt, delayMinutes } = req.body || {};
+    if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+
+    let resolvedRunAt = runAt;
+    if (!resolvedRunAt && delayMinutes) {
+      const mins = parseInt(delayMinutes, 10);
+      if (isNaN(mins) || mins < 1) return res.status(400).json({ error: 'delayMinutes must be >= 1' });
+      resolvedRunAt = new Date(Date.now() + mins * 60_000).toISOString();
+    }
+    if (!resolvedRunAt) return res.status(400).json({ error: 'runAt or delayMinutes is required' });
+
+    const entry = scheduler.scheduleOnce({ prompt, name, runAt: resolvedRunAt });
+    broadcast('schedule:once:created', { entry });
+    res.json(entry);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/schedules/once', (_req, res) => {
+  res.json({ pending: scheduler.listOnce() });
+});
+
+app.delete('/api/schedules/once/:id', (req, res) => {
+  const cancelled = scheduler.cancelOnce(req.params.id);
+  if (!cancelled) return res.status(404).json({ error: 'One-time trigger not found or already fired' });
+  broadcast('schedule:once:cancelled', { id: req.params.id });
+  res.json({ cancelled: true });
+});
+
+// Parameterized /:id routes after all static paths
+
+app.get('/api/schedules/:id', (req, res) => {
+  try {
+    const schedule = scheduler.get(req.params.id);
+    if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
+    res.json(schedule);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/schedules/:id', (req, res) => {
+  try {
+    const schedule = scheduler.update(req.params.id, req.body);
+    broadcast('schedule:updated', { schedule });
+    res.json(schedule);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/schedules/:id', (req, res) => {
+  try {
+    const removed = scheduler.remove(req.params.id);
+    if (!removed) return res.status(404).json({ error: 'Schedule not found' });
+    broadcast('schedule:deleted', { scheduleId: req.params.id });
+    res.json({ deleted: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/schedules/:id/trigger', (req, res) => {
+  try {
+    const schedule = scheduler.triggerNow(req.params.id);
+    broadcast('schedule:fired', {
+      scheduleId: schedule.id,
+      name: schedule.name,
+      prompt: schedule.prompt,
+      firedAt: schedule.lastRun,
+      hadSession: !!findActiveSessionWs(),
+      manual: true
+    });
+    res.json({ triggered: true, schedule });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ── API: Sessions ──────────────────────────────────────────────
 
 app.get('/api/sessions', (_req, res) => {
@@ -245,6 +416,7 @@ app.get('/api/crm/opportunities', async (req, res) => {
 app.get('/api/crm/milestones', async (req, res) => {
   try {
     const opts = {};
+    if (req.query.mine === 'true') opts.mine = true;
     if (req.query.opportunityId) opts.opportunityId = req.query.opportunityId;
     if (req.query.customer) opts.customerKeyword = req.query.customer;
     opts.statusFilter = req.query.status || 'active';
@@ -263,6 +435,625 @@ app.post('/api/crm/refresh', (_req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── API: CRM Read (new) ───────────────────────────────────────
+
+app.get('/api/crm/milestones/needing-tasks', async (req, res) => {
+  try {
+    const data = await getCrmClient().findMilestonesNeedingTasks(req.query.customer || undefined);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/milestones/:id/activities', async (req, res) => {
+  try {
+    const data = await getCrmClient().getMilestoneActivities(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/metadata/milestone-fields/:field', async (req, res) => {
+  const allowed = ['workloadType', 'deliveredBy', 'preferredAzureRegion', 'azureCapacityType'];
+  if (!allowed.includes(req.params.field)) {
+    return res.status(400).json({ error: 'Invalid field. Allowed: ' + allowed.join(', ') });
+  }
+  try {
+    const data = await getCrmClient().getMilestoneFieldOptions(req.params.field);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/metadata/task-statuses', async (_req, res) => {
+  try {
+    const data = await getCrmClient().getTaskStatusOptions();
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/accounts', async (req, res) => {
+  const raw = req.query.tpids;
+  if (!raw) return res.status(400).json({ error: 'tpids query param required' });
+  const tpids = String(raw).split(',').map(s => s.trim()).filter(Boolean);
+  if (tpids.length === 0) return res.status(400).json({ error: 'tpids must not be empty' });
+  try {
+    const data = await getCrmClient().listAccountsByTpid(tpids);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/opportunities/search', async (req, res) => {
+  try {
+    const data = await getCrmClient().searchOpportunities(
+      req.query.filter || undefined,
+      req.query.top ? Number(req.query.top) : undefined
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/records/:entitySet/:id', async (req, res) => {
+  try {
+    const data = await getCrmClient().getRecord(
+      req.params.entitySet,
+      req.params.id,
+      req.query.select || undefined
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/query', async (req, res) => {
+  if (!req.query.entitySet) return res.status(400).json({ error: 'entitySet is required' });
+  try {
+    const data = await getCrmClient().query(
+      req.query.entitySet,
+      req.query.filter || undefined,
+      req.query.select || undefined,
+      req.query.top ? Number(req.query.top) : undefined
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+// ── API: CRM Write-Intent (staged) ────────────────────────────
+
+app.post('/api/crm/milestones', async (req, res) => {
+  const { name, opportunityId } = req.body || {};
+  if (!name || !opportunityId) {
+    return res.status(400).json({ error: 'name and opportunityId are required' });
+  }
+  try {
+    const data = await getCrmClient().createMilestone(req.body);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/milestones/:id', async (req, res) => {
+  const { payload } = req.body || {};
+  if (!payload || typeof payload !== 'object') {
+    return res.status(400).json({ error: 'payload object is required' });
+  }
+  try {
+    const data = await getCrmClient().updateMilestone(req.params.id, payload);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/milestones/:id/team', async (req, res) => {
+  const { action, userId } = req.body || {};
+  if (!action || !userId) {
+    return res.status(400).json({ error: 'action and userId are required' });
+  }
+  try {
+    const data = await getCrmClient().manageMilestoneTeam(
+      req.params.id, action, userId, req.body.role || undefined
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/tasks', async (req, res) => {
+  const { subject, milestoneId } = req.body || {};
+  if (!subject || !milestoneId) {
+    return res.status(400).json({ error: 'subject and milestoneId are required' });
+  }
+  try {
+    const data = await getCrmClient().createTask(req.body);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/tasks/:id', async (req, res) => {
+  const { payload } = req.body || {};
+  if (!payload || typeof payload !== 'object') {
+    return res.status(400).json({ error: 'payload object is required' });
+  }
+  try {
+    const data = await getCrmClient().updateTask(req.params.id, payload);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/tasks/:id/close', async (req, res) => {
+  try {
+    const data = await getCrmClient().closeTask(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/opportunities/:id/deal-team', async (req, res) => {
+  const { action, userId } = req.body || {};
+  if (!action || !userId) {
+    return res.status(400).json({ error: 'action and userId are required' });
+  }
+  try {
+    const data = await getCrmClient().manageDealTeam(
+      req.params.id, action, userId, req.body.role || undefined
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+// ── API: CRM Operations (approval queue) ──────────────────────
+
+app.get('/api/crm/operations', async (_req, res) => {
+  try {
+    const data = await getCrmClient().listPendingOperations();
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/crm/operations/:id/diff', async (req, res) => {
+  try {
+    const data = await getCrmClient().viewStagedDiff(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/operations/:id/execute', async (req, res) => {
+  try {
+    const data = await getCrmClient().executeOperation(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/operations/execute-all', async (_req, res) => {
+  try {
+    const data = await getCrmClient().executeAll();
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/operations/:id/cancel', async (req, res) => {
+  try {
+    const data = await getCrmClient().cancelOperation(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+app.post('/api/crm/operations/cancel-all', async (_req, res) => {
+  try {
+    const data = await getCrmClient().cancelAll();
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'CRM unavailable: ' + err.message });
+  }
+});
+
+// ── OIL Client (lazy singleton) ───────────────────────────────────
+
+let oilClient = null;
+
+function getOilClient() {
+  if (!oilClient) {
+    oilClient = createOilClient({ repoRoot: REPO_ROOT });
+  }
+  return oilClient;
+}
+
+// ── API: Vault (OIL) ──────────────────────────────────────────────
+
+app.get('/api/vault/status', async (_req, res) => {
+  try {
+    const status = await getOilClient().getConnectionStatus();
+    res.json(status);
+  } catch (err) {
+    res.json({ connected: false, error: err.message });
+  }
+});
+
+app.get('/api/vault/health', async (_req, res) => {
+  try {
+    const data = await getOilClient().checkVaultHealth();
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Vault unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/vault/search', async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: 'q query param required' });
+  try {
+    const opts = {};
+    if (req.query.folder) opts.filter_folder = req.query.folder;
+    if (req.query.tags) opts.filter_tags = req.query.tags;
+    if (req.query.tier) opts.tier = req.query.tier;
+    const data = await getOilClient().searchVault(query, opts);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Vault unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/vault/query', async (req, res) => {
+  const key = req.query.key;
+  const value = req.query.value;
+  if (!key || !value) return res.status(400).json({ error: 'key and value query params required' });
+  try {
+    const data = await getOilClient().queryFrontmatter(key, value);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Vault unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/vault/recent-activity', async (req, res) => {
+  const typeFilter = req.query.type || 'all'; // all | customer | project | people | meeting | weekly
+  const oil = getOilClient();
+
+  try {
+    const CATEGORY_FOLDERS = {
+      customer: 'Customers',
+      project:  'Projects',
+      people:   'People',
+      meeting:  'Meetings',
+      weekly:   'Weekly'
+    };
+
+    // Always fetch ALL categories so counts are complete for the filter UI
+    const allCategories = Object.keys(CATEGORY_FOLDERS);
+    const allNotes = [];
+
+    // Customers — use vault health (has dates built-in)
+    try {
+      const health = await oil.checkVaultHealth();
+      const report = health.report || health;
+      const customers = (report.customers || [])
+        .filter(c => c.lastModified)
+        .map(c => ({
+          title: c.customer,
+          path: c.path,
+          modified: c.lastModified,
+          type: 'customer',
+          opportunityCount: c.opportunityCompleteness?.total || 0,
+          milestoneCount: c.milestoneCompleteness?.total || 0,
+          hasTeam: c.hasTeam || false
+        }));
+      allNotes.push(...customers);
+    } catch { /* vault health failed, skip customers */ }
+
+    // Other categories — search + enrich with metadata
+    const otherCategories = allCategories.filter(c => c !== 'customer');
+    const searchPromises = otherCategories.map(async (cat) => {
+      const folder = CATEGORY_FOLDERS[cat];
+      if (!folder) return [];
+      try {
+        const results = await oil.searchVault('*', { filter_folder: folder, tier: 'lexical' });
+        const items = Array.isArray(results) ? results : [];
+        // Enrich top results with metadata (parallel, capped at 6 per category)
+        const enriched = await Promise.all(
+          items.slice(0, 6).map(async (item) => {
+            try {
+              const meta = await oil.getNoteMetadata(item.path);
+              return {
+                title: meta.title || item.title,
+                path: item.path,
+                modified: meta.modified_at || null,
+                type: cat,
+                wordCount: meta.word_count || 0,
+                headings: (meta.headings || []).length,
+                tags: meta.frontmatter?.tags || []
+              };
+            } catch {
+              return {
+                title: item.title,
+                path: item.path,
+                modified: null,
+                type: cat
+              };
+            }
+          })
+        );
+        return enriched;
+      } catch { return []; }
+    });
+    const categoryResults = await Promise.all(searchPromises);
+    categoryResults.forEach(notes => allNotes.push(...notes));
+
+    // Sort all by modified date desc (nulls last)
+    allNotes.sort((a, b) => {
+      if (!a.modified && !b.modified) return 0;
+      if (!a.modified) return 1;
+      if (!b.modified) return -1;
+      return new Date(b.modified) - new Date(a.modified);
+    });
+
+    // Global counts (always full)
+    const counts = {};
+    for (const note of allNotes) {
+      counts[note.type] = (counts[note.type] || 0) + 1;
+    }
+
+    // Apply type filter to the notes list only
+    const filtered = typeFilter === 'all'
+      ? allNotes
+      : allNotes.filter(n => n.type === typeFilter);
+
+    res.json({
+      notes: filtered.slice(0, 12),
+      counts,
+      total: filtered.length,
+      filter: typeFilter
+    });
+  } catch (err) {
+    res.status(502).json({ error: 'Vault unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/vault/customer/:name', async (req, res) => {
+  try {
+    const data = await getOilClient().getCustomerContext(req.params.name);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Vault unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/vault/customers', async (_req, res) => {
+  try {
+    const oil = getOilClient();
+    const health = await oil.checkVaultHealth();
+    const report = health.report || health;
+    const rawCustomers = (report.customers || []).filter(c => c.customer !== 'opportunities');
+
+    // Enrich each customer with aliases from frontmatter (parallel, fast)
+    const customers = await Promise.all(rawCustomers.map(async (c) => {
+      const base = {
+        name: c.customer,
+        path: c.path,
+        lastModified: c.lastModified || null,
+        opportunityCount: c.opportunityCompleteness?.total || 0,
+        milestoneCount: c.milestoneCompleteness?.total || 0,
+        hasTeam: c.hasTeam || false,
+        aliases: []
+      };
+      try {
+        const ctx = await oil.getCustomerContext(c.customer);
+        const fm = ctx?.frontmatter || {};
+        const names = new Set();
+        if (Array.isArray(fm.aliases)) fm.aliases.forEach(a => names.add(a));
+        if (fm.MSX?.account) names.add(fm.MSX.account);
+        names.delete(c.customer); // don't duplicate the primary name
+        base.aliases = [...names];
+      } catch { /* context fetch failed — aliases stay empty */ }
+      return base;
+    }));
+
+    res.json({ customers, count: customers.length });
+  } catch (err) {
+    res.json({ customers: [], count: 0, error: err.message });
+  }
+});
+
+app.get('/api/vault/note-metadata', async (req, res) => {
+  const path = req.query.path;
+  if (!path) return res.status(400).json({ error: 'path query param required' });
+  try {
+    const data = await getOilClient().getNoteMetadata(path);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Vault unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/vault/agent-log', async (_req, res) => {
+  try {
+    const data = await getOilClient().getAgentLog();
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Vault unavailable: ' + err.message });
+  }
+});
+
+app.get('/api/vault/name', (_req, res) => {
+  // Derive vault name from OBSIDIAN_VAULT_PATH env var (folder basename)
+  const vaultPath = process.env.OBSIDIAN_VAULT_PATH;
+  if (!vaultPath) return res.json({ name: null });
+  const name = vaultPath.replace(/[\/\\]+$/, '').split(/[\/\\]/).pop();
+  res.json({ name });
+});
+
+app.post('/api/vault/refresh', (_req, res) => {
+  try {
+    getOilClient().invalidateCache();
+    res.json({ refreshed: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── API: MCP Servers ───────────────────────────────────────────
+
+const MCP_CONFIG_PATH = join(REPO_ROOT, '.vscode', 'mcp.json');
+
+function readMcpConfig() {
+  try {
+    if (existsSync(MCP_CONFIG_PATH)) {
+      // Strip JSON comments (// style) before parsing
+      const raw = readFileSync(MCP_CONFIG_PATH, 'utf8');
+      const stripped = raw.replace(/^\s*\/\/.*$/gm, '');
+      return JSON.parse(stripped);
+    }
+  } catch { /* corrupt or missing */ }
+  return { servers: {} };
+}
+
+function getMcpDisabledSet() {
+  const settings = readSettings();
+  return new Set(settings.mcpDisabledServers || []);
+}
+
+function setMcpDisabled(disabledArray) {
+  const settings = readSettings();
+  settings.mcpDisabledServers = disabledArray;
+  writeSettings(settings);
+}
+
+function classifyServer(name, cfg) {
+  const typeMap = {
+    msx: { label: 'MSX CRM', icon: '🔗', category: 'crm' },
+    oil: { label: 'Obsidian Vault', icon: '📂', category: 'vault' },
+    workiq: { label: 'WorkIQ', icon: '🧠', category: 'm365' },
+    'powerbi-remote': { label: 'Power BI', icon: '📊', category: 'analytics' },
+    calendar: { label: 'Calendar', icon: '📅', category: 'm365' },
+    teams: { label: 'Teams', icon: '💬', category: 'm365' },
+    mail: { label: 'Mail', icon: '📧', category: 'm365' },
+    sharepoint: { label: 'SharePoint', icon: '📁', category: 'm365' },
+    word: { label: 'Word', icon: '📝', category: 'm365' },
+    github: { label: 'GitHub', icon: '🐙', category: 'dev' },
+    ado: { label: 'Azure DevOps', icon: '🔷', category: 'dev' },
+  };
+  const match = typeMap[name];
+  return {
+    label: match?.label || name,
+    icon: match?.icon || '🔌',
+    category: match?.category || 'other',
+    transport: cfg.type || 'unknown'
+  };
+}
+
+app.get('/api/mcp/servers', (_req, res) => {
+  try {
+    const config = readMcpConfig();
+    const disabled = getMcpDisabledSet();
+    const servers = Object.entries(config.servers || {}).map(([name, cfg]) => {
+      const meta = classifyServer(name, cfg);
+      return {
+        name,
+        enabled: !disabled.has(name),
+        type: cfg.type,
+        label: meta.label,
+        icon: meta.icon,
+        category: meta.category,
+        transport: meta.transport,
+        url: cfg.url || null,
+        command: cfg.command || null
+      };
+    });
+    res.json({ servers });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read MCP config: ' + err.message });
+  }
+});
+
+app.post('/api/mcp/servers/:name/toggle', (req, res) => {
+  try {
+    const { name } = req.params;
+    const { enabled } = req.body;
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: 'enabled (boolean) is required' });
+    }
+    const config = readMcpConfig();
+    if (!config.servers || !config.servers[name]) {
+      return res.status(404).json({ error: 'Server not found: ' + name });
+    }
+    const disabled = getMcpDisabledSet();
+    if (enabled) {
+      disabled.delete(name);
+    } else {
+      disabled.add(name);
+    }
+    setMcpDisabled([...disabled]);
+    broadcast('mcp:server-toggled', { server: name, enabled });
+    res.json({ name, enabled });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Open External — launches URL in the device default browser ──
+
+app.post('/api/open-external', (req, res) => {
+  const { url } = req.body || {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'url is required' });
+  }
+  // Validate URL — only allow http/https and obsidian:// to prevent command injection
+  let parsed;
+  try { parsed = new URL(url); } catch { return res.status(400).json({ error: 'Invalid URL' }); }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:' && parsed.protocol !== 'obsidian:') {
+    return res.status(400).json({ error: 'Only http, https, and obsidian URLs allowed' });
+  }
+  const safeUrl = parsed.href;
+  // Use platform-specific open command
+  const platform = process.platform;
+  let cmd;
+  if (platform === 'darwin') {
+    cmd = `open "${safeUrl}"`;
+  } else if (platform === 'win32') {
+    cmd = `start "" "${safeUrl}"`;
+  } else {
+    cmd = `xdg-open "${safeUrl}"`;
+  }
+  exec(cmd, (err) => {
+    if (err) {
+      console.error('[open-external]', err.message);
+      return res.status(500).json({ error: 'Failed to open URL' });
+    }
+    res.json({ opened: true });
+  });
 });
 
 // ── WebSocket ──────────────────────────────────────────────────
@@ -316,6 +1107,10 @@ wss.on('connection', (ws, req) => {
       // Session event relay
       case 'event': {
         if (msg.sessionId && msg.event) {
+          // Intercept models:update to cache on the server
+          if (msg.event.type === 'models:update' && Array.isArray(msg.event.data?.models)) {
+            cachedModels = msg.event.data.models;
+          }
           stateManager.addEvent(msg.sessionId, msg.event);
           broadcast(msg.event.type, { sessionId: msg.sessionId, ...msg.event.data });
         }
@@ -360,6 +1155,44 @@ wss.on('connection', (ws, req) => {
         const targetWs2 = msg.sessionId ? sessionClients.get(msg.sessionId) : null;
         if (targetWs2 && targetWs2.readyState === WebSocket.OPEN) {
           targetWs2.send(JSON.stringify({ type: 'filter:update', data: msg.data }));
+        }
+        break;
+      }
+
+      // Browser sends tool approval/denial decision back to extension
+      case 'tool:approval-response': {
+        const targetWs3 = msg.sessionId ? sessionClients.get(msg.sessionId) : null;
+        if (targetWs3 && targetWs3.readyState === WebSocket.OPEN) {
+          targetWs3.send(JSON.stringify({ type: 'tool:approval-response', data: msg.data }));
+        }
+        break;
+      }
+
+      // Browser toggles auto-approve for a session
+      case 'auto-approve:update': {
+        const targetWs4 = msg.sessionId ? sessionClients.get(msg.sessionId) : null;
+        if (targetWs4 && targetWs4.readyState === WebSocket.OPEN) {
+          targetWs4.send(JSON.stringify({ type: 'auto-approve:update', data: msg.data }));
+        }
+        // Also broadcast to other viewers so UI stays in sync
+        broadcast('auto-approve:update', { sessionId: msg.sessionId, ...msg.data });
+        break;
+      }
+
+      // Browser requests session abort (stop current turn)
+      case 'session:stop': {
+        const targetWs5 = msg.sessionId ? sessionClients.get(msg.sessionId) : null;
+        if (targetWs5 && targetWs5.readyState === WebSocket.OPEN) {
+          targetWs5.send(JSON.stringify({ type: 'session:stop', data: msg.data || {} }));
+        }
+        break;
+      }
+
+      // Browser sends user input response back to extension
+      case 'user-input:response': {
+        const targetWs6 = msg.sessionId ? sessionClients.get(msg.sessionId) : null;
+        if (targetWs6 && targetWs6.readyState === WebSocket.OPEN) {
+          targetWs6.send(JSON.stringify({ type: 'user-input:response', data: msg.data }));
         }
         break;
       }
@@ -418,8 +1251,13 @@ server.listen(PORT, '127.0.0.1', () => {
 // Pre-warm capabilities cache
 getCapabilities().catch(() => {});
 
+// Start cron scheduler
+scheduler.start();
+console.log(`[mcaps-iq] Cron scheduler started (${scheduler.list().filter(s => s.enabled).length} active jobs)`);
+
 // Graceful shutdown
 process.on('SIGTERM', () => {
+  scheduler.stop();
   clearInterval(viewerHeartbeat);
   clearInterval(sessionHeartbeat);
   server.close(() => process.exit(0));

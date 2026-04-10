@@ -34,6 +34,21 @@ export function createCrmClient(options = {}) {
     cache.set(key, { data, ts: Date.now() });
   }
 
+  const METADATA_TTL_MS = 60 * 60 * 1000; // 1 hour for picklist metadata
+
+  function getCachedMeta(key) {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.ts > METADATA_TTL_MS) { cache.delete(key); return null; }
+    return entry.data;
+  }
+
+  function invalidateWriteCache() {
+    for (const key of cache.keys()) {
+      if (key.startsWith('milestones_') || key.startsWith('my_opps_')) cache.delete(key);
+    }
+  }
+
   function invalidateCache(prefix) {
     if (!prefix) { cache.clear(); return; }
     for (const key of cache.keys()) {
@@ -139,11 +154,12 @@ export function createCrmClient(options = {}) {
   }
 
   async function getMilestones(opts = {}) {
-    const key = `milestones_${opts.opportunityId || opts.customerKeyword || 'none'}`;
+    const key = `milestones_${opts.mine ? 'mine' : ''}${opts.opportunityId || opts.customerKeyword || 'none'}`;
     const cached = getCached(key);
     if (cached) return cached;
 
     const args = {};
+    if (opts.mine) args.mine = true;
     if (opts.opportunityId) args.opportunityId = opts.opportunityId;
     if (opts.customerKeyword) args.customerKeyword = opts.customerKeyword;
     if (opts.statusFilter) args.statusFilter = opts.statusFilter;
@@ -184,6 +200,140 @@ export function createCrmClient(options = {}) {
     cache.clear();
   }
 
+  // ── Read methods (new) ────────────────────────────────────────
+
+  async function getMilestoneActivities(milestoneId) {
+    const key = `ms_activities_${milestoneId}`;
+    const cached = getCached(key);
+    if (cached) return cached;
+    const data = await callTool('get_milestone_activities', { milestoneIds: [milestoneId] });
+    setCache(key, data);
+    return data;
+  }
+
+  async function getMilestoneFieldOptions(field) {
+    const key = `meta_ms_field_${field}`;
+    const cached = getCachedMeta(key);
+    if (cached) return cached;
+    const data = await callTool('get_milestone_field_options', { field });
+    setCache(key, data);
+    return data;
+  }
+
+  async function getTaskStatusOptions() {
+    const key = 'meta_task_statuses';
+    const cached = getCachedMeta(key);
+    if (cached) return cached;
+    const data = await callTool('get_task_status_options', {});
+    setCache(key, data);
+    return data;
+  }
+
+  async function searchOpportunities(filter, top) {
+    const args = {};
+    if (filter) args.filter = filter;
+    if (top) args.top = top;
+    return callTool('list_opportunities', args);
+  }
+
+  async function getRecord(entitySet, id, select) {
+    const args = { entitySet, id };
+    if (select) args.select = select;
+    return callTool('crm_get_record', args);
+  }
+
+  async function query(entitySet, filter, select, top) {
+    const args = { entitySet };
+    if (filter) args.filter = filter;
+    if (select) args.select = select;
+    if (top) args.top = top;
+    return callTool('crm_query', args);
+  }
+
+  async function findMilestonesNeedingTasks(customerKeyword) {
+    const args = {};
+    if (customerKeyword) args.customerKeyword = customerKeyword;
+    return callTool('find_milestones_needing_tasks', args);
+  }
+
+  // ── Write-intent methods (staged) ─────────────────────────────
+
+  async function updateMilestone(milestoneId, payload) {
+    const data = await callTool('update_milestone', { milestoneId, payload });
+    invalidateWriteCache();
+    return data;
+  }
+
+  async function createMilestone(params) {
+    const data = await callTool('create_milestone', params);
+    invalidateWriteCache();
+    return data;
+  }
+
+  async function createTask(params) {
+    const data = await callTool('create_task', params);
+    invalidateWriteCache();
+    return data;
+  }
+
+  async function updateTask(taskId, payload) {
+    const data = await callTool('update_task', { taskId, payload });
+    invalidateWriteCache();
+    return data;
+  }
+
+  async function closeTask(taskId) {
+    const data = await callTool('close_task', { taskId });
+    invalidateWriteCache();
+    return data;
+  }
+
+  async function manageDealTeam(opportunityId, action, userId, role) {
+    const args = { opportunityId, action, userId };
+    if (role) args.role = role;
+    const data = await callTool('manage_deal_team', args);
+    invalidateWriteCache();
+    return data;
+  }
+
+  async function manageMilestoneTeam(milestoneId, action, userId, role) {
+    const args = { milestoneId, action, userId };
+    if (role) args.role = role;
+    const data = await callTool('manage_milestone_team', args);
+    invalidateWriteCache();
+    return data;
+  }
+
+  // ── Approval/execution methods ────────────────────────────────
+
+  async function listPendingOperations() {
+    return callTool('list_pending_operations', {});
+  }
+
+  async function viewStagedDiff(operationId) {
+    return callTool('view_staged_changes_diff', { operationId });
+  }
+
+  async function executeOperation(operationId) {
+    const data = await callTool('execute_operation', { operationId });
+    cache.clear(); // full invalidation after a real CRM write
+    return data;
+  }
+
+  async function executeAll() {
+    const data = await callTool('execute_all', {});
+    cache.clear();
+    return data;
+  }
+
+  async function cancelOperation(operationId) {
+    return callTool('cancel_operation', { operationId });
+  }
+
+  async function cancelAll() {
+    return callTool('cancel_all', {});
+  }
+
   return {
     whoami,
     getAuthStatus,
@@ -193,6 +343,29 @@ export function createCrmClient(options = {}) {
     getConnectionStatus,
     invalidateCache,
     disconnect,
-    callTool
+    callTool,
+    // Read
+    getMilestoneActivities,
+    getMilestoneFieldOptions,
+    getTaskStatusOptions,
+    searchOpportunities,
+    getRecord,
+    query,
+    findMilestonesNeedingTasks,
+    // Write-intent (staged)
+    updateMilestone,
+    createMilestone,
+    createTask,
+    updateTask,
+    closeTask,
+    manageDealTeam,
+    manageMilestoneTeam,
+    // Approval
+    listPendingOperations,
+    viewStagedDiff,
+    executeOperation,
+    executeAll,
+    cancelOperation,
+    cancelAll
   };
 }

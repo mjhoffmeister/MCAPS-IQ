@@ -116,3 +116,6 @@ squad-*
 
 # MCAPS IQ Dashboard local settings (may contain priority account TPIDs)
 .mcaps-iq-settings.json
+
+# MCAPS IQ Dashboard local cron schedules
+.mcaps-iq-schedules.json
