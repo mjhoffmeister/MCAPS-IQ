@@ -195,6 +195,9 @@
       case 'schedule:deleted':
       case 'schedule:once:created':
       case 'schedule:once:cancelled':
+      case 'delegation:dispatched':
+      case 'delegation:complete':
+      case 'delegation:error':
         emit(msg.type, msg);
         break;
 
@@ -661,6 +664,7 @@
       accounts: window.accountsView || { mount: function (c) { c.innerHTML = '<div class="placeholder"><h2>🏢 Accounts</h2><p>Loading…</p></div>'; } },
       skills: window.skillsView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Skills loading…</div>'; } },
       'mcp-servers': window.mcpServersView || { mount: function (c) { c.innerHTML = '<div class="placeholder">MCP Servers loading…</div>'; } },
+      'mission-control': window.missionControlView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Mission Control loading…</div>'; } },
       schedules: window.schedulesView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Schedules loading…</div>'; } },
       settings: window.settingsView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Settings loading…</div>'; } }
     }

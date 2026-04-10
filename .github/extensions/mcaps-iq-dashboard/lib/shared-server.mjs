@@ -16,6 +16,13 @@ import { readAllCapabilities } from './skills-reader.mjs';
 import { createCrmClient } from './crm-client.mjs';
 import { createCronScheduler, validateCron, describeCron } from './cron-scheduler.mjs';
 import { createOilClient } from './oil-client.mjs';
+import {
+  listSessionHistory,
+  getSessionDetail,
+  getSessionTurns,
+  searchSessions,
+  getSessionStats
+} from './session-history.mjs';
 
 const PORT = Number(process.env.MCAPS_IQ_PORT || 3850);
 const PUBLIC_DIR = process.env.MCAPS_IQ_PUBLIC_DIR || join(import.meta.dirname, '..', 'public');
@@ -362,6 +369,107 @@ app.get('/api/sessions/:id', (req, res) => {
   const session = state.sessions[req.params.id];
   if (!session) return res.status(404).json({ error: 'Session not found' });
   res.json(session);
+});
+
+// ── API: Session History (Mission Control) ─────────────────────
+
+app.get('/api/session-history', (req, res) => {
+  try {
+    const result = listSessionHistory({
+      limit: Math.min(Number(req.query.limit) || 50, 200),
+      offset: Number(req.query.offset) || 0,
+      cwd: req.query.cwd || undefined,
+      repository: req.query.repository || undefined,
+      search: req.query.search || undefined
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/session-history/stats', (_req, res) => {
+  try {
+    res.json(getSessionStats());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/session-history/search', (req, res) => {
+  const query = req.query.q || req.query.query;
+  if (!query) return res.status(400).json({ error: 'q or query param required' });
+  try {
+    const results = searchSessions(query, {
+      limit: Math.min(Number(req.query.limit) || 20, 50)
+    });
+    res.json({ results, query });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/session-history/:id', (req, res) => {
+  try {
+    const detail = getSessionDetail(req.params.id);
+    if (!detail) return res.status(404).json({ error: 'Session not found in history' });
+    res.json(detail);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/session-history/:id/turns', (req, res) => {
+  try {
+    const result = getSessionTurns(req.params.id, {
+      limit: Math.min(Number(req.query.limit) || 100, 500),
+      offset: Number(req.query.offset) || 0
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/session-history/:id/delegate', (req, res) => {
+  const { prompt } = req.body || {};
+  if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+
+  const detail = getSessionDetail(req.params.id);
+  if (!detail) return res.status(404).json({ error: 'Session not found' });
+  if (!detail.canResume) return res.status(400).json({ error: 'Session cannot be resumed (no state directory)' });
+
+  // Dispatch to the most recent active session's extension via WS
+  const targetWs = findActiveSessionWs();
+  if (targetWs) {
+    targetWs.send(JSON.stringify({
+      type: 'delegation:request',
+      targetSessionId: req.params.id,
+      prompt
+    }));
+    res.json({ dispatched: true, targetSessionId: req.params.id });
+  } else {
+    // No active session — spawn CLI directly
+    const copilotBin = process.env.COPILOT_PATH || 'copilot';
+    exec(
+      `${copilotBin} --resume=${req.params.id} --allow-all-tools -p ${JSON.stringify(prompt)}`,
+      { cwd: REPO_ROOT, timeout: 300_000, maxBuffer: 2 * 1024 * 1024 },
+      (err, stdout) => {
+        if (err) {
+          broadcast('delegation:error', {
+            targetSessionId: req.params.id,
+            error: err.message
+          });
+        } else {
+          broadcast('delegation:complete', {
+            targetSessionId: req.params.id,
+            resultPreview: (stdout || '').slice(0, 500)
+          });
+        }
+      }
+    );
+    res.json({ dispatched: true, targetSessionId: req.params.id, method: 'cli-spawn' });
+  }
 });
 
 // ── CRM Client (lazy singleton) ────────────────────────────────
@@ -1194,6 +1302,14 @@ wss.on('connection', (ws, req) => {
         if (targetWs6 && targetWs6.readyState === WebSocket.OPEN) {
           targetWs6.send(JSON.stringify({ type: 'user-input:response', data: msg.data }));
         }
+        break;
+      }
+
+      // Delegation events — relay to all viewers
+      case 'delegation:dispatched':
+      case 'delegation:complete':
+      case 'delegation:error': {
+        broadcast(msg.type, msg.data || msg);
         break;
       }
 

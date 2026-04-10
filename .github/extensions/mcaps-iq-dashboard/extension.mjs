@@ -1,11 +1,13 @@
 /**
  * MCAPS IQ Dashboard — Copilot CLI Extension Entry Point
  *
- * Connects to a shared dashboard server via WebSocket and relays
- * session events (responses, tool calls, thinking, intents, tasks)
- * from the CLI session to the browser-based dashboard.
+ * Uses the @github/copilot-sdk/extension joinSession() API for proper SDK
+ * integration with all 6 hooks. Connects to a shared dashboard server via
+ * WebSocket and relays session events. Provides Mission Control tools for
+ * session history browsing and prompt delegation.
  */
 
+import { joinSession } from '@github/copilot-sdk/extension';
 import { CopilotClient } from '@github/copilot-sdk';
 import { join } from 'path';
 import { exec, execSync } from 'child_process';
@@ -15,20 +17,29 @@ import { createSessionClient } from './lib/session-client.mjs';
 import { filterResponse } from './lib/response-filter.mjs';
 import { deriveToolDetail } from './lib/tool-event-detail.mjs';
 import { ensureServer } from './lib/server-launcher.mjs';
+import {
+  listSessionHistory,
+  getSessionDetail,
+  searchSessions,
+  getSessionStats
+} from './lib/session-history.mjs';
 
 const DEFAULT_PORT = 3850;
 const PUBLIC_DIR = join(import.meta.dirname, 'public');
 
 let sessionClient = null;
 let serverPort = DEFAULT_PORT;
-const sessionId = randomUUID();
 let filterOptions = { showCode: false, verbosity: 'normal' };
 
 // ── Tool approval state ────────────────────────────────────────
 
-let autoApprove = true; // default: approve all tools (matches original behavior)
-const pendingApprovals = new Map(); // toolCallId → { resolve, timer }
-const pendingUserInputs = new Map(); // requestId → { resolve, timer }
+let autoApprove = true;
+const pendingApprovals = new Map();
+const pendingUserInputs = new Map();
+
+// ── Copilot SDK client (for model discovery + session listing) ─
+
+let copilotClient = null;
 
 function openBrowser(url) {
   const cmd = process.platform === 'win32' ? `start "" "${url}"`
@@ -57,10 +68,6 @@ function parseAgentDescription(description) {
   return { emoji: '🔧', agentName: 'agent', task: description };
 }
 
-// ── Copilot SDK client (shared for session + model discovery) ──
-
-let copilotClient = null;
-
 // ── Model discovery ────────────────────────────────────────────
 
 async function fetchAndPushModels() {
@@ -81,6 +88,9 @@ async function fetchAndPushModels() {
 
 // ── Dashboard init ─────────────────────────────────────────────
 
+// Forward reference — session assigned after joinSession()
+let session = null;
+
 async function initDashboard(source) {
   if (sessionClient) return;
 
@@ -99,13 +109,15 @@ async function initDashboard(source) {
       label: null,
       nodeVersion: process.version
     };
-    sessionClient = createSessionClient({ port, sessionId, metadata });
+    sessionClient = createSessionClient({ port, sessionId: session?.sessionId || randomUUID(), metadata });
     await sessionClient.connect();
 
     sessionClient.onChat((message) => {
-      setTimeout(() => {
-        session.send({ prompt: message }).catch(() => {});
-      }, 0);
+      if (session) {
+        setTimeout(() => {
+          session.send({ prompt: message }).catch(() => {});
+        }, 0);
+      }
     });
 
     sessionClient.onFilterChange((data) => {
@@ -130,10 +142,10 @@ async function initDashboard(source) {
 
     sessionClient.onStop(async () => {
       try {
-        await session.abort();
+        if (session) await session.abort();
         sessionClient?.pushEvent('session:stopped', { timestamp: Date.now() });
-      } catch (err) {
-        // Session may already be idle — not an error
+      } catch {
+        // Session may already be idle
       }
     });
 
@@ -150,60 +162,38 @@ async function initDashboard(source) {
       openBrowser(`http://127.0.0.1:${serverPort}`);
     }
 
-    // Fetch available models from the copilot SDK and push to server
     fetchAndPushModels().catch(() => {});
 
-    await session.log(`📊 MCAPS IQ Dashboard available at http://127.0.0.1:${serverPort}`);
+    if (session) {
+      await session.log(`📊 MCAPS IQ Dashboard available at http://127.0.0.1:${serverPort}`);
+    }
   } catch (err) {
-    try { await session.log(`⚠️ MCAPS IQ Dashboard failed: ${err.message}`); } catch { /* noop */ }
+    try { if (session) await session.log(`⚠️ MCAPS IQ Dashboard failed: ${err.message}`); } catch { /* noop */ }
     sessionClient = null;
   }
 }
 
-// ── Extension entry point ──────────────────────────────────────
+// ── Extension entry point — joinSession ────────────────────────
 
-// Inline joinSession() so we retain a reference to the CopilotClient
-// (needed for listModels and other client-level APIs).
-const cliSessionId = process.env.SESSION_ID;
-if (!cliSessionId) {
-  throw new Error('Extension must run as a child process of the Copilot CLI (SESSION_ID missing).');
+// Create a standalone CopilotClient for model listing and session discovery.
+// joinSession() only gives us the session — we need the client for listSessions().
+try {
+  copilotClient = new CopilotClient({ isChildProcess: true });
+} catch {
+  // Some environments may not support standalone client creation.
+  // Session listing will fall back to SQLite reader.
+  copilotClient = null;
 }
-copilotClient = new CopilotClient({ isChildProcess: true });
 
-const session = await copilotClient.resumeSession(cliSessionId, {
-  disableResume: true,
-  onUserInputRequest: async (request) => {
-    // If dashboard is connected, route to UI
-    if (sessionClient && sessionClient.isConnected()) {
-      const requestId = randomUUID();
-      sessionClient.pushEvent('user-input:request', {
-        requestId,
-        question: request.question || '',
-        choices: request.choices || null,
-        allowFreeform: request.allowFreeform !== false,
-        timestamp: Date.now()
-      });
+session = await joinSession({
 
-      return new Promise((resolve) => {
-        const USER_INPUT_TIMEOUT_MS = 300_000; // 5 minutes
-        const timer = setTimeout(() => {
-          pendingUserInputs.delete(requestId);
-          resolve({ answer: '', wasFreeform: true });
-        }, USER_INPUT_TIMEOUT_MS);
-        pendingUserInputs.set(requestId, { resolve, timer });
-      });
-    }
-    // Fallback: empty answer if dashboard not connected
-    return { answer: '', wasFreeform: true };
-  },
+  // ── Permission handling ──────────────────────────────────────
 
   onPermissionRequest: (request) => {
-    // Auto-approve if toggle is on or dashboard is not connected
     if (autoApprove || !sessionClient || !sessionClient.isConnected()) {
       return { kind: 'approved' };
     }
 
-    // Push approval request to the dashboard and wait for response
     const toolCallId = request.toolCallId || randomUUID();
     sessionClient.pushEvent('tool:approval-request', {
       toolCallId,
@@ -215,40 +205,131 @@ const session = await copilotClient.resumeSession(cliSessionId, {
     });
 
     return new Promise((resolve) => {
-      const APPROVAL_TIMEOUT_MS = 120_000; // 2 minutes
+      const APPROVAL_TIMEOUT_MS = 120_000;
       const timer = setTimeout(() => {
         pendingApprovals.delete(toolCallId);
-        // Timeout → deny to be safe
         resolve({ kind: 'denied-interactively-by-user' });
       }, APPROVAL_TIMEOUT_MS);
       pendingApprovals.set(toolCallId, { resolve, timer });
     });
   },
 
+  // ── User input handling ──────────────────────────────────────
+
+  onUserInputRequest: async (request) => {
+    if (sessionClient && sessionClient.isConnected()) {
+      const requestId = randomUUID();
+      sessionClient.pushEvent('user-input:request', {
+        requestId,
+        question: request.question || '',
+        choices: request.choices || null,
+        allowFreeform: request.allowFreeform !== false,
+        timestamp: Date.now()
+      });
+
+      return new Promise((resolve) => {
+        const USER_INPUT_TIMEOUT_MS = 300_000;
+        const timer = setTimeout(() => {
+          pendingUserInputs.delete(requestId);
+          resolve({ answer: '', wasFreeform: true });
+        }, USER_INPUT_TIMEOUT_MS);
+        pendingUserInputs.set(requestId, { resolve, timer });
+      });
+    }
+    return { answer: '', wasFreeform: true };
+  },
+
+  // ── All 6 Hooks ──────────────────────────────────────────────
+
   hooks: {
+    // 1. Session Start — init dashboard, inject context
     async onSessionStart(input) {
-      await initDashboard(input?.source);
+      await initDashboard(input?.source || 'startup');
+
+      return {
+        additionalContext:
+          'MCAPS IQ Mission Control extension is active. ' +
+          'Available tools: dashboard_status, list_sessions, search_sessions, ' +
+          'get_session_detail, delegate_prompt. Use list_sessions to browse ' +
+          'past Copilot CLI conversations and delegate_prompt to send work ' +
+          'to a previous session context.'
+      };
+    },
+
+    // 2. User Prompt Submitted — relay to dashboard
+    async onUserPromptSubmitted(input) {
+      sessionClient?.pushEvent('user:prompt', {
+        prompt: input.prompt,
+        timestamp: Date.now()
+      });
+      // No modification — pass through unchanged
       return {};
     },
 
-    async onSessionEnd() {
+    // 3. Pre-Tool-Use — relay to dashboard, enforce policies
+    async onPreToolUse(input) {
+      sessionClient?.pushEvent('tool:pre-use', {
+        toolName: input.toolName,
+        timestamp: Date.now()
+      });
+      // No blocking/modification by default — dashboard shows tool execution
+      return {};
+    },
+
+    // 4. Post-Tool-Use — relay results to dashboard
+    async onPostToolUse(input) {
+      sessionClient?.pushEvent('tool:post-use', {
+        toolName: input.toolName,
+        success: input.toolResult?.resultType !== 'failure',
+        timestamp: Date.now()
+      });
+      return {};
+    },
+
+    // 5. Error Occurred — auto-retry recoverable tool errors
+    async onErrorOccurred(input) {
+      sessionClient?.pushEvent('session:error-hook', {
+        error: input.error,
+        context: input.errorContext,
+        recoverable: input.recoverable,
+        timestamp: Date.now()
+      });
+
+      if (input.recoverable && input.errorContext === 'tool_execution') {
+        return { errorHandling: 'retry', retryCount: 2 };
+      }
+      return {
+        errorHandling: 'abort',
+        userNotification: `Error in ${input.errorContext}: ${input.error}`
+      };
+    },
+
+    // 6. Session End — cleanup dashboard, generate summary
+    async onSessionEnd(input) {
       if (sessionClient) {
         try {
-          // Push idle state so dashboard stops showing "agent is working" immediately
           sessionClient.pushEvent('session:idle', { backgroundTasks: [] });
         } catch { /* noop */ }
         try { sessionClient.close(); } catch { /* noop */ }
         sessionClient = null;
       }
-      return {};
+
+      return {
+        sessionSummary: `Session ended (${input?.reason || 'unknown'}).`,
+        cleanupActions: ['Dashboard connection closed']
+      };
     }
   },
 
+  // ── Custom Tools — Mission Control ───────────────────────────
+
   tools: [
+    // Dashboard status
     {
       name: 'dashboard_status',
       description: 'Returns the MCAPS IQ Dashboard URL and connection status',
-      parameters: {},
+      parameters: { type: 'object', properties: {} },
+      skipPermission: true,
       handler: async () => {
         let connCount = 0;
         try {
@@ -263,7 +344,315 @@ const session = await copilotClient.resumeSession(cliSessionId, {
         } catch { /* noop */ }
         return {
           textResultForLlm: `MCAPS IQ Dashboard: http://127.0.0.1:${serverPort} — ${connCount} active session(s)`,
-          resultType: 'text'
+          resultType: 'success'
+        };
+      }
+    },
+
+    // List all historical sessions (Mission Control)
+    {
+      name: 'list_sessions',
+      description:
+        'List past Copilot CLI sessions from session history. ' +
+        'Returns session IDs, summaries, timestamps, repos, and turn counts. ' +
+        'Use to browse conversation history and find sessions to resume or delegate to.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Max sessions to return (default 20)' },
+          offset: { type: 'number', description: 'Pagination offset' },
+          repository: { type: 'string', description: 'Filter by repository (owner/repo)' },
+          cwd: { type: 'string', description: 'Filter by working directory' },
+          search: { type: 'string', description: 'Search in session summaries' }
+        }
+      },
+      skipPermission: true,
+      handler: async (args) => {
+        // Try SDK client first (live query), fall back to SQLite reader
+        let sessions = [];
+        let total = 0;
+
+        if (copilotClient) {
+          try {
+            const filter = {};
+            if (args.repository) filter.repository = args.repository;
+            if (args.cwd) filter.cwd = args.cwd;
+            const allSessions = await copilotClient.listSessions(
+              Object.keys(filter).length > 0 ? filter : undefined
+            );
+
+            // Apply search filter client-side if needed
+            let filtered = allSessions;
+            if (args.search) {
+              const q = args.search.toLowerCase();
+              filtered = allSessions.filter(s =>
+                (s.summary || '').toLowerCase().includes(q)
+              );
+            }
+
+            total = filtered.length;
+            const offset = args.offset || 0;
+            const limit = args.limit || 20;
+            sessions = filtered.slice(offset, offset + limit).map(s => ({
+              sessionId: s.sessionId,
+              summary: s.summary || '(no summary)',
+              startTime: s.startTime?.toISOString?.() || s.startTime,
+              modifiedTime: s.modifiedTime?.toISOString?.() || s.modifiedTime,
+              cwd: s.context?.cwd || null,
+              repository: s.context?.repository || null,
+              branch: s.context?.branch || null,
+              isRemote: s.isRemote
+            }));
+          } catch {
+            // SDK listing failed, fall back to SQLite
+            sessions = [];
+          }
+        }
+
+        // Fallback: SQLite reader
+        if (sessions.length === 0) {
+          const result = listSessionHistory({
+            limit: args.limit || 20,
+            offset: args.offset || 0,
+            cwd: args.cwd,
+            repository: args.repository,
+            search: args.search
+          });
+          sessions = result.sessions;
+          total = result.total;
+        }
+
+        const statsLine = `Showing ${sessions.length} of ${total} sessions.`;
+        const table = sessions.map(s =>
+          `• [${s.sessionId?.slice(0, 8)}] ${s.summary || '(no summary)'} — ` +
+          `${s.repository || s.cwd || 'unknown'} ` +
+          `(${s.modifiedTime || s.updatedAt || '?'})`
+        ).join('\n');
+
+        return {
+          textResultForLlm: `${statsLine}\n\n${table}`,
+          resultType: 'success'
+        };
+      }
+    },
+
+    // Search sessions
+    {
+      name: 'search_sessions',
+      description:
+        'Search past Copilot CLI sessions by content — finds matches in ' +
+        'summaries and conversation turns. Use to locate specific past work.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' }
+        },
+        required: ['query']
+      },
+      skipPermission: true,
+      handler: async (args) => {
+        const results = searchSessions(args.query, { limit: 15 });
+        if (results.length === 0) {
+          return { textResultForLlm: 'No sessions found matching that query.', resultType: 'success' };
+        }
+
+        const lines = results.map(r =>
+          `• [${r.sessionId?.slice(0, 8)}] ${r.summary || '(no summary)'} ` +
+          `(${r.matchType}${r.matchedContent ? ': "' + r.matchedContent.slice(0, 80) + '…"' : ''}) — ` +
+          `${r.repository || r.cwd || ''} ${r.updatedAt || ''}`
+        ).join('\n');
+
+        return {
+          textResultForLlm: `Found ${results.length} matching sessions:\n\n${lines}`,
+          resultType: 'success'
+        };
+      }
+    },
+
+    // Get session detail
+    {
+      name: 'get_session_detail',
+      description:
+        'Get detailed info about a specific past session including turn history, ' +
+        'workspace context, and resumability. Use the sessionId from list_sessions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sessionId: { type: 'string', description: 'Session ID to inspect' }
+        },
+        required: ['sessionId']
+      },
+      skipPermission: true,
+      handler: async (args) => {
+        // Try SDK first
+        if (copilotClient) {
+          try {
+            const meta = await copilotClient.getSessionMetadata(args.sessionId);
+            if (meta) {
+              const detail = getSessionDetail(args.sessionId); // Enrich with SQLite data
+              const turns = detail?.turns || [];
+              const turnSummary = turns.slice(0, 10).map(t =>
+                `  Turn ${t.turnIndex}: ${(t.userMessage || '').slice(0, 120)}…`
+              ).join('\n');
+
+              return {
+                textResultForLlm:
+                  `Session: ${meta.sessionId}\n` +
+                  `Summary: ${meta.summary || '(none)'}\n` +
+                  `Started: ${meta.startTime}\n` +
+                  `Modified: ${meta.modifiedTime}\n` +
+                  `CWD: ${meta.context?.cwd || 'unknown'}\n` +
+                  `Repo: ${meta.context?.repository || 'unknown'}\n` +
+                  `Branch: ${meta.context?.branch || 'unknown'}\n` +
+                  `Can Resume: ${detail?.canResume ?? 'unknown'}\n` +
+                  `Turns (${turns.length}):\n${turnSummary || '  (no turns in DB)'}`,
+                resultType: 'success'
+              };
+            }
+          } catch { /* fall through */ }
+        }
+
+        // Fallback: SQLite
+        const detail = getSessionDetail(args.sessionId);
+        if (!detail) {
+          return { textResultForLlm: 'Session not found.', resultType: 'failure' };
+        }
+
+        const turnSummary = (detail.turns || []).slice(0, 10).map(t =>
+          `  Turn ${t.turnIndex}: ${(t.userMessage || '').slice(0, 120)}…`
+        ).join('\n');
+
+        return {
+          textResultForLlm:
+            `Session: ${detail.sessionId}\n` +
+            `Summary: ${detail.summary || '(none)'}\n` +
+            `Created: ${detail.createdAt}\n` +
+            `Updated: ${detail.updatedAt}\n` +
+            `CWD: ${detail.cwd || 'unknown'}\n` +
+            `Repo: ${detail.repository || 'unknown'}\n` +
+            `Can Resume: ${detail.canResume}\n` +
+            `State files: ${(detail.stateFiles || []).join(', ')}\n` +
+            `Turns (${detail.turns?.length || 0}):\n${turnSummary || '  (no turns)'}`,
+          resultType: 'success'
+        };
+      }
+    },
+
+    // Delegate prompt to a past session
+    {
+      name: 'delegate_prompt',
+      description:
+        'Send a prompt to a past Copilot CLI session, resuming it with new work. ' +
+        'The session runs asynchronously — use this for delegating tasks to a ' +
+        'session that has prior context (e.g., an earlier customer conversation). ' +
+        'The prompt is dispatched via the CLI --resume mechanism.',
+      parameters: {
+        type: 'object',
+        properties: {
+          sessionId: { type: 'string', description: 'Target session ID to resume and delegate to' },
+          prompt: { type: 'string', description: 'The prompt/instruction to send to that session' }
+        },
+        required: ['sessionId', 'prompt']
+      },
+      handler: async (args) => {
+        const { sessionId: targetId, prompt } = args;
+
+        // Verify session exists
+        let exists = false;
+        if (copilotClient) {
+          try {
+            const meta = await copilotClient.getSessionMetadata(targetId);
+            exists = !!meta;
+          } catch { /* fall through */ }
+        }
+        if (!exists) {
+          const detail = getSessionDetail(targetId);
+          exists = !!detail?.canResume;
+        }
+
+        if (!exists) {
+          return {
+            textResultForLlm: `Session ${targetId} not found or cannot be resumed.`,
+            resultType: 'failure'
+          };
+        }
+
+        // Dispatch via CLI subprocess: copilot --resume=<id> -p "<prompt>" --allow-all-tools
+        try {
+          const { execFile } = await import('child_process');
+          const copilotBin = process.env.COPILOT_PATH || 'copilot';
+
+          const child = execFile(copilotBin, [
+            `--resume=${targetId}`,
+            '--allow-all-tools',
+            '-p', prompt
+          ], {
+            cwd: process.cwd(),
+            timeout: 300_000, // 5 min max
+            maxBuffer: 2 * 1024 * 1024,
+            env: { ...process.env }
+          }, (err, stdout, stderr) => {
+            // Fire and forget — results go to that session's log
+            if (err) {
+              sessionClient?.pushEvent('delegation:error', {
+                targetSessionId: targetId,
+                error: err.message,
+                timestamp: Date.now()
+              });
+            } else {
+              sessionClient?.pushEvent('delegation:complete', {
+                targetSessionId: targetId,
+                resultPreview: (stdout || '').slice(0, 500),
+                timestamp: Date.now()
+              });
+            }
+          });
+
+          // Don't block — the delegation runs asynchronously
+          sessionClient?.pushEvent('delegation:dispatched', {
+            targetSessionId: targetId,
+            prompt: prompt.slice(0, 200),
+            timestamp: Date.now()
+          });
+
+          return {
+            textResultForLlm:
+              `Delegated prompt to session ${targetId.slice(0, 8)}… ` +
+              `The session will resume with the prior context and execute: "${prompt.slice(0, 100)}…"`,
+            resultType: 'success'
+          };
+        } catch (err) {
+          return {
+            textResultForLlm: `Failed to delegate: ${err.message}`,
+            resultType: 'failure'
+          };
+        }
+      }
+    },
+
+    // Session stats for Mission Control overview
+    {
+      name: 'session_stats',
+      description: 'Get aggregate statistics about Copilot CLI session history — total sessions, turns, repos, recent activity.',
+      parameters: { type: 'object', properties: {} },
+      skipPermission: true,
+      handler: async () => {
+        const stats = getSessionStats();
+        const repoLines = stats.repositories.slice(0, 5).map(r =>
+          `  ${r.repository}: ${r.sessionCount} sessions`
+        ).join('\n');
+        const activityLines = stats.recentActivity.slice(0, 7).map(d =>
+          `  ${d.day}: ${d.sessionCount} sessions`
+        ).join('\n');
+
+        return {
+          textResultForLlm:
+            `Session History Stats:\n` +
+            `  Total sessions: ${stats.totalSessions}\n` +
+            `  Total turns: ${stats.totalTurns}\n\n` +
+            `Top repositories:\n${repoLines || '  (none)'}\n\n` +
+            `Recent activity (last 7 days):\n${activityLines || '  (none)'}`,
+          resultType: 'success'
         };
       }
     }
@@ -290,7 +679,6 @@ session.on('tool.execution_start', (event) => {
   const { toolCallId, toolName, arguments: args } = event.data;
   const detail = deriveToolDetail(toolName, args);
 
-  // Truncate args for transport — keep enough for useful display
   let argsSnapshot = null;
   try {
     const raw = typeof args === 'string' ? args : JSON.stringify(args);
@@ -305,7 +693,6 @@ session.on('tool.execution_start', (event) => {
     const parsed = typeof args === 'string' ? args : args;
     const desc = typeof parsed === 'string' ? parsed : parsed.description || parsed.prompt || '';
     const { emoji, agentName, task } = parseAgentDescription(desc);
-    // Prefer explicit agentName from tool args over parsed name
     const resolvedAgent = (typeof parsed === 'object' && parsed.agentName)
       ? parsed.agentName
       : agentName;
@@ -319,7 +706,6 @@ session.on('tool.execution_complete', (event) => {
   if (!event?.data) return;
   const { toolCallId, toolName, success, result, error } = event.data;
 
-  // Truncate result for transport
   let resultSnapshot = null;
   try {
     const raw = error ? `Error: ${error}` : (typeof result === 'string' ? result : JSON.stringify(result));
