@@ -216,6 +216,39 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); color: va
   padding-top: 4px;
 }
 
+/* Experimental banner */
+.mcaps-experimental-banner {
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(124,58,237,0.06) 100%);
+  border: 1px solid rgba(245,158,11,0.3);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius);
+}
+.mcaps-experimental-banner__icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.mcaps-experimental-banner__body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.mcaps-experimental-banner__body strong {
+  display: block;
+  font-size: 14px;
+  color: var(--warning);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.mcaps-experimental-banner__body p {
+  margin: 0;
+}
+
 /* Status badge */
 .mcaps-status-badge {
   display: inline-flex;

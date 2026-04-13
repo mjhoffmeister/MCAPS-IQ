@@ -601,6 +601,17 @@
           </div>
         </div>
 
+        <div class="mcaps-experimental-banner">
+          <div class="mcaps-experimental-banner__icon">🧪</div>
+          <div class="mcaps-experimental-banner__body">
+            <strong>Experimental</strong>
+            <p>This dashboard is a highly experimental surface exploring how GitHub Copilot Extensions
+            can enhance the user experience. It leverages MCP connections as raw API calls to provide
+            a context-driven, personalizable visualization of your CRM, M365, and vault data — all
+            rendered outside the chat window. Expect rough edges; your feedback shapes what this becomes.</p>
+          </div>
+        </div>
+
         <div class="mcaps-home__body">
           <section class="mcaps-section">
             <h2 class="mcaps-section__title">Your Role</h2>
