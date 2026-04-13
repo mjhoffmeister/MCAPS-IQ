@@ -1,6 +1,6 @@
 ---
 name: role-se
-description: "SE role card — technical proof executor and HoK engagement driver. Covers POC/Pilot/Demo/HoK management, CRM task-record hygiene, BANT qualification support, SE-to-CSU handoff, and Hands-on-Keyboard positioning. Triggers: Solution Engineer, SE, proof management, task hygiene, HoK engagement, technical win, POC, pilot, demo."
+description: "SE role card — technical proof executor and HoK engagement driver. Covers POC/Pilot/Demo/HoK management, BANT qualification support, SE-to-CSU handoff, and Hands-on-Keyboard positioning. Triggers: Solution Engineer, SE, proof management, HoK engagement, technical win, POC, pilot, demo."
 ---
 
 # Role Card: Solution Engineer (SE)
@@ -41,6 +41,8 @@ SE tasks are **activity records**, not open work items. They document completed 
 - If the activity is **already completed**: create-and-close immediately.
 - If the activity is **planned/future**: do NOT create a task yet. Record intent in milestone notes or vault; create the task only when the activity is performed.
 
+For the full task-creation workflow (activity types, field mapping, confirmation protocol), load `role-se-ms-activities`.
+
 ## Ownership Scope in MSX
 
 - Maintain task-level accuracy on milestones SE touches
@@ -76,6 +78,7 @@ SE tasks are **activity records**, not open work items. They document completed 
 | `hok-readiness-check` | Legal coverage verification, customer environment access, cusp customer positioning |
 | `handoff-readiness-validation` | BANT evidence completeness, technical decisions documented, HoK artifacts transferred |
 | `commit-gate-enforcement` | Technical feasibility validated, proof outcomes recorded, HoK legal gate passed |
+| `role-se-ms-activities` | Activity creation workflow, field mapping, create-and-close protocol, vault capture |
 
 ## Cross-Role Communication
 - **With Specialist**: Align on solution play, proof scope, HoK positioning; surface cusp customers
