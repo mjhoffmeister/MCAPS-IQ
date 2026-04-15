@@ -135,12 +135,18 @@
 
   // ── Data loading ────────────────────────────────────────────
 
-  function loadData() {
+  function loadData(bustCache) {
     _loading = true;
     _error = null;
     render();
 
-    fetch('/api/crm/opportunities')
+    var pipeline = bustCache
+      ? fetch('/api/crm/refresh', { method: 'POST' }).then(function () {
+          return fetch('/api/crm/opportunities');
+        })
+      : fetch('/api/crm/opportunities');
+
+    pipeline
       .then(function (r) {
         if (!r.ok) throw new Error('CRM returned ' + r.status);
         return r.json();
@@ -343,9 +349,9 @@
   function bindEvents() {
     if (!_el) return;
 
-    // Refresh
+    // Refresh (bust server-side CRM cache so fresh data is returned)
     _el.querySelectorAll('[data-action="refresh"]').forEach(function (btn) {
-      btn.addEventListener('click', function () { loadData(); });
+      btn.addEventListener('click', function () { loadData(true); });
     });
 
     // Expand/collapse
