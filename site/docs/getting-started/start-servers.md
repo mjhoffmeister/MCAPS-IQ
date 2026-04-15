@@ -1,16 +1,16 @@
 ---
-title: Installation
+title: Verify Installation
 description: Start the MCP servers and verify your setup.
 tags:
   - getting-started
-  - installation
+  - setup
 ---
 
-# Installation
+# Verify Installation
 
 <div class="step-indicator" markdown>
 <span class="step done">1. Getting Started ✓</span>
-<span class="step active">2. Start Servers</span>
+<span class="step active">2. Verify Installation</span>
 <span class="step">3. First Chat</span>
 <span class="step">4. Choose Role</span>
 </div>

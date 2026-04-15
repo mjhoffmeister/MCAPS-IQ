@@ -12,7 +12,7 @@ hide:
 
 <div class="timeline-nav">
 <a href="../" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Getting Started</div></a>
-<a href="../installation/" class="tl-step done"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Install</div></a>
+<a href="../start-servers/" class="tl-step done"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Verify Installation</div></a>
 <a href="../first-chat/" class="tl-step done"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
 <a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
 </div>
