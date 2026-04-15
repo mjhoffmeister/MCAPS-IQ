@@ -9,7 +9,7 @@ import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { resolve, join } from 'path';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 
 import { createMultiSessionState } from './multi-session-state.mjs';
 import { readAllCapabilities } from './skills-reader.mjs';
@@ -32,6 +32,29 @@ const VIEWER_HEARTBEAT_MS = 30_000;
 const SESSION_HEARTBEAT_MS = 10_000;
 const SESSION_MISSED_LIMIT = 3;
 const DISCONNECT_TIMEOUT_MS = 30_000;
+
+// ── Rate limiter (in-memory, per-route) ────────────────────────
+
+function createRateLimiter({ windowMs = 60_000, max = 30 } = {}) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const key = req.ip || '127.0.0.1';
+    const now = Date.now();
+    let entry = hits.get(key);
+    if (!entry || now - entry.start > windowMs) {
+      entry = { start: now, count: 0 };
+      hits.set(key, entry);
+    }
+    entry.count++;
+    if (entry.count > max) {
+      return res.status(429).json({ error: 'Too many requests, try again later' });
+    }
+    next();
+  };
+}
+
+const generalLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
+const execLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 
 const stateManager = createMultiSessionState();
 const viewerClients = new Set();
@@ -373,7 +396,7 @@ app.get('/api/sessions/:id', (req, res) => {
 
 // ── API: Session History (Mission Control) ─────────────────────
 
-app.get('/api/session-history', (req, res) => {
+app.get('/api/session-history', generalLimiter, (req, res) => {
   try {
     const result = listSessionHistory({
       limit: Math.min(Number(req.query.limit) || 50, 200),
@@ -388,7 +411,7 @@ app.get('/api/session-history', (req, res) => {
   }
 });
 
-app.get('/api/session-history/stats', (_req, res) => {
+app.get('/api/session-history/stats', generalLimiter, (_req, res) => {
   try {
     res.json(getSessionStats());
   } catch (err) {
@@ -396,7 +419,7 @@ app.get('/api/session-history/stats', (_req, res) => {
   }
 });
 
-app.get('/api/session-history/search', (req, res) => {
+app.get('/api/session-history/search', generalLimiter, (req, res) => {
   const query = req.query.q || req.query.query;
   if (!query) return res.status(400).json({ error: 'q or query param required' });
   try {
@@ -409,7 +432,7 @@ app.get('/api/session-history/search', (req, res) => {
   }
 });
 
-app.get('/api/session-history/:id', (req, res) => {
+app.get('/api/session-history/:id', generalLimiter, (req, res) => {
   try {
     const detail = getSessionDetail(req.params.id);
     if (!detail) return res.status(404).json({ error: 'Session not found in history' });
@@ -419,7 +442,7 @@ app.get('/api/session-history/:id', (req, res) => {
   }
 });
 
-app.get('/api/session-history/:id/turns', (req, res) => {
+app.get('/api/session-history/:id/turns', generalLimiter, (req, res) => {
   try {
     const result = getSessionTurns(req.params.id, {
       limit: Math.min(Number(req.query.limit) || 100, 500),
@@ -431,7 +454,7 @@ app.get('/api/session-history/:id/turns', (req, res) => {
   }
 });
 
-app.post('/api/session-history/:id/delegate', (req, res) => {
+app.post('/api/session-history/:id/delegate', execLimiter, (req, res) => {
   const { prompt } = req.body || {};
   if (!prompt) return res.status(400).json({ error: 'prompt is required' });
 
@@ -449,10 +472,15 @@ app.post('/api/session-history/:id/delegate', (req, res) => {
     }));
     res.json({ dispatched: true, targetSessionId: req.params.id });
   } else {
-    // No active session — spawn CLI directly
+    // No active session — spawn CLI directly (using execFile to avoid shell injection)
     const copilotBin = process.env.COPILOT_PATH || 'copilot';
-    exec(
-      `${copilotBin} --resume=${req.params.id} --allow-all-tools -p ${JSON.stringify(prompt)}`,
+    // Validate session ID to prevent argument injection
+    if (!/^[a-zA-Z0-9_-]+$/.test(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid session ID format' });
+    }
+    execFile(
+      copilotBin,
+      [`--resume=${req.params.id}`, '--allow-all-tools', '-p', prompt],
       { cwd: REPO_ROOT, timeout: 300_000, maxBuffer: 2 * 1024 * 1024 },
       (err, stdout) => {
         if (err) {
@@ -1133,7 +1161,7 @@ app.post('/api/mcp/servers/:name/toggle', (req, res) => {
 
 // ── Open External — launches URL in the device default browser ──
 
-app.post('/api/open-external', (req, res) => {
+app.post('/api/open-external', execLimiter, (req, res) => {
   const { url } = req.body || {};
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'url is required' });
@@ -1145,17 +1173,21 @@ app.post('/api/open-external', (req, res) => {
     return res.status(400).json({ error: 'Only http, https, and obsidian URLs allowed' });
   }
   const safeUrl = parsed.href;
-  // Use platform-specific open command
+  // Use platform-specific open command (execFile avoids shell injection)
   const platform = process.platform;
   let cmd;
+  let args;
   if (platform === 'darwin') {
-    cmd = `open "${safeUrl}"`;
+    cmd = 'open';
+    args = [safeUrl];
   } else if (platform === 'win32') {
-    cmd = `start "" "${safeUrl}"`;
+    cmd = 'cmd';
+    args = ['/c', 'start', '', safeUrl];
   } else {
-    cmd = `xdg-open "${safeUrl}"`;
+    cmd = 'xdg-open';
+    args = [safeUrl];
   }
-  exec(cmd, (err) => {
+  execFile(cmd, args, (err) => {
     if (err) {
       console.error('[open-external]', err.message);
       return res.status(500).json({ error: 'Failed to open URL' });

@@ -21,6 +21,18 @@
   var detectedRole = null; // from CRM whoami
   var whoamiData = null;   // raw whoami response
 
+  // ── HTML escaping ─────────────────────────────────────────────
+
+  function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // ── Render helpers ────────────────────────────────────────────
 
   function renderDetectedRoleBanner(selectedRole) {
@@ -32,7 +44,7 @@
       <div class="mcaps-role-detected">
         <span class="mcaps-role-detected__icon">🔍</span>
         <div class="mcaps-role-detected__text">
-          CRM identifies <strong>${userName}</strong> as <strong>${match.label}</strong>
+          CRM identifies <strong>${escapeHtml(userName)}</strong> as <strong>${escapeHtml(match.label)}</strong>
         </div>
         <button class="mcaps-role-detected__apply" id="mcaps-apply-detected-role">Apply</button>
       </div>`;
@@ -59,10 +71,10 @@
       <ul class="mcaps-accounts-list">
         ${accounts.map(function (a, i) {
           var name = typeof a === 'string' ? a : (a.name || '');
-          var tpid = typeof a === 'object' && a.tpid ? `<span class="mcaps-account-tpid">${a.tpid}</span>` : '';
+          var tpid = typeof a === 'object' && a.tpid ? `<span class="mcaps-account-tpid">${escapeHtml(a.tpid)}</span>` : '';
           return `
             <li class="mcaps-account-item" data-index="${i}">
-              <span class="mcaps-account-name">${name}</span>
+              <span class="mcaps-account-name">${escapeHtml(name)}</span>
               ${tpid}
               <button class="mcaps-btn mcaps-btn--icon mcaps-account-remove"
                       data-index="${i}" title="Remove">✕</button>

@@ -14,6 +14,21 @@ const COPILOT_DIR = join(homedir(), '.copilot');
 const SESSION_STORE_DB = join(COPILOT_DIR, 'session-store.db');
 const SESSION_STATE_DIR = join(COPILOT_DIR, 'session-state');
 
+// ── Path safety ────────────────────────────────────────────────
+
+/** Validate that a session ID is safe for use in path construction.
+ *  Copilot session IDs are UUIDs — reject anything else. */
+const SAFE_SESSION_ID = /^[a-zA-Z0-9_-]+$/;
+
+function safeSessionPath(...segments) {
+  for (const seg of segments) {
+    if (typeof seg !== 'string' || !SAFE_SESSION_ID.test(seg)) {
+      throw new Error('Invalid session ID');
+    }
+  }
+  return join(SESSION_STATE_DIR, ...segments);
+}
+
 // ── SQLite helper ──────────────────────────────────────────────
 
 function querySqlite(db, sql) {
@@ -87,11 +102,14 @@ export function listSessionHistory(opts = {}) {
   `);
 
   return {
-    sessions: sessions.map(s => ({
-      ...s,
-      hasStateDir: existsSync(join(SESSION_STATE_DIR, s.sessionId)),
-      canResume: existsSync(join(SESSION_STATE_DIR, s.sessionId))
-    })),
+    sessions: sessions.map(s => {
+      try {
+        const stateDir = safeSessionPath(s.sessionId);
+        return { ...s, hasStateDir: existsSync(stateDir), canResume: existsSync(stateDir) };
+      } catch {
+        return { ...s, hasStateDir: false, canResume: false };
+      }
+    }),
     total
   };
 }
@@ -124,25 +142,22 @@ export function getSessionDetail(sessionId) {
 
   // Read workspace.yaml if available
   let workspace = null;
-  const wsPath = join(SESSION_STATE_DIR, sessionId, 'workspace.yaml');
-  if (existsSync(wsPath)) {
-    try {
-      workspace = readFileSync(wsPath, 'utf8');
-    } catch { /* noop */ }
-  }
-
-  // Check for events.jsonl
-  const eventsPath = join(SESSION_STATE_DIR, sessionId, 'events.jsonl');
-  const hasEvents = existsSync(eventsPath);
-
-  // Check state dir files
+  let hasEvents = false;
   let stateFiles = [];
-  const stateDir = join(SESSION_STATE_DIR, sessionId);
-  if (existsSync(stateDir)) {
-    try {
-      stateFiles = readdirSync(stateDir);
-    } catch { /* noop */ }
-  }
+  let canResume = false;
+  try {
+    const stateDir = safeSessionPath(sessionId);
+    const wsPath = join(stateDir, 'workspace.yaml');
+    if (existsSync(wsPath)) {
+      try { workspace = readFileSync(wsPath, 'utf8'); } catch { /* noop */ }
+    }
+    const eventsPath = join(stateDir, 'events.jsonl');
+    hasEvents = existsSync(eventsPath);
+    if (existsSync(stateDir)) {
+      try { stateFiles = readdirSync(stateDir); } catch { /* noop */ }
+    }
+    canResume = existsSync(stateDir);
+  } catch { /* invalid session ID — skip state dir access */ }
 
   return {
     ...session,
@@ -150,7 +165,7 @@ export function getSessionDetail(sessionId) {
     workspace,
     hasEvents,
     stateFiles,
-    canResume: existsSync(stateDir)
+    canResume
   };
 }
 
