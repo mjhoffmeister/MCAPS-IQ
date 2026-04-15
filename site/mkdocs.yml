@@ -153,6 +153,7 @@ nav:
     - Obsidian Vault (OIL): integrations/obsidian.md
     - Power BI: integrations/powerbi.md
     - Copilot CLI: integrations/copilot-cli.md
+    - Dashboard: integrations/dashboard.md
     - Squads (Experimental): integrations/squads.md
   - Customization:
     - customization/index.md

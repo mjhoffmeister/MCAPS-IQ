@@ -18,17 +18,17 @@ The vault is the local context layer. CRM is system-of-record for live state.
 ## Minimal Structure Model
 
 - Customer note: `Customers/<Name>.md`
-- Preferred layout: `Customers/<Name>/<Name>.md` with `opportunities/`, `milestones/`, and `Deliverables/` subdirs
+- Preferred layout: `Customers/<Name>/<Name>.md` with `opportunities/`, `milestones/`, and `MCAPS-IQ-Artifacts/` subdirs
 - People note: `People/<Name>.md`
-- General deliverables: `Deliverables/` (vault root) for non-customer-scoped artifacts
+- General deliverables: `MCAPS-IQ-Artifacts/` (vault root) for non-customer-scoped artifacts
 - Customer summaries link to entity sub-notes; canonical IDs live in entity frontmatter
 
 ### Agent-Generated Deliverables
 
 All generated documents (docx, xlsx, pptx, pdf, excalidraw, PBI reports) are stored in the vault when OIL is available:
 
-- **Customer-scoped**: `Customers/<Name>/Deliverables/<artifact>.<ext>`
-- **General**: `Deliverables/<artifact>.<ext>` (vault root)
+- **Customer-scoped**: `MCAPS-IQ-Artifacts/<Name>/<artifact>.<ext>`
+- **General**: `MCAPS-IQ-Artifacts/<artifact>.<ext>` (vault root)
 - **Fallback** (OIL unavailable): `.copilot/docs/` in workspace root
 
 See `shared-patterns` skill § Artifact Output Directory for the full resolution order and path table.

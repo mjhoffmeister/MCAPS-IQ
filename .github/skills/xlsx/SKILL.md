@@ -20,7 +20,7 @@ npm install csv-parse csv-stringify
 
 ## Output Requirements
 
-**Output directory**: Save generated `.xlsx`/`.csv` files to the vault `Deliverables/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
+**Output directory**: Save generated `.xlsx`/`.csv` files to the vault `MCAPS-IQ-Artifacts/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
 
 **Formulas**: Write Excel formula strings — let Excel calculate on open. ExcelJS stores the formula string and an optional cached result; always include a sensible `result` fallback so the file is readable if not opened in Excel.
 

@@ -275,6 +275,55 @@ describe("Anti-Pattern Detection", () => {
     });
   });
 
+  describe("AP-011: missing statusFilter on scoped get_milestones", () => {
+    it("catches scoped call without statusFilter", ({ task }) => {
+      crm.handle("msx:get_milestones", {
+        customerKeyword: "Cencora",
+        format: "triage",
+        includeTasks: true,
+      });
+
+      const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-011"]));
+
+      task.meta.evalScenarioId = "ap011-missing-statusfilter";
+      task.meta.evalDimension = "antiPatterns";
+      task.meta.evalScore = result.score;
+      task.meta.evalPass = !result.pass;
+
+      expect(result.pass).toBe(false);
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0].id).toBe("AP-011");
+    });
+
+    it("passes when statusFilter is present", () => {
+      crm.handle("msx:get_milestones", {
+        customerKeyword: "Contoso",
+        statusFilter: "active",
+        includeTasks: true,
+      });
+
+      const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-011"]));
+      expect(result.pass).toBe(true);
+    });
+
+    it("passes for direct milestone lookup without statusFilter", () => {
+      crm.handle("msx:get_milestones", {
+        milestoneNumber: "7-500658820",
+      });
+
+      const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-011"]));
+      expect(result.pass).toBe(true);
+    });
+
+    it("catches mine:true without statusFilter", () => {
+      crm.handle("msx:get_milestones", { mine: true });
+
+      const result = judgeAntiPatterns(recorder.calls, getPatterns(["AP-011"]));
+      expect(result.pass).toBe(false);
+      expect(result.violations[0].id).toBe("AP-011");
+    });
+  });
+
   describe("Combined — full trace validation", () => {
     it("good trace passes all patterns", () => {
       // Well-formed flow: whoami → vault → scoped CRM

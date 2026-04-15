@@ -188,9 +188,9 @@ Generated file artifacts follow a **vault-first** storage strategy. When OIL is 
 
 #### Resolution order
 
-1. **Vault available** — save to `Deliverables/` in the vault root via `oil:create_note` (for `.md`/text) or direct file write to the vault path (for binary formats).
-   - Customer-scoped artifacts go under `Customers/<Customer>/Deliverables/<name>.<ext>`.
-   - General (non-customer) artifacts go under `Deliverables/<name>.<ext>`.
+1. **Vault available** — save to `MCAPS-IQ-Artifacts/` in the vault root via `oil:create_note` (for `.md`/text) or direct file write to the vault path (for binary formats).
+   - Customer-scoped artifacts go under `MCAPS-IQ-Artifacts/<Customer>/<name>.<ext>`.
+   - General (non-customer) artifacts go under `MCAPS-IQ-Artifacts/<name>.<ext>`.
 2. **Vault unavailable** — save to `.copilot/docs/<name>.<ext>` in the workspace root (gitignored fallback).
 3. **User provides explicit path** — honor it, regardless of vault availability.
 
@@ -198,13 +198,13 @@ Generated file artifacts follow a **vault-first** storage strategy. When OIL is 
 
 | Artifact type | Customer-scoped | General |
 |---|---|---|
-| PDF | `Customers/<Customer>/Deliverables/<name>.pdf` | `Deliverables/<name>.pdf` |
-| Word (.docx) | `Customers/<Customer>/Deliverables/<name>.docx` | `Deliverables/<name>.docx` |
-| Excel (.xlsx) | `Customers/<Customer>/Deliverables/<name>.xlsx` | `Deliverables/<name>.xlsx` |
-| PowerPoint (.pptx) | `Customers/<Customer>/Deliverables/<name>.pptx` | `Deliverables/<name>.pptx` |
-| Excalidraw | `Customers/<Customer>/Deliverables/<name>.excalidraw` | `Deliverables/<name>.excalidraw` |
-| PBI session report | `Customers/<Customer>/Deliverables/<prompt>-<date>.md` | `Deliverables/pbi/<prompt>-<date>.md` |
-| Other documents | `Customers/<Customer>/Deliverables/<name>.<ext>` | `Deliverables/<name>.<ext>` |
+| PDF | `MCAPS-IQ-Artifacts/<Customer>/<name>.pdf` | `MCAPS-IQ-Artifacts/<name>.pdf` |
+| Word (.docx) | `MCAPS-IQ-Artifacts/<Customer>/<name>.docx` | `MCAPS-IQ-Artifacts/<name>.docx` |
+| Excel (.xlsx) | `MCAPS-IQ-Artifacts/<Customer>/<name>.xlsx` | `MCAPS-IQ-Artifacts/<name>.xlsx` |
+| PowerPoint (.pptx) | `MCAPS-IQ-Artifacts/<Customer>/<name>.pptx` | `MCAPS-IQ-Artifacts/<name>.pptx` |
+| Excalidraw | `MCAPS-IQ-Artifacts/<Customer>/<name>.excalidraw` | `MCAPS-IQ-Artifacts/<name>.excalidraw` |
+| PBI session report | `MCAPS-IQ-Artifacts/<Customer>/<prompt>-<date>.md` | `MCAPS-IQ-Artifacts/pbi/<prompt>-<date>.md` |
+| Other documents | `MCAPS-IQ-Artifacts/<Customer>/<name>.<ext>` | `MCAPS-IQ-Artifacts/<name>.<ext>` |
 
 #### Fallback paths (vault unavailable)
 

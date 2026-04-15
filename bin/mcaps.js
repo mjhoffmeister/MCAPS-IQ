@@ -21,7 +21,7 @@ const isWindows = process.platform === "win32";
 const args = process.argv.slice(2);
 
 // Build copilot args: always enable all tools and add the repo dir
-const copilotArgs = ["--allow-all-tools", "--add-dir", ROOT];
+const copilotArgs = ["--experimental", "--allow-all-tools", "--add-dir", ROOT];
 
 // If OBSIDIAN_VAULT env var is set, validate and include the vault as an additional dir
 const rawVaultDir = process.env.OBSIDIAN_VAULT || process.env.OBSIDIAN_VAULT_PATH;

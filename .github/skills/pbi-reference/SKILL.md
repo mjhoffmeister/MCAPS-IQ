@@ -90,8 +90,8 @@ Push analysis into DAX to reduce rows before they enter context:
 
 After PBI analysis completes, persist the report using vault-first storage (see `shared-patterns` skill § Artifact Output Directory):
 
-- **Vault available (customer-scoped)**: `Customers/<Customer>/Deliverables/<prompt-name>-<date>.md`
-- **Vault available (general)**: `Deliverables/pbi/<prompt-name>-<date>.md`
+- **Vault available (customer-scoped)**: `MCAPS-IQ-Artifacts/<Customer>/<prompt-name>-<date>.md`
+- **Vault available (general)**: `MCAPS-IQ-Artifacts/pbi/<prompt-name>-<date>.md`
 - **Vault unavailable**: `.copilot/sessions/pbi/<prompt-name>-<date>.md`
 
 Full rendered report — not compressed. Downstream skills re-read to extract TPIDs, gaps, rankings.

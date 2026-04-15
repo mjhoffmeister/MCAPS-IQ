@@ -303,9 +303,39 @@ const AP_010: AntiPatternRule = {
 
 // ── All patterns ────────────────────────────────────────────────────────────
 
+const AP_011: AntiPatternRule = {
+  id: "AP-011",
+  description: "get_milestones() called with entity/customer scope but no statusFilter — returns all milestones including completed/cancelled",
+  check(calls) {
+    for (const call of calls) {
+      if (call.tool !== "msx:get_milestones" && call.tool !== "get_milestones") continue;
+      const params = call.params;
+      // Has entity scope (customerKeyword, opportunityId, etc.) but no statusFilter
+      const hasEntityScope =
+        params.customerKeyword ||
+        params.opportunityKeyword ||
+        params.opportunityId ||
+        params.opportunityIds ||
+        params.tpid ||
+        params.mine;
+      const hasStatusFilter = params.statusFilter;
+      // Direct lookups by milestone ID/number don't need statusFilter
+      const isDirectLookup = params.milestoneId || params.milestoneNumber;
+      if (hasEntityScope && !hasStatusFilter && !isDirectLookup) {
+        return {
+          id: "AP-011",
+          tool: call.tool,
+          reason: `get_milestones called with scope (${Object.keys(params).filter(k => params[k]).join(", ")}) but no statusFilter — will return all milestones including completed/cancelled. Add statusFilter: 'active' unless all milestones are explicitly needed.`,
+        };
+      }
+    }
+    return null;
+  },
+};
+
 export const ALL_ANTI_PATTERNS: AntiPatternRule[] = [
   AP_001, AP_002, AP_003, AP_004, AP_005,
-  AP_006, AP_007, AP_008, AP_009, AP_010,
+  AP_006, AP_007, AP_008, AP_009, AP_010, AP_011,
 ];
 
 /** Get a subset of patterns by ID. */
@@ -327,6 +357,7 @@ const AP_SEVERITY: Record<string, number> = {
   "AP-008": 0.10, // stale cache — deferred to LLM judge
   "AP-009": 0.15, // unbounded WorkIQ — perf
   "AP-010": 0.25, // role assumption — safety
+  "AP-011": 0.25, // missing statusFilter — payload bloat, context burn
 };
 
 const DEFAULT_SEVERITY = 0.20;

@@ -17,7 +17,13 @@
 				"npm_config_@jinlee794:registry": "https://npm.pkg.github.com"
 			}
 		},
-		
+		"showrunner": {
+			"command": "npx",
+			"args": ["-y", "@jinlee794/showrunner-mcp@latest"],
+			"env": {
+				"npm_config_@jinlee794:registry": "https://npm.pkg.github.com"
+			}
+		},
 		// // Additional MCP servers can be added here, e.g. for specific tools, data sources, or operations.
 		// // Highlight the components you'd like and press Ctrl + K + U to uncomment and enable them.
 		// "github": {

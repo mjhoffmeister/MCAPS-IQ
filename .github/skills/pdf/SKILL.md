@@ -19,7 +19,7 @@ No Python or virtual environment required.
 
 ## Overview
 
-**Output directory**: Save generated/merged/split `.pdf` files to the vault `Deliverables/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
+**Output directory**: Save generated/merged/split `.pdf` files to the vault `MCAPS-IQ-Artifacts/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
 
 ## Quick Reference
 

@@ -86,6 +86,7 @@ From `crm-query-strategy.instructions.md` and skill docs:
 | `AP-008` | Treating vault cached state as live CRM truth | obsidian-vault |
 | `AP-009` | Unbounded M365/WorkIQ retrieval | shared-patterns |
 | `AP-010` | Role assumption without `crm_whoami` or explicit confirmation | msx-role-and-write-gate |
+| `AP-011` | `get_milestones` scoped by entity/customer but missing `statusFilter` — returns all milestones including completed/cancelled | crm-query-strategy |
 
 ### 3.4 Output Format Compliance
 
