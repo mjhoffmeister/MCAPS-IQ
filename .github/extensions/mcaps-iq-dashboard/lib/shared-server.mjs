@@ -134,8 +134,8 @@ const resolvedPublic = resolve(PUBLIC_DIR);
 app.use(express.static(resolvedPublic, { setHeaders: (res) => {
   res.setHeader('Cache-Control', 'no-cache, must-revalidate');
 }}));
-app.get('/', (_req, res) => res.sendFile(resolve(resolvedPublic, 'index.html')));
-app.get('/favicon.ico', (_req, res) => res.status(204).end());
+app.get('/', generalLimiter, (_req, res) => res.sendFile(resolve(resolvedPublic, 'index.html')));
+app.get('/favicon.ico', generalLimiter, (_req, res) => res.status(204).end());
 
 // ── API: Health ────────────────────────────────────────────────
 
@@ -1160,7 +1160,7 @@ app.post('/api/mcp/servers/:name/toggle', execLimiter, (req, res) => {
 });
 
 // ── Open External — launches URL in the device default browser ──
-
+// (Already rate-limited by execLimiter parent middleware)
 app.post('/api/open-external', execLimiter, (req, res) => {
   const { url } = req.body || {};
   if (!url || typeof url !== 'string') {
