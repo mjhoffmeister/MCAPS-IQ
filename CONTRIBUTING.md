@@ -101,7 +101,7 @@ az login
 
 Use your Microsoft corporate account. You must be on the corporate VPN.
 
-### Start servers in VS Code
+### Verify Installation in VS Code
 
 1. Open `.vscode/mcp.json` — you'll see **Start** buttons above each server definition.
 2. Click **Start** on `msx` (required).
@@ -109,7 +109,7 @@ Use your Microsoft corporate account. You must be on the corporate VPN.
 
 Once started, each server shows a **Running** status with the number of available tools.
 
-### Start servers from the terminal
+### Verify Installation from the terminal
 
 ```bash
 # MSX CRM server

@@ -117,7 +117,7 @@ nav:
   - Home: index.md
   - Getting Started:
     - getting-started/index.md
-    - Installation: getting-started/installation.md
+    - Verify Installation: getting-started/start-servers.md
     - Your First Chat: getting-started/first-chat.md
     - Choose Your Role: getting-started/choose-role.md
     - Troubleshooting Setup: getting-started/troubleshooting.md

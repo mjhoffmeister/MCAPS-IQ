@@ -31,7 +31,6 @@ const REPO_ROOT = process.env.MCAPS_IQ_REPO_ROOT || process.cwd();
 const SHUTDOWN_GRACE_MS = 5 * 60 * 1000;
 const VIEWER_HEARTBEAT_MS = 30_000;
 const SESSION_HEARTBEAT_MS = 10_000;
-const SESSION_MISSED_LIMIT = 3;
 const DISCONNECT_TIMEOUT_MS = 30_000;
 
 // ── Rate limiters (express-rate-limit — recognized by CodeQL) ──

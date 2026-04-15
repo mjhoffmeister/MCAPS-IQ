@@ -18,7 +18,7 @@ hide:
 
 <div class="timeline-nav">
 <a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Getting Started</div></a>
-<a href="installation/" class="tl-step"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Install</div></a>
+<a href="start-servers/" class="tl-step"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Verify Installation</div></a>
 <a href="first-chat/" class="tl-step"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
 <a href="choose-role/" class="tl-step"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
 </div>
@@ -59,32 +59,70 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
 
 === "Windows"
 
-    Open any PowerShell terminal (press ++win++, type `powershell`) and run everything at once:
+    **A. Open PowerShell** — press ++win++, type `powershell`, and click **Windows PowerShell**:
 
-    ```powershell
-    winget install --id Microsoft.PowerShell --source winget
-    winget install Git.Git GitHub.cli
+    <figure markdown="span">
+      ![Start menu search for powershell](../assets/getting-started/1.png){ loading=lazy width="450" }
+      <figcaption>Press <kbd>Win</kbd>, type <code>powershell</code>, click <strong>Windows PowerShell</strong>.</figcaption>
+    </figure>
+
+    **B. Paste this command** — copy the entire block below and paste it into the terminal:
+
+    ```
+    winget install --id Microsoft.PowerShell --source winget; winget install Git.Git GitHub.cli; Start-Process pwsh -ArgumentList @('-NoExit', '-Command', '$env:PATH+=\";C:\Program Files\Git\cmd;C:\Program Files\GitHub CLI\"; Write-Host \"PowerShell 7 ready - continue with Step 2\" -ForegroundColor Green')
     ```
 
-    !!! warning "After those installs finish, close this terminal and open PowerShell 7"
-        Press ++win++, type `pwsh`, and select **PowerShell 7 (x64)** (black icon, not the blue "Windows PowerShell"):
+    This installs PowerShell 7, Git, and GitHub CLI, then **automatically opens a new PowerShell 7 window** with `git` and `gh` on your PATH. Continue all remaining steps in that new window.
+
+    <figure markdown="span">
+      ![Command pasted into Windows PowerShell](../assets/getting-started/2.png){ loading=lazy width="700" }
+      <figcaption>Paste the command into the <strong>Windows PowerShell</strong> window (blue icon) and press Enter.</figcaption>
+    </figure>
+
+    **C. Wait for the installs** — PowerShell 7 installs first, then Git and GitHub CLI. You may see installer dialogs — let them finish.
+
+    <figure markdown="span">
+      ![PowerShell 7 installing at 19%](../assets/getting-started/3.png){ loading=lazy width="700" }
+      <figcaption>PowerShell 7 installs first. Don't close the terminal — it will continue automatically.</figcaption>
+    </figure>
+
+    <figure markdown="span">
+      ![Git installing with setup dialog](../assets/getting-started/5.png){ loading=lazy width="700" }
+      <figcaption>Git installs next. If prompted for admin access, click <strong>Yes</strong>.</figcaption>
+    </figure>
+
+    <figure markdown="span">
+      ![GitHub CLI UAC prompt — click Yes](../assets/getting-started/6.png){ loading=lazy width="400" }
+      <figcaption>GitHub CLI may also prompt for admin access. Click <strong>Yes</strong> to continue.</figcaption>
+    </figure>
+
+    **D. When everything finishes**, a new PowerShell 7 window opens with a green "ready" message. Continue all remaining steps in that window.
+
+    <figure markdown="span">
+      ![Installs complete — new PowerShell 7 window opens](../assets/getting-started/7.png){ loading=lazy width="700" }
+      <figcaption>All installs complete. A new <strong>PowerShell 7</strong> window (top-right) opens automatically with a green message. Continue in that window.</figcaption>
+    </figure>
+
+    ??? failure "Getting red errors like 'gh is not recognized'?"
+        If `gh` or `git` commands show red error messages in the new window, the PATH hasn't updated yet:
 
         <figure markdown="span">
-          ![Windows Start menu showing PowerShell 7 (x64)](../assets/PowerShell7.png){ loading=lazy width="300" }
-          <figcaption>Press <kbd>Win</kbd>, type <code>pwsh</code>, and select <strong>PowerShell 7 (x64)</strong>.</figcaption>
+          ![gh not recognized error in PowerShell 7](../assets/getting-started/troubleshooting1.png){ loading=lazy width="700" }
+          <figcaption>Red error: <code>gh</code> is not recognized. This means the PATH needs updating.</figcaption>
         </figure>
 
-        Do **not** reopen the blue "Windows PowerShell" — that's the old 5.x version and won't work for Step 2 onward.
+        **Paste this to fix it:**
 
-        **Already have PowerShell 7?** You still need to close and reopen it after installing Git and GitHub CLI so that `git` and `gh` are on your PATH.
+        ```powershell
+        $env:PATH += ';C:\Program Files\Git\cmd;C:\Program Files\GitHub CLI'
+        ```
 
-    ??? tip "How to tell PowerShell 7 from Windows PowerShell"
+        After running the PATH fix, `gh` and `git` will work:
 
-        | | PowerShell 7 :white_check_mark: | Windows PowerShell :x: |
-        |---|---|---|
-        | **Icon** | Black | Blue |
-        | **Start menu** | "PowerShell 7 (x64)" or "pwsh" | "Windows PowerShell" |
-        | **Header** | `PowerShell 7.x.x` | `Windows PowerShell` / `Copyright (C) Microsoft` |
+        <figure markdown="span">
+          ![gh working after PATH fix](../assets/getting-started/troubleshooting2.png){ loading=lazy width="700" }
+          <figcaption>After the PATH fix, <code>gh</code> works. Continue with Step 2.</figcaption>
+        </figure>
 
     ??? warning "Don't have `winget`?"
         If `winget --version` returns an error, install it:
@@ -108,6 +146,8 @@ This repo is **internal to the Microsoft GitHub org**, so you need Git and GitHu
 ## Step 2: Authenticate and Clone
 
 Before cloning the repo, you need to authenticate the GitHub CLI. This grants access to the Microsoft org's private packages.
+
+Now authenticate:
 
 ```bash
 gh auth login          # Use your PERSONAL GitHub account (not _microsoft EMU)
@@ -141,47 +181,28 @@ After authorizing, you'll see a **Device Activation** confirmation showing your 
   <figcaption>Confirm your GitHub identity and click Continue.</figcaption>
 </figure>
 
-Once authenticated, clone the repo and navigate into it:
+Once authenticated, **clone the repo and run the bootstrap** — paste the block for your OS:
 
-```bash
-gh repo clone microsoft/MCAPS-IQ
-cd MCAPS-IQ
-```
+=== "macOS / Linux"
+
+    ```bash
+    gh repo clone microsoft/MCAPS-IQ && cd MCAPS-IQ && ./scripts/bootstrap.sh --skip-clone
+    ```
+
+=== "Windows (PowerShell 7)"
+
+    ```powershell
+    gh repo clone microsoft/MCAPS-IQ; cd MCAPS-IQ; Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force; .\scripts\bootstrap.ps1 -SkipClone
+    ```
 
 !!! warning "Use your personal GitHub account"
     Sign in with your **personal** GitHub account (e.g. `JohnDoe`), **not** your Enterprise Managed User ending in `_microsoft`. EMU accounts cannot access GitHub Packages from external organizations.
 
 ---
 
-## Step 3: Run the Bootstrap Script
+## Step 3: What the Bootstrap Does
 
 The bootstrap script checks your system and installs any remaining tools automatically — **VS Code**, **Node.js 18+**, **Azure CLI**, the **Copilot extension**, GitHub Packages auth, Azure sign-in, the **`mcaps` CLI command**, and **Obsidian vault initialization** (you'll be prompted for a vault location — press Enter to use the default `.vault/` directory inside the repo).
-
-=== "macOS / Linux"
-
-    ```bash
-    ./scripts/bootstrap.sh --skip-clone
-    ```
-
-=== "Windows (PowerShell)"
-
-    If this is your first time running scripts, allow PowerShell to execute local scripts:
-
-    ```powershell
-    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-    ```
-
-    Then run the bootstrap:
-
-    ```powershell
-    .\scripts\bootstrap.ps1 -SkipClone
-    ```
-
-=== "Windows (cmd.exe)"
-
-    ```cmd
-    powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1 -SkipClone
-    ```
 
 !!! tip "Just want to check what's missing?"
     Run with `--check-only` / `-CheckOnly` to see a report without installing anything.
@@ -235,7 +256,7 @@ The bootstrap script checks for each prerequisite and installs anything missing.
 
 After the bootstrap script finishes, VS Code opens automatically. Continue to:
 
-[:octicons-arrow-right-16: Installation — Start MCP Servers](installation.md){ .md-button .md-button--primary }
+[:octicons-arrow-right-16: Start MCP Servers](start-servers.md){ .md-button .md-button--primary }
 [:octicons-arrow-right-16: Skip to Your First Chat](first-chat.md){ .md-button }
 
 ---
