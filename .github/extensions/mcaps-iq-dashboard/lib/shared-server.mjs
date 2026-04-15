@@ -223,11 +223,11 @@ app.get('/api/capabilities/summary', async (_req, res) => {
 
 // ── API: Settings ──────────────────────────────────────────────
 
-app.get('/api/settings', (_req, res) => {
+app.get('/api/settings', generalLimiter, (_req, res) => {
   res.json(readSettings());
 });
 
-app.post('/api/settings', (req, res) => {
+app.post('/api/settings', execLimiter, (req, res) => {
   try {
     const current = readSettings();
     const updated = { ...current, ...req.body };
@@ -238,7 +238,7 @@ app.post('/api/settings', (req, res) => {
   }
 });
 
-app.post('/api/settings/priority-accounts', (req, res) => {
+app.post('/api/settings/priority-accounts', execLimiter, (req, res) => {
   try {
     const settings = readSettings();
     const { accounts } = req.body;
@@ -256,7 +256,7 @@ app.post('/api/settings/priority-accounts', (req, res) => {
 
 // Static-path routes MUST come before parameterized /:id routes
 
-app.get('/api/schedules', (_req, res) => {
+app.get('/api/schedules', generalLimiter, (_req, res) => {
   try {
     const list = scheduler.list();
     res.json({ schedules: list });
@@ -265,7 +265,7 @@ app.get('/api/schedules', (_req, res) => {
   }
 });
 
-app.post('/api/schedules', (req, res) => {
+app.post('/api/schedules', execLimiter, (req, res) => {
   try {
     const { name, cron, prompt, enabled } = req.body || {};
     if (!cron || !prompt) {
@@ -279,7 +279,7 @@ app.post('/api/schedules', (req, res) => {
   }
 });
 
-app.post('/api/schedules/validate', (req, res) => {
+app.post('/api/schedules/validate', generalLimiter, (req, res) => {
   const { cron } = req.body || {};
   if (!cron) return res.status(400).json({ error: 'cron is required' });
   const err = validateCron(cron);
@@ -290,7 +290,7 @@ app.post('/api/schedules/validate', (req, res) => {
   });
 });
 
-app.post('/api/schedules/once', (req, res) => {
+app.post('/api/schedules/once', execLimiter, (req, res) => {
   try {
     const { prompt, name, runAt, delayMinutes } = req.body || {};
     if (!prompt) return res.status(400).json({ error: 'prompt is required' });
@@ -311,11 +311,11 @@ app.post('/api/schedules/once', (req, res) => {
   }
 });
 
-app.get('/api/schedules/once', (_req, res) => {
+app.get('/api/schedules/once', generalLimiter, (_req, res) => {
   res.json({ pending: scheduler.listOnce() });
 });
 
-app.delete('/api/schedules/once/:id', (req, res) => {
+app.delete('/api/schedules/once/:id', execLimiter, (req, res) => {
   const cancelled = scheduler.cancelOnce(req.params.id);
   if (!cancelled) return res.status(404).json({ error: 'One-time trigger not found or already fired' });
   broadcast('schedule:once:cancelled', { id: req.params.id });
@@ -324,7 +324,7 @@ app.delete('/api/schedules/once/:id', (req, res) => {
 
 // Parameterized /:id routes after all static paths
 
-app.get('/api/schedules/:id', (req, res) => {
+app.get('/api/schedules/:id', generalLimiter, (req, res) => {
   try {
     const schedule = scheduler.get(req.params.id);
     if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
@@ -334,7 +334,7 @@ app.get('/api/schedules/:id', (req, res) => {
   }
 });
 
-app.put('/api/schedules/:id', (req, res) => {
+app.put('/api/schedules/:id', execLimiter, (req, res) => {
   try {
     const schedule = scheduler.update(req.params.id, req.body);
     broadcast('schedule:updated', { schedule });
@@ -344,7 +344,7 @@ app.put('/api/schedules/:id', (req, res) => {
   }
 });
 
-app.delete('/api/schedules/:id', (req, res) => {
+app.delete('/api/schedules/:id', execLimiter, (req, res) => {
   try {
     const removed = scheduler.remove(req.params.id);
     if (!removed) return res.status(404).json({ error: 'Schedule not found' });
@@ -355,7 +355,7 @@ app.delete('/api/schedules/:id', (req, res) => {
   }
 });
 
-app.post('/api/schedules/:id/trigger', (req, res) => {
+app.post('/api/schedules/:id/trigger', execLimiter, (req, res) => {
   try {
     const schedule = scheduler.triggerNow(req.params.id);
     broadcast('schedule:fired', {
@@ -1110,7 +1110,7 @@ function classifyServer(name, cfg) {
   };
 }
 
-app.get('/api/mcp/servers', (_req, res) => {
+app.get('/api/mcp/servers', generalLimiter, (_req, res) => {
   try {
     const config = readMcpConfig();
     const disabled = getMcpDisabledSet();
@@ -1134,7 +1134,7 @@ app.get('/api/mcp/servers', (_req, res) => {
   }
 });
 
-app.post('/api/mcp/servers/:name/toggle', (req, res) => {
+app.post('/api/mcp/servers/:name/toggle', execLimiter, (req, res) => {
   try {
     const { name } = req.params;
     const { enabled } = req.body;
