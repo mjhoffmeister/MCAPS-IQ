@@ -86,7 +86,7 @@
   function dispatchToSession(session) {
     hide();
 
-    window.location.hash = '#/sessions';
+    window.location.hash = '#/mission-control';
 
     // Send via WebSocket if available, otherwise fall back to dispatchCopilotAction
     if (typeof window.AppConnection !== 'undefined' && typeof window.AppConnection.send === 'function') {

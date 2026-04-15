@@ -557,7 +557,7 @@
     bar.innerHTML = '<div class="attention-bar__content">'
       + '<span class="attention-bar__pulse"></span>'
       + parts.join('')
-      + '<a class="attention-bar__action" href="#/sessions">Go to Sessions →</a>'
+      + '<a class="attention-bar__action" href="#/mission-control">Go to Mission Control →</a>'
       + '</div>';
     bar.classList.add('attention-bar--visible');
   }
@@ -590,7 +590,7 @@
           data: { message: prompt }
         }));
       }
-      window.location.hash = '#/sessions';
+      window.location.hash = '#/mission-control';
       return;
     }
 
@@ -659,7 +659,6 @@
     defaultRoute: 'home',
     views: {
       home: window.homeView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Home loading…</div>'; } },
-      sessions: window.sessionsView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Sessions loading…</div>'; } },
       opportunities: window.opportunitiesView || { mount: function (c) { c.innerHTML = '<div class="placeholder"><h2>📋 Opportunities</h2><p>Loading…</p></div>'; } },
       accounts: window.accountsView || { mount: function (c) { c.innerHTML = '<div class="placeholder"><h2>🏢 Accounts</h2><p>Loading…</p></div>'; } },
       skills: window.skillsView || { mount: function (c) { c.innerHTML = '<div class="placeholder">Skills loading…</div>'; } },

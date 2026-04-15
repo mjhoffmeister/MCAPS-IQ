@@ -8,7 +8,7 @@ argument-hint: 'Provide file path and operation: read, create, or modify'
 
 Read, create, and modify `.pptx` files via Node.js scripts executed in the terminal.
 
-**Output directory**: Save generated `.pptx` files to the vault `Deliverables/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
+**Output directory**: Save generated `.pptx` files to the vault `MCAPS-IQ-Artifacts/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
 
 **Reference implementation**: See `docs/generate-presentation.mjs` for a full 10-slide production deck using all patterns below.
 

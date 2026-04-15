@@ -364,7 +364,7 @@ Supports wildcards (`msx:*`) for "any CRM tool was called" assertions.
 
 #### `anti-pattern.ts` — Anti-Pattern Detection
 
-Scans the trace for 10 known bad patterns with **severity-weighted scoring**. Each violation carries a different penalty (AP-005 write bypass = 0.5, AP-001 unscoped query = 0.3, AP-010 role assumption = 0.1, default = 0.2). AP-004 accepts scenario `context.mediums` to skip vault-skip checks on CRM-only scenarios. AP-003 uses param-aware scope grouping for N+1 detection:
+Scans the trace for 11 known bad patterns with **severity-weighted scoring**. Each violation carries a different penalty (AP-005 write bypass = 0.5, AP-001 unscoped query = 0.3, AP-011 missing statusFilter = 0.25, AP-010 role assumption = 0.1, default = 0.2). AP-004 accepts scenario `context.mediums` to skip vault-skip checks on CRM-only scenarios. AP-003 uses param-aware scope grouping for N+1 detection:
 
 ```mermaid
 flowchart LR
@@ -381,6 +381,7 @@ flowchart LR
         AP8["AP-008: Vault state as live truth\n(stub — deferred to LLM judge)"]
         AP9["AP-009: Unbounded WorkIQ\n(missing top: or limit)"]
         AP10["AP-010: Role assumed\n(no crm_whoami call)"]
+        AP11["AP-011: Missing statusFilter\n(scoped but returns all including completed)"]
     end
 
     AP --> Result["violations[] + pass/fail per AP"]

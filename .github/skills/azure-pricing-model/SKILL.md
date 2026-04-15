@@ -258,7 +258,7 @@ Invoke the `processing-spreadsheets` skill to generate the actual `.xlsx` file:
    - Percentage columns: `0.0%` format.
    - Conditional formatting: highlight cells where RI savings > 30% in green.
    - Auto-filter on all header rows.
-3. Save to the vault `Deliverables/` folder when OIL is available, otherwise `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Honor the user's specified path if provided.
+3. Save to the vault `MCAPS-IQ-Artifacts/` folder when OIL is available, otherwise `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Honor the user's specified path if provided.
 
 ## Decision Logic
 

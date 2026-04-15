@@ -45,8 +45,8 @@ description: "Shared definitions, runtime contract, upfront scoping pattern, Wor
 Collect scope in minimal calls before per-milestone workflows:
 
 0. **VAULT-PREFETCH** — call `oil:get_customer_context({ customer })` for opportunity GUIDs and context. Skip if OIL unavailable. See `obsidian-vault.instructions.md`.
-1. **Prefer `get_milestones` with name resolution** — `msx:get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` resolves customer → accounts → opportunities → milestones in one call. Add `includeTasks: true` to embed tasks inline.
-2. **If vault provided GUIDs** — `msx:get_milestones({ opportunityId })` or `msx:get_milestones({ opportunityIds: [...] })` for batch.
+1. **Prefer `get_milestones` with name resolution** — `msx:get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` resolves customer → accounts → opportunities → milestones in one call. **Always include `statusFilter: 'active'`** — omitting it returns all milestones including completed/cancelled (hundreds of irrelevant records). Add `includeTasks: true` to embed tasks inline.
+2. **If vault provided GUIDs** — `msx:get_milestones({ opportunityId, statusFilter: "active" })` or `msx:get_milestones({ opportunityIds: [...], statusFilter: "active" })` for batch.
 3. `msx:get_milestone_activities(milestoneId)` — only for specific milestones needing deep investigation (or use `includeTasks: true` above).
 4. `msx:crm_query` — for ad-hoc OData needs not covered by `get_milestones`. See `crm-query-strategy.instructions.md`.
 
@@ -174,7 +174,7 @@ Use that file when a prompt clearly maps to a chain.
 **PBI chain rules** (see `pbi-context-bridge.instructions.md`):
 
 - For medium/heavy PBI prompts, run PBI retrieval + analysis as a **subagent** so raw DAX data stays in the subagent's context. The parent receives only the final rendered report.
-- PBI reports are persisted to the vault `Deliverables/` folder when OIL is available, otherwise `.copilot/sessions/pbi/`, for downstream re-read without re-executing queries.
+- PBI reports are persisted to the vault `MCAPS-IQ-Artifacts/` folder when OIL is available, otherwise `.copilot/sessions/pbi/`, for downstream re-read without re-executing queries.
 - Downstream skills scope their CRM/WorkIQ queries using the report's gap analysis table, conversion rankings, and recommended actions.
 
 ## Connect Hook Capture (Post-Action)
@@ -196,9 +196,9 @@ Generated file artifacts follow a **vault-first** storage strategy. When OIL is 
 
 #### Resolution order
 
-1. **Vault available** — save to `Deliverables/` in the vault root via `oil:create_note` (for `.md`/text) or direct file write to the vault path (for binary formats).
-   - Customer-scoped artifacts go under `Customers/<Customer>/Deliverables/<name>.<ext>`.
-   - General (non-customer) artifacts go under `Deliverables/<name>.<ext>`.
+1. **Vault available** — save to `MCAPS-IQ-Artifacts/` in the vault root via `oil:create_note` (for `.md`/text) or direct file write to the vault path (for binary formats).
+   - Customer-scoped artifacts go under `MCAPS-IQ-Artifacts/<Customer>/<name>.<ext>`.
+   - General (non-customer) artifacts go under `MCAPS-IQ-Artifacts/<name>.<ext>`.
 2. **Vault unavailable** — save to `.copilot/docs/<name>.<ext>` in the workspace root (gitignored fallback).
 3. **User provides explicit path** — honor it, regardless of vault availability.
 
@@ -206,13 +206,13 @@ Generated file artifacts follow a **vault-first** storage strategy. When OIL is 
 
 | Artifact type | Customer-scoped | General |
 |---|---|---|
-| PDF | `Customers/<Customer>/Deliverables/<name>.pdf` | `Deliverables/<name>.pdf` |
-| Word (.docx) | `Customers/<Customer>/Deliverables/<name>.docx` | `Deliverables/<name>.docx` |
-| Excel (.xlsx) | `Customers/<Customer>/Deliverables/<name>.xlsx` | `Deliverables/<name>.xlsx` |
-| PowerPoint (.pptx) | `Customers/<Customer>/Deliverables/<name>.pptx` | `Deliverables/<name>.pptx` |
-| Excalidraw | `Customers/<Customer>/Deliverables/<name>.excalidraw` | `Deliverables/<name>.excalidraw` |
-| PBI session report | `Customers/<Customer>/Deliverables/<prompt>-<date>.md` | `Deliverables/pbi/<prompt>-<date>.md` |
-| Other documents | `Customers/<Customer>/Deliverables/<name>.<ext>` | `Deliverables/<name>.<ext>` |
+| PDF | `MCAPS-IQ-Artifacts/<Customer>/<name>.pdf` | `MCAPS-IQ-Artifacts/<name>.pdf` |
+| Word (.docx) | `MCAPS-IQ-Artifacts/<Customer>/<name>.docx` | `MCAPS-IQ-Artifacts/<name>.docx` |
+| Excel (.xlsx) | `MCAPS-IQ-Artifacts/<Customer>/<name>.xlsx` | `MCAPS-IQ-Artifacts/<name>.xlsx` |
+| PowerPoint (.pptx) | `MCAPS-IQ-Artifacts/<Customer>/<name>.pptx` | `MCAPS-IQ-Artifacts/<name>.pptx` |
+| Excalidraw | `MCAPS-IQ-Artifacts/<Customer>/<name>.excalidraw` | `MCAPS-IQ-Artifacts/<name>.excalidraw` |
+| PBI session report | `MCAPS-IQ-Artifacts/<Customer>/<prompt>-<date>.md` | `MCAPS-IQ-Artifacts/pbi/<prompt>-<date>.md` |
+| Other documents | `MCAPS-IQ-Artifacts/<Customer>/<name>.<ext>` | `MCAPS-IQ-Artifacts/<name>.<ext>` |
 
 #### Fallback paths (vault unavailable)
 

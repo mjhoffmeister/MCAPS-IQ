@@ -651,7 +651,7 @@
         if (typeof window.dispatchCopilotAction === 'function') {
           window.dispatchCopilotAction(prompt);
         } else {
-          window.location.hash = '#/sessions';
+          window.location.hash = '#/mission-control';
         }
       });
     });

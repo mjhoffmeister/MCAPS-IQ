@@ -7,6 +7,25 @@ description: "CRM read query scoping strategy for MSX/MCEM. Scope-Before-Retriev
 
 **Never call `msx:get_milestones` without a scoping parameter.** The tool now rejects unscoped calls — `mine` no longer defaults to `true`. Always provide at least one of: `customerKeyword`, `opportunityKeyword`, `opportunityId`, `opportunityIds`, `milestoneNumber`, `milestoneId`, `ownerId`, or explicit `mine: true`.
 
+**Always pass `statusFilter`.** A scoped call without `statusFilter` still returns every milestone for that scope — hundreds of completed, cancelled, and irrelevant records. Default to `statusFilter: 'active'` unless the user explicitly asks for completed or all milestones. This is the single highest-impact filter for reducing payload size.
+
+### Intent-to-Filter Mapping (apply before every `get_milestones` call)
+
+Before calling `get_milestones`, map the user's intent to the tightest filter set:
+
+| User Intent | `statusFilter` | Other Params | Rationale |
+|---|---|---|---|
+| "What do I need to do?" / "my action items" | `active` | `mine: true`, `includeTasks: true` | Only actionable milestones |
+| "Morning brief" / "catch me up" | `active` | `format: 'triage'`, `includeTasks: true` | Active pipeline only |
+| "Milestone health" / "governance prep" | `active` | `format: 'triage'`, `includeTasks: true` | Excludes completed |
+| "What's overdue?" / "at risk" | `active` | `format: 'triage'` | Triage buckets already classify overdue/blocked |
+| "Pipeline review" / "hygiene check" | `active` | `format: 'summary'` | No need for completed |
+| "Show me all milestones" / "full history" | `all` | — | Only when explicitly requested |
+| "Completed milestones" / "what did we finish" | `all` + post-filter | Filter for `msp_milestonestatus = 861980003` | Rare — explicit ask only |
+| "Milestone X" (by number or name) | omit | `milestoneNumber` or `keyword` | Direct lookup — status irrelevant |
+
+**Default rule**: If the user's intent doesn't clearly require completed milestones, use `statusFilter: 'active'`.
+
 ## Step 0 — SESSION CACHE CHECK + VAULT-PREFETCH
 
 Before asking scoping questions or calling any CRM tool, check for existing session data first:
@@ -130,16 +149,17 @@ For "which milestones need tasks":
 |---|---|
 | `get_milestones(mine: true)` → "which ones need attention?" | Bad — Unscoped — use customerKeyword or opportunityId instead |
 | `get_milestones({})` or `get_milestones()` with no params | Bad — Rejected — scoping required |
+| `get_milestones({ customerKeyword: "Contoso", format: "triage", includeTasks: true })` — no statusFilter | Bad — Returns ALL milestones (hundreds of completed/cancelled) — always add `statusFilter: 'active'` |
 | `crm_query({ entitySet: "msp_milestones" })` | Bad — Wrong entity set |
 | `crm_query` with `msp_forecastedconsumptionrecurring` | Bad — Field doesn't exist |
 | `crm_query` with `msp_estimatedcompletiondate` | Bad — Use `msp_milestonedate` |
 | Loop: list_opportunities per customer → get_milestones per opp → get_milestone_activities per ms | Bad — ~30 calls |
 | Skipping vault when OIL is available | Bad — Wastes API calls |
 | `get_milestones({ customerKeyword: "Contoso", statusFilter: "active" })` | Good — **1 call** (best) |
-| `get_milestones({ customerKeyword: "Contoso", includeTasks: true })` | Good — **1 call** with inline tasks |
-| `get_milestones({ opportunityKeyword: "Azure Migration" })` | Good — **1 call** (name resolution) |
+| `get_milestones({ customerKeyword: "Contoso", statusFilter: "active", includeTasks: true })` | Good — **1 call** with inline tasks + status filter |
+| `get_milestones({ opportunityKeyword: "Azure Migration", statusFilter: "active" })` | Good — **1 call** (name resolution + filter) |
 | `get_milestones({ opportunityIds: [...], statusFilter: "active" })` | Good — Batch with filtering |
-| `oil:get_customer_context("Contoso")` → use GUID → `get_milestones({ opportunityId })` | Good — Vault-first (2 calls) |
+| `oil:get_customer_context("Contoso")` → use GUID → `get_milestones({ opportunityId, statusFilter: "active" })` | Good — Vault-first (2 calls) |
 | `oil:prepare_crm_prefetch({ customers: [...] })` → paste into `crm_query` | Good — CRM-ready prefetch |
 | `find_milestones_needing_tasks({ customerKeywords: [...] })` | Good — 1 call |
 | `crm_query` with proper `$filter`/`$select`/`$top` | Good — Filtered, efficient |
