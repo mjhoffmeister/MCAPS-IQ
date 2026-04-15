@@ -4,6 +4,8 @@ description: Connect Copilot to Power BI for ACR telemetry and consumption analy
 tags:
   - integrations
   - powerbi
+hide:
+  - toc
 ---
 
 # Power BI Integration

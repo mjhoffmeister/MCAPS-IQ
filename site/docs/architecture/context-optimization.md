@@ -6,6 +6,8 @@ tags:
   - context
   - optimization
   - subagents
+hide:
+  - toc
 ---
 
 # Context Optimization
@@ -36,23 +38,31 @@ The VS Code Copilot framework assembles context automatically each turn:
 
 ```mermaid
 graph LR
-    A[User prompt] --> B{Framework keyword match}
+    A["💬 <b>User prompt</b>"] --> B{"\ud83e\udde0 Framework<br/>keyword match"}
 
-    B --> C[copilot-instructions.md — ALWAYS]
-    B --> D[Matched instructions]
-    B --> E[Matched skills]
-    B --> F[Tool definitions — ALL at startup]
-    B --> G[Conversation history]
+    B --> C["📄 <b>copilot-instructions</b><br/><small>ALWAYS loaded</small>"]
+    B --> D["📝 <b>Matched instructions</b>"]
+    B --> E["⚙️ <b>Matched skills</b>"]
+    B --> F["🔌 <b>Tool definitions</b><br/><small>ALL at startup</small>"]
+    B --> G["💬 <b>Conversation history</b>"]
 
-    C --> H[Assembled context to LLM]
+    C --> H["🧠 <b>Assembled context</b><br/><small>sent to LLM</small>"]
     D --> H
     E --> H
     F --> H
     G --> H
 
-    H --> I[Agent reasoning + tool calls]
-    I --> J[MCP tool results added to context]
-    J --> K[Response to user]
+    H --> I["⚙️ <b>Agent reasoning</b><br/><small>+ tool calls</small>"]
+    I --> J["📥 <b>MCP tool results</b><br/><small>added to context</small>"]
+    J --> K["✨ <b>Response to user</b>"]
+
+    style A fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style B fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
+    style H fill:#5C2D91,color:#fff,stroke:#462170,stroke-width:2px
+    style I fill:#FFB900,color:#1B1B1B,stroke:#e0a700,stroke-width:2px
+    style K fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:2px
+
+    linkStyle default stroke:#9e9e9e,stroke-width:2px
 ```
 
 ---
@@ -63,20 +73,31 @@ The `description` field in each SKILL.md frontmatter **is** the intent router. T
 
 ```mermaid
 graph TD
-    P["User: review my pipeline and flag stale deals"]
-    P --> M{Framework scans all 35 skill descriptions}
+    P["💬 <b>User:</b> review my pipeline and flag stale deals"]
+    P --> M{"\ud83d\udd0d Framework scans all 35 skill descriptions"}
 
-    M -->|"matches: pipeline, stale"| S1["pipeline-hygiene-triage LOADED"]
-    M -->|"matches: risks, warning"| S2["risk-surfacing LOADED"]
-    M -->|no keyword match| S3["processing-presentations SKIPPED"]
+    M -->|"matches: pipeline, stale"| S1["✅ <b>pipeline-hygiene-triage</b> LOADED"]
+    M -->|"matches: risks, warning"| S2["✅ <b>risk-surfacing</b> LOADED"]
+    M -->|"no keyword match"| S3["❌ <b>processing-presentations</b> SKIPPED"]
 
-    S1 --> SK[Skills + instructions injected into context]
+    S1 --> SK["⚡ <b>Skills + instructions</b><br/>injected into context"]
     S2 --> SK
 
-    M -->|"matches: pipeline, MCEM"| I1["shared-patterns.instructions.md LOADED"]
-    M -->|"matches: stage, MCEM"| I2["mcem-flow.instructions.md LOADED"]
+    M -->|"matches: pipeline, MCEM"| I1["✅ <b>shared-patterns</b> LOADED"]
+    M -->|"matches: stage, MCEM"| I2["✅ <b>mcem-flow</b> LOADED"]
     I1 --> SK
     I2 --> SK
+
+    style P fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style M fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
+    style S1 fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:1.5px
+    style S2 fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:1.5px
+    style S3 fill:#737373,color:#fff,stroke:#555,stroke-width:1.5px
+    style I1 fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:1.5px
+    style I2 fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:1.5px
+    style SK fill:#FFB900,color:#1B1B1B,stroke:#e0a700,stroke-width:2px
+
+    linkStyle default stroke:#9e9e9e,stroke-width:2px
 ```
 
 !!! tip "Description quality = routing quality"
@@ -90,37 +111,37 @@ graph TD
 
 ```mermaid
 graph LR
-    subgraph A["A: Pipeline — 10 skills"]
+    subgraph A ["\ud83d\udcca A: Pipeline — 10 skills"]
         a1[pipeline-hygiene-triage]
         a2[mcem-stage-identification]
         a3[risk-surfacing]
         a4["+ 7 more"]
     end
 
-    subgraph B["B: Technical Proof — 8 skills"]
+    subgraph B ["\ud83d\udd27 B: Technical Proof — 8 skills"]
         b1[task-hygiene-flow]
         b2[execution-monitoring]
         b3["+ 6 more"]
     end
 
-    subgraph C["C: Customer Success — 8 skills"]
+    subgraph C ["\ud83e\udd1d C: Customer Success — 8 skills"]
         c1[milestone-health-review]
         c2[customer-evidence-pack]
         c3["+ 6 more"]
     end
 
-    subgraph D["D: M365 Comms — 4 skills"]
+    subgraph D ["\ud83d\udce7 D: M365 Comms — 4 skills"]
         d1[workiq-query-scoping]
         d2[teams-query-scoping]
         d3["+ 2 more"]
     end
 
-    subgraph E["E: Analytics — 2 skills"]
+    subgraph E ["\ud83d\udcca E: Analytics — 2 skills"]
         e1[pbi-prompt-builder]
         e2[azure-pricing-model]
     end
 
-    subgraph F["F: Documents — 3 skills"]
+    subgraph F ["\ud83d\udcc4 F: Documents — 3 skills"]
         f1[processing-presentations]
         f2["+ 2 more"]
     end
@@ -130,6 +151,13 @@ graph LR
     A -.->|SOME| D
     C -.->|SOME| D
     E -.->|SOME| F
+
+    style A fill:none,stroke:#0078D4,stroke-width:2px,color:#0078D4
+    style B fill:none,stroke:#00B7C3,stroke-width:2px,color:#00B7C3
+    style C fill:none,stroke:#107C10,stroke-width:2px,color:#107C10
+    style D fill:none,stroke:#5C2D91,stroke-width:2px,color:#5C2D91
+    style E fill:none,stroke:#FFB900,stroke-width:2px,color:#946200
+    style F fill:none,stroke:#737373,stroke-width:2px,color:#737373
 ```
 
 | Takeaway | Implication |
@@ -146,37 +174,43 @@ Subagents (`.github/agents/*.agent.md`) run in isolated context windows. Tool re
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant M as "@mcaps (main)"
-    participant P as "@pbi-analyst"
-    participant A as "@m365-actions"
-    participant CRM as msx-crm
-    participant PBI as powerbi-remote
-    participant T as teams MCP
+    participant U as 🧑‍💻 User
+    participant M as 🤖 @mcaps (main)
+    participant P as 📊 @pbi-analyst
+    participant A as 📧 @m365-actions
+    participant CRM as 🏢 msx
+    participant PBI as 📊 powerbi-remote
+    participant T as 📨 teams MCP
 
     U->>M: Review my Azure portfolio and email the summary to my manager
 
     Note over M: Step 1 — Delegate PBI analysis
     M->>P: runSubagent: portfolio review
+    activate P
     P->>PBI: DiscoverArtifacts
     PBI-->>P: semantic models
     P->>PBI: ExecuteQuery (DAX)
     PBI-->>P: 40K tokens of raw data
     Note over P: Renders report internally
     P-->>M: Markdown report 2K tokens + session file path
+    deactivate P
 
     Note over M: Step 2 — CRM correlation
     M->>CRM: get_milestones(triage format)
+    activate CRM
     CRM-->>M: Compact milestone data
+    deactivate CRM
     Note over M: Combines report + CRM data
 
     Note over M: Step 3 — Delegate email send
     M->>A: runSubagent: send email
+    activate A
     A->>T: Resolve manager UPN
     T-->>A: UPN resolved
     A->>T: SendEmail(summary)
     T-->>A: Sent
     A-->>M: Delivery confirmation
+    deactivate A
 
     M-->>U: "Portfolio reviewed. Email sent to manager."
 ```
@@ -185,7 +219,7 @@ sequenceDiagram
 
 | Agent | Status | Tools | When to Use | Token Impact |
 |---|---|---|---|---|
-| **@mcaps** | Existing | msx-crm, oil, workiq, teams, mail, calendar | Main orchestrator for all CRM/vault workflows | — |
+| **@mcaps** | Existing | msx, oil, workiq, teams, mail, calendar | Main orchestrator for all CRM/vault workflows | — |
 | **@m365-actions** | Existing | teams, mail, calendar | Send messages, emails, create events | Low (fire-and-forget) |
 | **@pbi-analyst** | Recommended | powerbi-remote, editFiles | Any Power BI DAX query or report rendering | **High** — keeps 15–80K tokens out of main context |
 
@@ -237,25 +271,33 @@ The second lever: make tool results smaller at the source.
 
 ```mermaid
 graph LR
-    Agent["Agent calls get_milestones"] --> Server[MSX MCP Server]
+    Agent["🤖 <b>Agent calls</b><br/>get_milestones"] --> Server["🔌 <b>MSX MCP Server</b>"]
 
-    Server --> Select["select: 80 fields → 15"]
-    Server --> Scope[reject unscoped queries]
-    Server --> Format[format parameter]
-    Server --> Picklist[embedded picklist labels]
-    Server --> Cap[500-record ceiling]
+    Server --> Select["🎯 <b>select:</b><br/><small>80 fields → 15</small>"]
+    Server --> Scope["🚫 <b>reject</b><br/><small>unscoped queries</small>"]
+    Server --> Format["📝 <b>format</b><br/><small>parameter</small>"]
+    Server --> Picklist["🏷️ <b>picklist</b><br/><small>embedded labels</small>"]
+    Server --> Cap["📏 <b>ceiling</b><br/><small>500 records max</small>"]
 
-    Format --> Full["full: all OData fields"]
-    Format --> Summary["summary: grouped counts"]
-    Format --> Triage["triage: urgency-sorted, 3–5× smaller"]
+    Format --> Full["📄 <b>full</b><br/><small>all OData fields</small>"]
+    Format --> Summary["📊 <b>summary</b><br/><small>grouped counts</small>"]
+    Format --> Triage["⚡ <b>triage</b><br/><small>urgency-sorted, 3–5× smaller</small>"]
+
+    style Agent fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style Server fill:#5C2D91,color:#fff,stroke:#462170,stroke-width:2px
+    style Triage fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:2px
+    style Summary fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:1.5px
+    style Full fill:#737373,color:#fff,stroke:#555,stroke-width:1.5px
+
+    linkStyle default stroke:#9e9e9e,stroke-width:2px
 ```
 
 ### Planned Additions
 
 | Change | Server | Impact |
 |---|---|---|
-| `format: "compact"` for `list_opportunities` | msx-crm | Returns only: id, name, stage, close date, revenue, health |
-| `maxResults` for `get_my_active_opportunities` | msx-crm | Caps portfolio scans for users with 50+ opportunities |
+| `format: "compact"` for `list_opportunities` | msx | Returns only: id, name, stage, close date, revenue, health |
+| `maxResults` for `get_my_active_opportunities` | msx | Caps portfolio scans for users with 50+ opportunities |
 | `maxResults` for `search_vault` (default 10) | oil | Caps large vault searches |
 | `summaryOnly` flag for `get_customer_context` | oil | Returns only GUIDs + team roster, no engagement history |
 

@@ -27,12 +27,12 @@ Surfaces the full pipeline landscape across the user's accounts — not just the
 
 1. **VAULT-PREFETCH** — `oil:get_customer_context({ customer })` if a specific customer is named. Otherwise `oil:get_vault_context()` for the full roster.
 
-2. **My footprint** — `msx-crm:get_my_active_opportunities()` with optional `customerKeyword`. Returns opportunities tagged `relationship: 'owner'` or `relationship: 'deal-team'`. Extract:
+2. **My footprint** — `msx:get_my_active_opportunities()` with optional `customerKeyword`. Returns opportunities tagged `relationship: 'owner'` or `relationship: 'deal-team'`. Extract:
    - `my_opportunity_ids` — set of opportunity GUIDs I'm on
    - `my_account_ids` — set of unique `_parentaccountid_value` from those opportunities
 
 3. **Full account pipeline** — For each account in `my_account_ids`:
-   - `msx-crm:list_opportunities({ accountIds: [<account_ids>], format: 'compact' })` — returns active opportunities on those accounts in a compact shape for faster diff/scoring.
+   - `msx:list_opportunities({ accountIds: [<account_ids>], format: 'compact' })` — returns active opportunities on those accounts in a compact shape for faster diff/scoring.
    - Tag each returned opportunity: `mine: true` if `opportunityid ∈ my_opportunity_ids`, else `mine: false`.
 
 4. **Produce the diff**:
@@ -42,7 +42,7 @@ Surfaces the full pipeline landscape across the user's accounts — not just the
 
 ### Layer 2 — Cross-Role Coverage Map
 
-5. **Milestone owners across all opps** — `msx-crm:get_milestones({ opportunityIds: [<all_opp_ids>], statusFilter: 'active', format: 'summary' })`. Or if single customer: `get_milestones({ customerKeyword, statusFilter: 'active' })`.
+5. **Milestone owners across all opps** — `msx:get_milestones({ opportunityIds: [<all_opp_ids>], statusFilter: 'active', format: 'summary' })`. Or if single customer: `get_milestones({ customerKeyword, statusFilter: 'active' })`.
 
 6. **Build people roster** — Extract unique `_ownerid_value` across all milestones. Group by opportunity. For each person, infer role from milestone context (solution area, workload type) or vault People notes (`oil:resolve_people_to_customers` / `oil:get_person_context`).
 

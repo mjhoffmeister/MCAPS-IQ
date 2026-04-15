@@ -23,10 +23,16 @@ on:
         type: string
         default: 'gpt-4o-mini'
 
+permissions:
+  contents: read
+
 jobs:
   eval-offline:
     name: Phase 1 — Offline Evals
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,6 +40,10 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci --ignore-scripts
+      - name: Audit dependencies for vulnerabilities
+        run: npm audit --audit-level moderate
+      - name: Security lint
+        run: npx eslint bin/ scripts/lib/
       - run: npm run eval
         env:
           NODE_ENV: test
@@ -78,6 +88,9 @@ jobs:
   eval-live:
     name: Phase 2 — Live Agent Evals
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     needs: eval-offline
     if: >-
       github.event_name == 'schedule' ||

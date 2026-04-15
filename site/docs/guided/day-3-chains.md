@@ -6,26 +6,26 @@ tags:
   - day-3
   - chains
   - advanced
+hide:
+  - toc
 ---
 
 # Day 3: Multi-Skill Chains
 
-<div class="step-indicator" markdown>
-<span class="step done">Day 1 ✓</span>
-<span class="step done">Day 2 ✓</span>
-<span class="step active">Day 3</span>
-<span class="step">Day 5</span>
+<div class="timeline-nav tl-guided">
+<a href="../day-1-hello/" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Day 1</div></a>
+<a href="../day-2-pipeline/" class="tl-step done"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Day 2</div></a>
+<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">Day 3</div></a>
+<a href="../day-5-lightbulb/" class="tl-step"><div class="tl-node"><span class="tl-num">5</span></div><div class="tl-label">Day 5</div></a>
 </div>
 
-**Goal:** Experience the power of multi-step orchestration — one prompt, multiple skills, comprehensive output.
+<div class="journey-hero" markdown>
 
-**Time:** ~15 minutes
+## :material-link-variant: One prompt. Multiple skills. Comprehensive output.
 
-**What you'll learn:**
+**Time:** ~15 minutes · You'll describe the outcome you want, and Copilot figures out the workflow.
 
-- How one natural-language prompt can trigger 3–4 skills in sequence
-- How skills pass context to each other (chaining)
-- Why this is fundamentally different from asking separate questions
+</div>
 
 ---
 
@@ -33,150 +33,190 @@ tags:
 
 On Day 2, you asked individual questions: _"Show milestones," "Check tasks," "Write a summary."_ That's useful, but it's still you orchestrating the workflow.
 
-**Chains flip the model.** You describe the _outcome_ you want, and Copilot figures out which skills to run and in what order.
+**Chains flip the model.** You describe the _outcome_, and Copilot orchestrates multiple skills in the right order automatically.
 
-```mermaid
-graph LR
-    A[Your prompt] --> B[pipeline-hygiene-triage]
-    B --> C[risk-surfacing]
-    C --> D[handoff-readiness-validation]
-    D --> E[Prioritized action list]
-    style A fill:#4CAF50,color:#fff
-    style E fill:#1565C0,color:#fff
-```
+<div class="skill-chain">
+<div class="sc-node sc-input"><span class="sc-icon">💬</span> Your prompt</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">🔍</span> pipeline-hygiene-triage</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">⚠️</span> risk-surfacing</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">✅</span> handoff-readiness</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-output"><span class="sc-icon">📋</span> Prioritized actions</div>
+</div>
 
 ---
 
-## Exercise 1: The Weekly Review Chain
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">1</div>
+<h3>The Weekly Review Chain</h3>
+<span class="exercise-time">⏱️ 5 min</span>
+</div>
+<div class="exercise-body" markdown>
 
-=== "Specialist"
+Pick your role tab below and try the prompt:
+
+=== ":material-briefcase: Specialist"
 
     ```
     I'm a Specialist. Run my full weekly review — pipeline hygiene, 
     any deals ready to hand off, and flag risks across my active opps.
     ```
-    
-    **What runs:**
-    
-    1. `pipeline-hygiene-triage` — sweeps for stale opps, missing fields, close-date slippage
-    2. `handoff-readiness-validation` — checks STU-to-CSU handoff completeness
-    3. `risk-surfacing` — flags relationship decay, silent stakeholders, looming threats
-    
-    **What you get:** A single, prioritized action list with everything ranked by urgency.
 
-=== "CSAM"
+    **Skills that run:** 🔍 pipeline-hygiene-triage → 🤝 handoff-readiness-validation → ⚠️ risk-surfacing → 📋 **Prioritized action list**
+
+=== ":material-shield-account: CSAM"
 
     ```
     Before my governance meeting Thursday, tell me: what stage are we 
     really in on the Contoso deal, what's the milestone health, and 
     prepare a customer evidence pack for the last 30 days.
     ```
-    
-    **What runs:**
-    
-    1. `mcem-stage-identification` — diagnoses true stage vs. BPF label
-    2. `milestone-health-review` — scans for date drift and overdue completions
-    3. `customer-evidence-pack` — assembles communication evidence
-    
-    **What you get:** Governance-ready briefing with honest stage assessment, not just what CRM says.
 
-=== "CSA"
+    **Skills that run:** 📍 mcem-stage-identification → 🏥 milestone-health-review → 📦 customer-evidence-pack → 📋 **Governance briefing**
+
+=== ":material-cog: CSA"
 
     ```
     I'm a CSA. Run my weekly execution sweep — what's at risk across 
     my committed milestones?
     ```
-    
-    **What runs:**
-    
-    1. `execution-monitoring` — audits architecture decisions vs. live state
-    2. `task-hygiene-flow` — checks task owners and due dates
-    
-    **What you get:** A punch-list of execution risks with specific remediation actions.
 
-=== "Solution Engineer"
+    **Skills that run:** 🔧 execution-monitoring → 📋 task-hygiene-flow → ⚡ **Execution risk punch-list**
+
+=== ":material-wrench: Solution Engineer"
 
     ```
     I'm an SE. Check my task hygiene, show me any execution blockers 
     on committed milestones, and tell me if there are Unified constraints 
     I should flag today.
     ```
-    
-    **What runs:**
-    
-    1. `task-hygiene-flow` — reads each CRM task for correctness
-    2. `execution-monitoring` — flags constraint breaches
-    3. `unified-constraint-check` — detects Unified dispatch eligibility gaps
-    
-    **What you get:** Morning prep completed in one prompt.
 
-!!! success "Notice the difference"
-    You didn't name any skills. You didn't specify any tools. You described what you needed, and Copilot:
-    
-    1. Identified the relevant skills from your intent
-    2. Ran them in the correct order
-    3. Passed context between them
-    4. Produced a unified output
+    **Skills that run:** 📋 task-hygiene-flow → 🔧 execution-monitoring → 🏢 unified-constraint-check → 📋 **Morning prep completed**
+
+<div class="lightbulb-callout" markdown>
+<div class="lc-icon">💡</div>
+<div class="lc-body" markdown>
+
+#### Notice the difference
+
+You didn't name any skills. You didn't specify any tools. You described what you needed, and Copilot identified the relevant skills, ran them in order, passed context between them, and produced a unified output.
+
+</div>
+</div>
+
+</div>
+</div>
 
 ---
 
-## Exercise 2: The Deal Triage Chain
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">2</div>
+<h3>The Deal Triage Chain</h3>
+<span class="exercise-time">⏱️ 5 min</span>
+</div>
+<div class="exercise-body" markdown>
 
 Pick a deal that feels stuck or uncertain:
 
-```
-The [opportunity name] deal feels stuck. What stage is it actually in, 
-are exit criteria met, what are the risks, and who should own the next action?
-```
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">The [opportunity name] deal feels stuck. What stage is it actually in, are exit criteria met, what are the risks, and who should own the next action?</div>
+</div>
+</div>
 
-**What runs:**
+<div class="skill-chain">
+<div class="sc-node sc-skill"><span class="sc-icon">📍</span> mcem-stage-identification</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">✅</span> exit-criteria-validation</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">⚠️</span> risk-surfacing</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">👥</span> role-orchestration</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-output"><span class="sc-icon">📋</span> Full triage report</div>
+</div>
 
-1. `mcem-stage-identification` → Where are we _really_?
-2. `exit-criteria-validation` → What criteria are met/unmet?
-3. `risk-surfacing` → What threats are we not seeing?
-4. `role-orchestration` → Who should move next?
+This is **four workflows** compressed into one prompt. The output connects them — risks inform the next-action recommendation, stage position informs which exit criteria matter.
 
-**This is four workflows compressed into one prompt.** The output connects them — risks inform the next-action recommendation, stage position informs which exit criteria matter.
-
----
-
-## Exercise 3: The Commit-or-Loopback Decision
-
-```
-The team wants to commit the [milestone name] milestone, but I heard the 
-proof had issues. Check if we should commit or loop back.
-```
-
-**What runs:**
-
-1. `commit-gate-enforcement` → Are resources staffed? Delivery path named? Dates realistic?
-2. `non-linear-progression` → Should we regress to an earlier stage?
-3. `delivery-accountability-mapping` → Who owns what if we do commit?
-
-**What you get:** A clear commit/loopback recommendation with evidence, not opinion.
+</div>
+</div>
 
 ---
 
-## Exercise 4: Post-Proof Handoff (CSA → CSAM)
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">3</div>
+<h3>The Commit-or-Loopback Decision</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
 
-```
-I'm a CSA. The Contoso proof just completed successfully. Check 
-architecture feasibility, create the handoff note, and validate 
-that the Specialist handoff is clean.
-```
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">The team wants to commit the [milestone name] milestone, but I heard the proof had issues. Check if we should commit or loop back.</div>
+</div>
+</div>
 
-**What runs:**
+<div class="skill-chain">
+<div class="sc-node sc-skill"><span class="sc-icon">🚪</span> commit-gate-enforcement</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">🔄</span> non-linear-progression</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">👤</span> delivery-accountability-mapping</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-output"><span class="sc-icon">✅</span> Commit / loopback decision</div>
+</div>
 
-1. `architecture-feasibility-check` → Can we actually build what was proved?
-2. `architecture-execution-handoff` → Generate the decision record
-3. `handoff-readiness-validation` → Is the STU exit clean?
+A clear commit/loopback recommendation with evidence, not opinion.
+
+</div>
+</div>
+
+---
+
+<div class="exercise" markdown>
+<div class="exercise-header">
+<div class="exercise-num">4</div>
+<h3>Post-Proof Handoff (CSA → CSAM)</h3>
+<span class="exercise-time">⏱️ 3 min</span>
+</div>
+<div class="exercise-body" markdown>
+
+<div class="try-it">
+<div class="try-it-icon">💬</div>
+<div class="try-it-content">
+<div class="try-it-label">Try this prompt</div>
+<div class="try-it-prompt">I'm a CSA. The Contoso proof just completed successfully. Check architecture feasibility, create the handoff note, and validate that the Specialist handoff is clean.</div>
+</div>
+</div>
+
+<div class="skill-chain">
+<div class="sc-node sc-skill"><span class="sc-icon">🏗️</span> architecture-feasibility-check</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">📄</span> architecture-execution-handoff</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-skill"><span class="sc-icon">✅</span> handoff-readiness-validation</div>
+<div class="sc-arrow">→</div>
+<div class="sc-node sc-output"><span class="sc-icon">📦</span> Complete handoff package</div>
+</div>
+
+</div>
+</div>
 
 ---
 
 ## Understanding Chain Behavior
 
-!!! info "How Copilot chains skills"
-    
+??? info "How Copilot chains skills"
     1. **Intent matching** — Copilot reads your prompt and identifies which skills' `description` keywords match
     2. **Ordering** — Skills declare which other skills they chain with in their docs
     3. **Context forwarding** — Output from skill 1 becomes input context for skill 2
@@ -196,12 +236,36 @@ that the Specialist handoff is clean.
 
 ## What You Learned Today
 
-| Concept | What It Means |
-|---------|--------------|
-| **Skill chaining** | Multiple skills execute in sequence from a single prompt |
-| **Intent-driven orchestration** | You describe the outcome; Copilot picks the workflow |
-| **Context forwarding** | Each skill's output enriches the next skill's input |
-| **One prompt, full picture** | Complex multi-step investigations in a single interaction |
+<div class="learned-strip" markdown>
+<div class="ls-item" markdown>
+
+#### Skill Chaining
+
+Multiple skills execute in sequence from a single prompt
+
+</div>
+<div class="ls-item" markdown>
+
+#### Intent-Driven Orchestration
+
+Describe the outcome; Copilot picks the workflow
+
+</div>
+<div class="ls-item" markdown>
+
+#### Context Forwarding
+
+Each skill's output enriches the next skill's input
+
+</div>
+<div class="ls-item" markdown>
+
+#### One Prompt, Full Picture
+
+Complex multi-step investigations in a single interaction
+
+</div>
+</div>
 
 ---
 
@@ -217,4 +281,10 @@ The more you use real data, the more impressed (or occasionally frustrated) you'
 
 ---
 
-[:octicons-arrow-right-16: Continue to Day 5: The Lightbulb Moment](day-5-lightbulb.md){ .md-button .md-button--primary }
+<a class="next-day" href="../day-5-lightbulb/">
+<div class="nd-arrow">→</div>
+<div class="nd-body">
+<h4>Continue to Day 5: The Lightbulb Moment</h4>
+<p>Cross-medium synthesis, strategic intelligence, and the difference between a chatbot and an agent.</p>
+</div>
+</a>

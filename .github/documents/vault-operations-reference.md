@@ -15,6 +15,12 @@ Detailed reference for OIL workflows. Use
 - IDs and machine-readable fields belong in frontmatter.
 - Narrative context belongs in note body sections.
 - Keep owner names aligned with `People/<Name>.md` filenames.
+- All agent-created notes MUST include `icon:` frontmatter for the Obsidian Iconize plugin:
+  - Opportunity notes: `icon: LiTarget`
+  - Milestone notes: `icon: LiFlag`
+  - People notes: `icon: LiUser`
+  - Customer notes: `icon: LiBuilding2`
+  - Meeting notes: `icon: LiCalendar`
 
 ## Deep Workflow Notes
 

@@ -2,7 +2,7 @@
 # morning-prep.sh — Copilot CLI-driven daily note population
 #
 # Called by Obsidian Cron (Mon–Fri, 7:00 AM) or manually.
-# Uses copilot CLI with WorkIQ, OIL, and MSX-CRM MCP servers
+# Uses copilot CLI with WorkIQ, OIL, and msx MCP servers
 # to build today's daily note and individual meeting prep notes.
 
 set -euo pipefail
@@ -33,7 +33,7 @@ log "Vault: $VAULT_DIR"
 
 cd "$REPO_DIR" || { log "ERROR: Cannot cd to $REPO_DIR"; exit 1; }
 
-# Ensure Azure CLI token is fresh (required for MSX-CRM + WorkIQ)
+# Ensure Azure CLI token is fresh (required for msx + WorkIQ)
 if ! az account get-access-token --resource https://graph.microsoft.com > /dev/null 2>&1; then
   log "WARNING: Azure CLI token expired — MSX and WorkIQ calls may fail."
   log "Run 'az login' to refresh."

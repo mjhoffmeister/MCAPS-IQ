@@ -1,28 +1,22 @@
 #!/usr/bin/env node
 
 /**
- * OIL MCP Server launcher.
+ * OIL MCP Server launcher (package mode).
  *
- * Loads environment variables from the repo-root .env file (if present)
- * then starts the Obsidian Intelligence Layer server.
- *
- * This wrapper ensures a consistent startup path for both
- * VS Code MCP hosting and Copilot CLI (`copilot` / `mcaps`).
- *
- * Priority order for OBSIDIAN_VAULT_PATH:
- *   1. Already set in process environment (e.g. shell profile)
- *   2. Defined in <repo-root>/.env
- *   3. Not set → server exits with a helpful message
+ * Starts the published OIL MCP server package via npx so this repo no
+ * longer depends on a local mcp/oil source checkout.
  */
 
+import { spawnSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const envFile = resolve(ROOT, ".env");
 
-// ── Load .env (simple key=value, no dependency on dotenv) ──────────
-if (existsSync(envFile)) {
+function loadEnv() {
+  if (!existsSync(envFile)) return;
   const lines = readFileSync(envFile, "utf-8").split("\n");
   for (const raw of lines) {
     const line = raw.trim();
@@ -31,12 +25,38 @@ if (existsSync(envFile)) {
     if (eq === -1) continue;
     const key = line.slice(0, eq).trim();
     const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-    // Don't override values already in the environment
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
+    if (!process.env[key]) process.env[key] = value;
   }
 }
 
-// ── Start OIL server ───────────────────────────────────────────────
-await import("../mcp/oil/dist/index.js");
+loadEnv();
+
+const isWin = process.platform === "win32";
+const npx = isWin ? "npx.cmd" : "npx";
+const passthrough = process.argv.slice(2);
+
+const result = spawnSync(
+  npx,
+  [
+    "-y",
+    "@jinlee794/obsidian-intelligence-layer@latest",
+    "mcp",
+    ...passthrough,
+  ],
+  {
+    cwd: ROOT,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      npm_config_loglevel: process.env.npm_config_loglevel || "error",
+    },
+    shell: false,
+  },
+);
+
+if (result.error) {
+  process.stderr.write(`[oil] Failed to start package: ${result.error.message}\n`);
+  process.exit(1);
+}
+
+process.exit(result.status ?? 1);

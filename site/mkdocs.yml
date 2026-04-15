@@ -38,7 +38,6 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
-    - navigation.expand
     - navigation.path
     - navigation.top
     - navigation.footer
@@ -92,7 +91,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_div_format
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
       combine_header_slug: true
@@ -112,15 +111,13 @@ extra_css:
   - stylesheets/extra.css
 
 extra_javascript:
-  - https://unpkg.com/mermaid@11/dist/mermaid.min.js
   - javascripts/mermaid-init.js
 
 nav:
   - Home: index.md
   - Getting Started:
     - getting-started/index.md
-    - Prerequisites: getting-started/prerequisites.md
-    - Installation: getting-started/installation.md
+    - Verify Installation: getting-started/start-servers.md
     - Your First Chat: getting-started/first-chat.md
     - Choose Your Role: getting-started/choose-role.md
     - Troubleshooting Setup: getting-started/troubleshooting.md
@@ -130,12 +127,12 @@ nav:
     - "Day 2: Read Your Pipeline": guided/day-2-pipeline.md
     - "Day 3: Multi-Skill Chains": guided/day-3-chains.md
     - "Day 5: The Lightbulb Moment": guided/day-5-lightbulb.md
-  - Prompts & Workflows:
+  - Prompts & Skills:
     - prompts/index.md
-    - Slash Commands: prompts/slash-commands.md
+    - All Prompts: prompts/slash-commands.md
     - By Role: prompts/by-role.md
-    - Multi-Skill Chains: prompts/multi-skill-chains.md
-    - Power BI Analytics: prompts/powerbi.md
+    - Workflow Chains: prompts/multi-skill-chains.md
+    - Power BI Reports: prompts/powerbi.md
   - How It Works:
     - architecture/index.md
     - System Overview: architecture/overview.md
@@ -156,6 +153,8 @@ nav:
     - Obsidian Vault (OIL): integrations/obsidian.md
     - Power BI: integrations/powerbi.md
     - Copilot CLI: integrations/copilot-cli.md
+    - Dashboard: integrations/dashboard.md
+    - Squads (Experimental): integrations/squads.md
   - Customization:
     - customization/index.md
     - Editing Instructions: customization/instructions.md

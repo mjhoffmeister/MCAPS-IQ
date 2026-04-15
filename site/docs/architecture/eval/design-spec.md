@@ -5,6 +5,8 @@ tags:
   - evaluation
   - design
   - testing
+hide:
+  - toc
 ---
 
 # Prompt & Skill Evaluation Framework — Design Spec
@@ -84,6 +86,7 @@ From `crm-query-strategy.instructions.md` and skill docs:
 | `AP-008` | Treating vault cached state as live CRM truth | obsidian-vault |
 | `AP-009` | Unbounded M365/WorkIQ retrieval | shared-patterns |
 | `AP-010` | Role assumption without `crm_whoami` or explicit confirmation | msx-role-and-write-gate |
+| `AP-011` | `get_milestones` scoped by entity/customer but missing `statusFilter` — returns all milestones including completed/cancelled | crm-query-strategy |
 
 ### 3.4 Output Format Compliance
 
@@ -165,7 +168,7 @@ Hand-crafted or YAML-driven scenarios with fixture-backed mock servers. Supports
 ```typescript
 // Implemented in harness.ts
 interface ToolCallTrace {
-  tool: string;           // "msx-crm:get_milestones"
+  tool: string;           // "msx:get_milestones"
   params: Record<string, unknown>;
   response: unknown;      // mocked or captured response
   timestamp: number;
@@ -333,19 +336,19 @@ scenarios:
       role: CSAM
       customer: Contoso
     expected_calls:
-      - tool: msx-crm:crm_auth_status
+      - tool: msx:crm_auth_status
         order: 1
       - tool: oil:get_customer_context
         params: { customer: "Contoso" }
         order: 2
-      - tool: msx-crm:get_milestones
+      - tool: msx:get_milestones
         params_contains:
           customerKeyword: "Contoso"
           statusFilter: "active"
           includeTasks: true
         order: 3
     forbidden_calls:
-      - tool: msx-crm:get_milestones
+      - tool: msx:get_milestones
         params: {}  # unscoped
 
   - id: morning-brief-parallel
@@ -356,11 +359,11 @@ scenarios:
     expected_calls:
       - tool: oil:get_vault_context
         phase: 1
-      - tool: msx-crm:crm_auth_status
+      - tool: msx:crm_auth_status
         phase: 1  # parallel with vault
-      - tool: msx-crm:get_my_active_opportunities
+      - tool: msx:get_my_active_opportunities
         phase: 2
-      - tool: msx-crm:get_milestones
+      - tool: msx:get_milestones
         phase: 2
         params_contains:
           statusFilter: "active"
@@ -373,7 +376,7 @@ scenarios:
     expected_sequence:
       - oil:get_vault_context  # must come before any CRM call
       - oil:get_customer_context
-      - msx-crm:*             # any CRM call must follow vault
+      - msx:*             # any CRM call must follow vault
 ```
 
 ### 5.3 Anti-Pattern Scenarios
@@ -403,7 +406,7 @@ scenarios:
       - AP-004  # vault available but skipped
     expected_calls:
       - tool: oil:get_customer_context
-        before: msx-crm:*
+        before: msx:*
 
   - id: ap005-write-gate
     description: "Agent must confirm before CRM writes"

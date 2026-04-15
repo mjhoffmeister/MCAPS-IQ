@@ -6,47 +6,27 @@ argument-hint: 'Provide the path to the spreadsheet file and describe what opera
 
 # XLSX Creation, Editing, and Analysis
 
-## Python Environment — MANDATORY
+## Setup
 
-**All Python scripts in this skill MUST run inside a virtual environment. No exceptions.**
-
-```powershell
-# Create venv (once per session, skip if .venv already exists)
-python -m venv .venv
-
-# Activate (Windows PowerShell)
-.venv\Scripts\Activate.ps1
-
-# Activate (bash/macOS)
-source .venv/bin/activate
-
-# Install dependencies INSIDE venv only
-pip install openpyxl
+```bash
+npm install exceljs
+# For CSV-only work:
+npm install csv-parse csv-stringify
 ```
 
-**Rules:**
-- NEVER run `pip install` globally — always activate `.venv` first
-- Check if `.venv` exists before creating: `Test-Path .venv`
-- All `python scripts/...` commands assume the venv is active
-- Clean up `.venv` when the session is done if it was created for this task
-- **openpyxl is the default library** — use it for all read/write/edit operations
-- **Do NOT default to pandas** — it may not be installed. Try openpyxl first
-
-**Temp file cleanup — MANDATORY:**
-- All temp scripts MUST use `.tmp_` prefix (e.g., `.tmp_process_xlsx.py`)
-- After the task completes, delete ALL `.tmp_*` files autonomously — never leave them behind, never ask the user
-- `Remove-Item` is deny-listed in auto-approval mode. Use Python instead:
-  ```
-  .venv\Scripts\python.exe -c "import os,glob; [os.remove(f) for f in glob.glob('.tmp_*')]"
-  ```
-- If no `.venv` exists, use system `python -c "..."`
-> **Note:** `scripts/` paths are relative to this skill folder (`.github/skills/xlsx/`).
+**`exceljs` is the default library** — handles read, write, edit, and formatting for both .xlsx and .csv. No Python or virtual environment required.
 
 ---
 
 ## Output Requirements
 
-**Output directory**: Save generated `.xlsx`/`.csv` files to `.copilot/docs/` (see `shared-patterns.instructions.md` § Artifact Output Directory). Create the directory with `os.makedirs('.copilot/docs', exist_ok=True)` before writing.
+**Output directory**: Save generated `.xlsx`/`.csv` files to the vault `MCAPS-IQ-Artifacts/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
+
+**Formulas**: Write Excel formula strings — let Excel calculate on open. ExcelJS stores the formula string and an optional cached result; always include a sensible `result` fallback so the file is readable if not opened in Excel.
+
+```javascript
+sheet.getCell('B10').value = { formula: 'SUM(B2:B9)', result: 0 };
+```
 
 ### All Excel Files
 - Use a consistent, professional font (e.g., Arial) unless the user specifies otherwise
@@ -80,17 +60,17 @@ pip install openpyxl
 
 ## CRITICAL: Use Formulas, Not Hardcoded Values
 
-**Always use Excel formulas instead of calculating in Python and hardcoding.**
+**Always write Excel formula strings — never calculate values in code.**
 
-```python
-# ❌ WRONG - hardcoding calculated values
-total = df['Sales'].sum()
-sheet['B10'] = total  # Hardcodes 5000
+```javascript
+// ❌ WRONG - hardcoding calculated values
+const total = rows.reduce((s, r) => s + r.sales, 0);
+sheet.getCell('B10').value = total;  // Hardcodes 5000
 
-# ✅ CORRECT - let Excel calculate
-sheet['B10'] = '=SUM(B2:B9)'
-sheet['C5'] = '=(C4-C2)/C2'
-sheet['D20'] = '=AVERAGE(D2:D19)'
+// ✅ CORRECT - let Excel calculate
+sheet.getCell('B10').value = { formula: 'SUM(B2:B9)', result: 0 };
+sheet.getCell('C5').value  = { formula: '(C4-C2)/C2', result: 0 };
+sheet.getCell('D20').value = { formula: 'AVERAGE(D2:D19)', result: 0 };
 ```
 
 This applies to ALL calculations — totals, percentages, ratios, differences.
@@ -101,162 +81,136 @@ This applies to ALL calculations — totals, percentages, ratios, differences.
 
 | Task | Approach |
 |------|----------|
-| Read/analyze data | openpyxl (always available) |
-| Heavy data analysis | pandas (check availability first) |
-| Create new files | openpyxl with formatting |
-| Edit existing files | openpyxl preserving formulas |
-| Recalculate formulas | `python scripts/recalc.py output.xlsx` |
+| Read/analyze data | `exceljs` — workbook.xlsx.readFile() |
+| Create new files | `exceljs` — Workbook + addWorksheet |
+| Edit existing files | `exceljs` — load, modify cells, save |
+| CSV import/export | `exceljs` csv methods or `csv-parse`/`csv-stringify` |
 
 ---
 
 ## Reading Data
 
-### openpyxl (preferred — always available)
+```javascript
+import ExcelJS from 'exceljs';
 
-```python
-from openpyxl import load_workbook
+const workbook = new ExcelJS.Workbook();
+await workbook.xlsx.readFile('file.xlsx');
 
-wb = load_workbook('file.xlsx')
-ws = wb.active
+const sheet = workbook.getWorksheet('Sheet1'); // by name or index (1-based)
 
-headers = [cell.value for cell in ws[1]]
-for row in ws.iter_rows(min_row=2, values_only=True):
-    print(row)
+// Headers from row 1
+const headers = sheet.getRow(1).values.slice(1); // slice(1): values[0] is undefined (1-indexed)
+
+// Iterate data rows
+sheet.eachRow({ includeEmpty: false }, (row, rowNum) => {
+  if (rowNum === 1) return; // skip header
+  console.log(row.values); // row.values[1] = col A, row.values[2] = col B, ...
+});
+
+// Read specific cell
+const val = sheet.getCell('B3').value; // or sheet.getRow(3).getCell(2).value
 ```
 
-### pandas (optional — check first)
-
-```python
-try:
-    import pandas as pd
-    df = pd.read_excel('file.xlsx')
-    all_sheets = pd.read_excel('file.xlsx', sheet_name=None)  # All sheets
-    df.describe()
-except ImportError:
-    print("pandas not installed — use openpyxl instead")
-```
+Cell value types: `string`, `number`, `Date`, `{ formula, result }`, `{ richText }`, `{ hyperlink, text }`.
 
 ---
 
 ## Creating New Files
 
-```python
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
+```javascript
+import ExcelJS from 'exceljs';
 
-wb = Workbook()
-sheet = wb.active
+const workbook = new ExcelJS.Workbook();
+workbook.creator = 'Author';
+workbook.created = new Date();
 
-sheet['A1'] = 'Hello'
-sheet.append(['Row', 'of', 'data'])
+const sheet = workbook.addWorksheet('Report', {
+  properties: { defaultColWidth: 15 },
+});
 
-# Formulas
-sheet['B2'] = '=SUM(A1:A10)'
+// Define columns (sets header + key + width in one step)
+sheet.columns = [
+  { header: 'Name',  key: 'name',  width: 25 },
+  { header: 'Value', key: 'value', width: 15 },
+  { header: 'Date',  key: 'date',  width: 18 },
+];
 
-# Formatting
-sheet['A1'].font = Font(bold=True, color='FF0000')
-sheet['A1'].fill = PatternFill('solid', start_color='FFFF00')
-sheet['A1'].alignment = Alignment(horizontal='center')
-sheet.column_dimensions['A'].width = 20
+// Add rows by key
+sheet.addRow({ name: 'Item A', value: 100, date: new Date() });
+sheet.addRows([
+  { name: 'Item B', value: 250, date: new Date() },
+  { name: 'Item C', value: 75,  date: new Date() },
+]);
 
-wb.save('output.xlsx')
+// Formulas
+sheet.getCell('B6').value = { formula: 'SUM(B2:B5)', result: 425 };
+
+// Header styling
+sheet.getRow(1).eachCell(cell => {
+  cell.font      = { bold: true, color: { argb: 'FFFFFFFF' } };
+  cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF003366' } };
+  cell.alignment = { horizontal: 'center' };
+});
+
+// Auto-filter
+sheet.autoFilter = 'A1:C1';
+
+await workbook.xlsx.writeFile('output.xlsx');
 ```
 
 ---
 
 ## Editing Existing Files
 
-```python
-from openpyxl import load_workbook
+```javascript
+import ExcelJS from 'exceljs';
 
-wb = load_workbook('existing.xlsx')
-sheet = wb.active  # or wb['SheetName']
+const workbook = new ExcelJS.Workbook();
+await workbook.xlsx.readFile('existing.xlsx');
 
-# Modify cells
-sheet['A1'] = 'New Value'
-sheet.insert_rows(2)
-sheet.delete_cols(3)
+const sheet = workbook.getWorksheet(1); // first sheet
 
-# Add new sheet
-new_sheet = wb.create_sheet('NewSheet')
-new_sheet['A1'] = 'Data'
+// Modify cells
+sheet.getCell('A1').value = 'New Value';
 
-wb.save('modified.xlsx')
+// Insert / delete rows
+sheet.insertRow(2, ['inserted', 'row']);
+sheet.spliceRows(5, 1); // delete row 5
+
+// Add a new sheet
+const newSheet = workbook.addWorksheet('NewData');
+newSheet.getCell('A1').value = 'Hello';
+
+await workbook.xlsx.writeFile('modified.xlsx');
 ```
-
----
-
-## Recalculating Formulas — MANDATORY
-
-Excel files created/modified by openpyxl have formula strings but no calculated values. **Always recalculate after writing formulas:**
-
-```bash
-python scripts/recalc.py output.xlsx [timeout_seconds]
-```
-
-The script:
-- Recalculates all formulas in all sheets via LibreOffice
-- Scans ALL cells for Excel errors (#REF!, #DIV/0!, etc.)
-- Returns JSON with detailed error locations
-
-**Interpreting output:**
-```json
-{
-  "status": "success",           // or "errors_found"
-  "total_errors": 0,
-  "total_formulas": 42,
-  "error_summary": {
-    "#REF!": { "count": 2, "locations": ["Sheet1!B5", "Sheet1!C10"] }
-  }
-}
-```
-
-If errors are found: fix them and recalculate again.
 
 ---
 
 ## Common Workflow
 
-1. **Choose tool**: openpyxl for everything; pandas only if installed and needed
-2. **Create/Load**: Create new workbook or load existing
-3. **Modify**: Add data, formulas, formatting
-4. **Save**: Write to file
-5. **Recalculate** (if formulas used): `python scripts/recalc.py output.xlsx`
-6. **Verify**: Check for errors, fix, recalculate again
-
----
-
-## PowerShell Terminal Rules
-
-**Never use inline `python -c "..."` for anything with regex, f-strings containing `$`, CSV parsing, or multi-line logic** — PowerShell mangles special characters. Write a `.tmp_<name>.py` script, run it, then delete it.
+1. **Install**: `npm install exceljs`
+2. **Create/Load**: `new ExcelJS.Workbook()` then `readFile` or `addWorksheet`
+3. **Modify**: Cells, rows, columns, formulas
+4. **Save**: `workbook.xlsx.writeFile(outputPath)`
+5. **Verify**: Open in Excel — formulas calculate automatically
 
 ---
 
 ## Formula Verification Checklist
 
-- [ ] Test 2–3 sample references before building full model
-- [ ] Column mapping: confirm Excel columns match (column 64 = BL, not BK)
-- [ ] Row offset: Excel rows are 1-indexed (DataFrame row 5 = Excel row 6)
-- [ ] NaN handling: check with `pd.notna()` if using pandas
-- [ ] Division by zero: check denominators (#DIV/0!)
-- [ ] Cross-sheet references: correct format (`Sheet1!A1`)
-- [ ] Edge cases: zero, negative, and very large values
+- [ ] Cell references use correct sheet prefix for cross-sheet formulas: `'Sheet Name'!A1`
+- [ ] Row indices are 1-based in ExcelJS: row 1 = header, row 2 = first data row
+- [ ] Division by zero: wrap denominators with `IFERROR(calc, "")`
+- [ ] `result` cache is a plausible placeholder (0 or 0.0) — not the actual computed value
 
 ---
 
 ## Best Practices
 
-### openpyxl
-- Cell indices are 1-based (row=1, column=1 = cell A1)
-- `data_only=True` reads calculated values: `load_workbook('file.xlsx', data_only=True)`
-- **Warning**: Saving after `data_only=True` replaces formulas with values permanently
-- Large files: `read_only=True` for reading, `write_only=True` for writing
-
-### pandas
-- Specify dtypes: `pd.read_excel('file.xlsx', dtype={'id': str})`
-- Limit columns: `pd.read_excel('file.xlsx', usecols=['A', 'C', 'E'])`
-- Parse dates: `pd.read_excel('file.xlsx', parse_dates=['date_column'])`
-
-### Code Style
-- Write minimal, concise Python — no unnecessary comments or verbose variables
-- For Excel files: add cell comments for complex formulas and document data sources
+- **ExcelJS uses 1-based indices** everywhere: `getRow(1)`, `getCell('A1')`, `sheet.getWorksheet(1)`
+- `row.values[0]` is always `undefined` — data starts at `[1]`
+- Format numbers with `cell.numFmt`: `'$#,##0'`, `'0.0%'`, `'0.0x'`
+- For large files use streaming: `workbook.xlsx.createInputStream()` / `WorkbookWriter` for output
+- Always set `workbook.creator` and `workbook.created` for metadata
+- Write minimal, tidy scripts — no unnecessary comments or verbose variable names
+- For Excel files: add cell comments for complex formulas to document sources

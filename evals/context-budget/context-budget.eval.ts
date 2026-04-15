@@ -109,8 +109,8 @@ describe("Context Budget Efficiency", () => {
 
   it("morning-brief skill chain fits within budget ceiling", () => {
     // Morning brief loads: copilot-instructions + shared-patterns + morning-brief + vault
-    const chainSkills = ["morning-brief", "vault-context-assembly"];
-    const chainInstructions = ["shared-patterns.instructions.md", "crm-query-strategy.instructions.md"];
+    const chainSkills = ["morning-brief", "vault-context-assembly", "shared-patterns"];
+    const chainInstructions = ["crm-query-strategy.instructions.md"];
 
     let total = 0;
 

@@ -22,10 +22,14 @@ Before calling any CRM read tool that may return large result sets (especially `
 1. Identify current user via `crm_auth_status` (or `crm_whoami`).
 2. Fetch profile data using `crm_get_record` for `systemusers(<userId>)` with available identity fields (for example: name/title/email/business unit).
 3. Map the user to one of these role workflows:
-   - `Specialist` → `.github/instructions/role-card-specialist.instructions.md`
-   - `Solution Engineer` → `.github/instructions/role-card-se.instructions.md`
-   - `Cloud Solution Architect` → `.github/instructions/role-card-csa.instructions.md`
-   - `Customer Success Account Manager` → `.github/instructions/role-card-csam.instructions.md`
+   - `Account Executive` → `role-ae` skill
+   - `Specialist` → `role-specialist` skill
+   - `Solution Engineer` → `role-se` skill
+   - `Cloud Solution Architect` → `role-csa` skill
+   - `Customer Success Account Manager` → `role-csam` skill
+   - `Account Technology Strategist` → `role-ats` skill
+   - `Industry Advisor` → `role-ia` skill
+   - `ATU Sales Director` → `role-atu-sd` skill
 4. If mapping is ambiguous or multiple roles match:
    - Present top 1–2 likely role mappings with reasons.
    - Ask the user to confirm role before proceeding.
@@ -41,8 +45,30 @@ Before calling any CRM read tool that may return large result sets (especially `
   - escalation triggers.
 - If a requested action conflicts with the selected role boundary, call out the conflict and propose the correct owner/route.
 
+## 2a) Role-Action Authority Matrix (Mandatory pre-write check)
+
+Before proposing or executing **any** write-intent action, check this matrix. If the active role is not in the **Allowed Roles** column, **STOP** — do not propose the action. Instead, name the correct role and suggest the user coordinate with that person.
+
+| Action | Allowed Roles | Blocked Roles (must redirect) |
+|---|---|---|
+| `create_milestone` | **Specialist** | AE, IA, SD, SE, CSA, CSAM, ATS — redirect to Specialist |
+| `update_milestone` (structure: name, date, monthlyUse, workload, commitment) | **Specialist**, **CSAM** (Stage 4-5 only) | SE, CSA, ATS — redirect to Specialist/CSAM |
+| `update_milestone` (status only: On Track/At Risk/Blocked) | **Specialist**, **CSAM**, **CSA** | SE, ATS — can flag but redirect status update to milestone owner |
+| `create_task` | **All roles** (on milestones they touch) | — |
+| `update_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
+| `close_task` | **Task owner**, or role that created it | Other roles — redirect to task owner |
+| Opportunity field updates (stage, close date, revenue) | **Specialist** | AE, IA, SD, SE, CSA, CSAM, ATS — redirect to Specialist |
+| Deal team membership | **Specialist**, **self-add by any role** | — |
+
+**Enforcement rule**: When the agent detects a gap (e.g., "this milestone has no tasks"), the recommendation must respect the matrix:
+- If the gap is a missing **milestone** → recommend the user flag it to their **Specialist**, not create it themselves.
+- If the gap is a missing **task** on an existing milestone → the active role may create it (if they touch that milestone).
+- If the gap is a stale **opportunity field** → recommend the user flag it to their **Specialist**.
+
 ## 3) Mandatory Plan Mode for Write-Intent Actions
-Before calling any write-intent tool (`create_task`, `update_task`, `close_task`, `create_milestone`, `update_milestone`), always run a confirmation step.
+Before calling any write-intent tool (`create_task`, `update_task`, `close_task`, `create_milestone`, `update_milestone`), always:
+1. **Check §2a Role-Action Authority Matrix** — confirm the active role is allowed. If not, STOP and redirect.
+2. Run a confirmation step.
 
 ### 3a) Picklist Field Mapping (Required for `create_milestone` and `update_milestone`)
 Before building the confirmation packet for milestone create/update operations:
@@ -63,6 +89,16 @@ Before building the confirmation packet for milestone create/update operations:
 - Expected impact and any risk
 
 **Linkification**: Every opportunity, milestone, and task in the confirmation packet must be a clickable CRM link. Use `recordUrl` from `get_milestones` when available, otherwise construct from the entity logical name and GUID (see `crm-entity-schema.instructions.md` § CRM Record URL Pattern).
+
+### SE Activity Tracking: Create-and-Close (Mandatory for SE role)
+
+When the active role is **SE**, every `create_task` MUST be paired with an immediate `close_task` in the same confirmation packet. SE tasks are **activity records** (completed work), not open work items.
+
+- Present as a single atomic operation: "Create and close task: [description]".
+- The confirmation packet shows both the create and close as one proposed action.
+- Approval covers both operations — no separate confirm for the close.
+- If the SE describes a **future/planned** activity, do NOT create a task. Advise recording it after the activity is performed.
+- This rule applies to all SE task creation: task hygiene backfills, proof plan tasks, HoK activity records, and execution monitoring follow-ups.
 
 ### Confirmation language
 Ask for explicit approval in a separate step, for example:
@@ -86,3 +122,22 @@ When producing action recommendations or preflight checks, use this order:
 3. Proposed action plan
 4. Confirmation packet
 5. Await approval
+
+## 6) Post-Write Vault Capture (Task Operations)
+
+After any confirmed `create_task`, `update_task`, or `close_task` write completes:
+
+1. **Automatically chain** to the `vault-sync` skill (Mode 5: Task Sync post-write hook) — pass the write result plus confirmation-packet context (customer, milestone, opportunity names and GUIDs).
+2. No additional user confirmation — the vault log is a downstream record of the already-approved CRM write.
+3. If OIL is unavailable, skip silently. If vault write fails, warn the user and suggest `/task-sync` to reconcile later.
+4. For batch task operations (e.g., task-hygiene corrections), run vault capture once after all writes complete rather than per-task.
+
+## 7) Post-Write Vault Capture (Opportunity Operations)
+
+After any confirmed `update_milestone`, `create_milestone`, or `manage_deal_team` write completes:
+
+1. **Automatically chain** to the `vault-sync` skill (Mode 1: Opp Sync auto-capture) — pass the opportunity context from the confirmation packet (customer, opportunity GUID/number, deal team, milestones with ACR values).
+2. No additional user confirmation — the vault capture is a one-way CRM→vault sync of the already-approved data.
+3. If OIL is unavailable, skip silently. If vault write fails, warn the user and suggest `opp sync` to reconcile later.
+4. This captures deal team roster, opportunity notes, ACR values (`estimatedvalue`, `msp_consumptionconsumedrecurring`, milestone `msp_monthlyuse`), and pipeline metadata to the vault.
+5. **Direction rule**: CRM→vault only. The vault is a read-cache. To update CRM, the user must explicitly request a write through the write-gate.

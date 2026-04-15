@@ -101,22 +101,22 @@ az login
 
 Use your Microsoft corporate account. You must be on the corporate VPN.
 
-### Start servers in VS Code
+### Verify Installation in VS Code
 
 1. Open `.vscode/mcp.json` — you'll see **Start** buttons above each server definition.
-2. Click **Start** on `msx-crm` (required).
+2. Click **Start** on `msx` (required).
 3. Click **Start** on `workiq` (optional, for M365 searches).
 
 Once started, each server shows a **Running** status with the number of available tools.
 
-### Start servers from the terminal
+### Verify Installation from the terminal
 
 ```bash
 # MSX CRM server
 node scripts/msx-start.js
 
 # OIL (Obsidian Intelligence Layer) server
-# See mcp/oil/README.md for setup
+node scripts/oil-start.js
 ```
 
 ### Verify the environment
@@ -152,14 +152,11 @@ These checks validate:
 ### MCP server tests
 
 ```bash
-cd mcp/msx
-npm test
+npm run check
+npm run eval
 ```
 
-```bash
-cd mcp/oil
-npm test
-```
+MSX and OIL are consumed as published npm packages via `npx` in this repo. If you need to run unit tests for those servers directly, run them in their source repositories.
 
 ### Docs site (optional)
 
@@ -260,8 +257,8 @@ Labels are used on both issues and PRs.
 
 | Label                  | Description                                                 |
 | ---------------------- | ----------------------------------------------------------- |
-| `area: mcp-msx`      | Changes to the MSX CRM MCP server (`mcp/msx/`)            |
-| `area: mcp-oil`      | Changes to the OIL (Obsidian) MCP server (`mcp/oil/`)     |
+| `area: mcp-msx`      | Changes that impact MSX CRM MCP integration                |
+| `area: mcp-oil`      | Changes that impact OIL (Obsidian) MCP integration         |
 | `area: skills`       | Changes to Copilot skills (`.github/skills/`)             |
 | `area: instructions` | Changes to Copilot instructions (`.github/instructions/`) |
 | `area: docs`         | Changes to documentation (`docs/`, `site/`)             |

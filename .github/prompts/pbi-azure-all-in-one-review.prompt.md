@@ -71,7 +71,7 @@ Before pulling any data, ask the user to narrow the scope:
 | Sales stage | `'F_AzureConsumptionPipe'[SalesStageName]` | "Qualify", "Develop" |
 
 If user says **"all my assigned accounts"**:
-- Use `msx-crm:crm_whoami` to get alias
+- Use `msx:crm_whoami` to get alias
 - Query `CustomerAssignByRole` filtered by that alias across role columns to get TPID list
 
 Build a `<SCOPE_FILTER>` from the user's choices. Always include these base filters:

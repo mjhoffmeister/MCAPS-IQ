@@ -1,6 +1,6 @@
 ---
 name: pipeline-qualification
-description: 'Inbound-signal qualifier: scores a new customer signal for commercial fit, solution-play alignment, and priority match, then scaffolds a draft opportunity with initial milestones. Triggers: qualify signal, new opportunity, inbound lead, commercial fit, create pipeline, scaffold opportunity, net-new deal. DO NOT USE FOR: routing upsell or expansion signals from existing delivery — use expansion-signal-routing.'
+description: 'Inbound-signal qualifier: scores a new customer signal for commercial fit, solution-play alignment, and priority match, then scaffolds a draft opportunity with initial milestones. Triggers: qualify signal, new opportunity, inbound lead, commercial fit, create pipeline, scaffold opportunity, net-new deal. DO NOT USE FOR: routing upsell or expansion signals from existing delivery — use stage-5-review.'
 argument-hint: 'Provide account TPID or GUID and the inbound customer signal description'
 ---
 
@@ -20,10 +20,10 @@ Qualifies incoming customer signals into actionable Stage 2 pipeline by validati
 
 ## Flow
 
-1. Call `msx-crm:crm_auth_status`.
-2. Resolve account scope — if TPID: call `msx-crm:list_accounts_by_tpid`; if GUID known: skip.
-3. Call `msx-crm:get_my_active_opportunities` to check for existing opportunities (avoid duplicates).
-4. For existing opportunities, call `msx-crm:get_milestones` with `opportunityIds` to classify milestone state across all opportunities in one call.
+1. Call `msx:crm_auth_status`.
+2. Resolve account scope — if TPID: call `msx:list_accounts_by_tpid`; if GUID known: skip.
+3. Call `msx:get_my_active_opportunities` to check for existing opportunities (avoid duplicates).
+4. For existing opportunities, call `msx:get_milestones` with `opportunityIds` to classify milestone state across all opportunities in one call.
 5. Apply qualification criteria (see below).
 6. If qualified, output draft opportunity + minimum milestone set as recommendations.
 
@@ -51,3 +51,21 @@ Qualifies incoming customer signals into actionable Stage 2 pipeline by validati
 - `draft_opportunity`: recommended field values for new opportunity (if qualified)
 - `draft_milestones`: minimum milestone set with owners and dates
 - `next_action`: "Opportunity qualified. Would you like to initiate `proof-plan-orchestration` for Stage 2 technical shaping?"
+
+## Customer Outcome Scoping (Pre-Stage 2)
+
+When qualifying, also define explicit, measurable KPIs during initial engagement:
+
+### Outcome Clarity Criteria
+
+| Element | Required | Evidence |
+|---|---|---|
+| Business problem stated | Yes | Customer-articulated need (not Microsoft projection) |
+| Measurable success metric | Yes | Quantifiable target (reduce X by Y%, achieve Z users) |
+| Baseline available | Recommended | Current state measurement exists or plan to obtain |
+| Timeline expectation | Yes | Customer's expected value realization window |
+| Stakeholder identified | Recommended | Named sponsor or decision maker |
+
+- Missing baseline → acceptable to proceed but flag for Stage 2 collection
+- No measurable metric → block progression; create task to define measurement
+- Multiple outcomes → prioritize by customer emphasis and commercial alignment

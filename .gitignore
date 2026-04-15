@@ -1,5 +1,8 @@
 node_modules/
 .beads
+# Auth token cache (contains refresh tokens — never commit)
+.auth-cache/
+
 # Logs
 *.log
 *.bak
@@ -36,7 +39,9 @@ temp/
 # Local agent memory (untracked)
 .agent-memory/
 
-.vscode/mcp.json
+# M365 auth token cache (sensitive — contains refresh tokens)
+.auth-cache/
+
 .copilot
 
 # LenVolk
@@ -55,6 +60,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!scripts/lib/
+!.github/extensions/*/lib/
 lib64/
 parts/
 sdist/
@@ -93,3 +100,22 @@ evals/traces/captured/
 
 # Auto-generated tool definitions (regenerated from live MCP servers)
 evals/generated/
+# Squad: ignore runtime state (logs, inbox, sessions)
+.squad/orchestration-log/
+.squad/log/
+.squad/decisions/inbox/
+.squad/sessions/
+# Squad: SubSquad activation file (local to this machine)
+.squad-workstream
+.squad
+squad-*
+
+# Playwright MCP temp data
+.playwright-mcp/
+.vault/
+
+# MCAPS IQ Dashboard local settings (may contain priority account TPIDs)
+.mcaps-iq-settings.json
+
+# MCAPS IQ Dashboard local cron schedules
+.mcaps-iq-schedules.json

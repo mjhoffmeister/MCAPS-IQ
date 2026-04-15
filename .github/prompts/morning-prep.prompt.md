@@ -1,5 +1,5 @@
 ---
-description: "Automated morning prep — populates today's daily note and creates meeting prep skeletons using WorkIQ, OIL, and MSX-CRM. Designed for non-interactive copilot CLI execution."
+description: "Automated morning prep — populates today's daily note and creates meeting prep skeletons using WorkIQ, OIL, and msx. Designed for non-interactive copilot CLI execution."
 ---
 
 # Morning Prep — {{TODAY}}
@@ -8,9 +8,12 @@ You are running the user's automated morning prep routine. Today is **{{TODAY}}*
 
 Your job: populate today's daily note and create pre-filled meeting prep notes for each meeting on today's calendar. Use all available MCP tools.
 
-## Step 1: Get today's meetings from WorkIQ
+## Step 1: Get today's meetings via m365-actions
 
-Use the WorkIQ MCP tools to retrieve today's calendar events (meetings, calls). For each event, extract:
+Delegate to the `m365-actions` subagent to retrieve today's calendar events:
+> "Use ListCalendarView to get today's meetings and calls. For each event, return: meeting title, start time, attendees (names and emails), and any meeting body/description text."
+
+For each event, extract:
 - Meeting title
 - Start time
 - Attendees (names and emails)
@@ -22,7 +25,7 @@ For each meeting:
 1. **Match attendees/title to vault entities** — use OIL tools (`search_vault`, `get_customer_context`) to identify which Customer and Project each meeting relates to.
 2. If a customer or project can't be identified, note it as "Unlinked" so Jin can triage manually.
 
-## Step 3: Pull MSX-CRM context for linked meetings
+## Step 3: Pull msx context for linked meetings
 
 For each meeting that maps to a known customer:
 1. Use `list_opportunities({ customerKeyword: "<customer>", format: "full", includeDealTeam: true })` to get active opportunities with stage/estimated close/deal-team context.
@@ -69,7 +72,7 @@ date: {{TODAY}}
 
 ## MSX Alerts
 
-{Any milestones due this week, blocked items, or opportunities needing attention — pulled from MSX-CRM}
+{Any milestones due this week, blocked items, or opportunities needing attention — pulled from msx}
 
 ## Notes
 

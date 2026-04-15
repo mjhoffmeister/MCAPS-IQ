@@ -1,31 +1,22 @@
 #!/usr/bin/env node
 
 /**
- * MSX CRM MCP Server launcher.
+ * MSX CRM MCP Server launcher (package mode).
  *
- * Loads environment variables from the repo-root .env file (if present),
- * ensures PATH includes common tool locations (homebrew, conda, etc.)
- * so `az` CLI is discoverable, then starts the MSX CRM server.
- *
- * This wrapper ensures a consistent startup path for both
- * VS Code MCP hosting and Copilot CLI (`copilot` / `mcaps`).
- *
- * Priority order for MSX_CRM_URL / MSX_TENANT_ID:
- *   1. Already set in process environment (e.g. shell profile)
- *   2. Defined in <repo-root>/.env
- *   3. Defaults baked into mcp/msx/src/index.js
+ * Starts the published MSX MCP server package via npx so this repo no
+ * longer depends on a local mcp/msx source checkout.
  */
 
+import { spawnSync, execSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
-import { resolve, delimiter } from "node:path";
-import { homedir, platform } from "node:os";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const isWin = platform() === "win32";
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const envFile = resolve(ROOT, ".env");
 
-// ── Load .env (simple key=value, no dependency on dotenv) ──────────
-if (existsSync(envFile)) {
+function loadEnv() {
+  if (!existsSync(envFile)) return;
   const lines = readFileSync(envFile, "utf-8").split("\n");
   for (const raw of lines) {
     const line = raw.trim();
@@ -34,50 +25,50 @@ if (existsSync(envFile)) {
     if (eq === -1) continue;
     const key = line.slice(0, eq).trim();
     const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-    // Don't override values already in the environment
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
+    if (!process.env[key]) process.env[key] = value;
   }
 }
 
-// ── Ensure PATH includes common tool locations ─────────────────────
-// VS Code spawns MCP servers with a minimal PATH that may not include
-// homebrew, conda, or other locations where `az` CLI lives.
-const home = homedir();
-const extraDirs = isWin
-  ? [
-      resolve(process.env.ProgramFiles || "C:\\Program Files", "Microsoft SDKs", "Azure", "CLI2", "wbin"),
-      resolve(home, "AppData", "Local", "Programs", "Azure CLI"),
-      resolve(home, "miniconda3", "Scripts"),
-      resolve(home, "anaconda3", "Scripts"),
-    ]
-  : [
-      `${home}/miniconda3/bin`,
-      `${home}/anaconda3/bin`,
-      "/opt/homebrew/bin",
-      "/usr/local/bin",
-    ];
-
-const existing = extraDirs.filter((d) => existsSync(d));
-if (existing.length) {
-  const current = process.env.PATH || "";
-  const parts = current.split(delimiter);
-  const missing = existing.filter((d) => !parts.includes(d));
-  if (missing.length) {
-    process.env.PATH = [...missing, current].join(delimiter);
+function preflightAzAuth() {
+  try {
+    execSync("az account show", {
+      stdio: ["ignore", "ignore", "ignore"],
+      timeout: 10_000,
+    });
+  } catch {
+    process.stderr.write("[msx] Azure CLI is not authenticated. Run: az login\n");
   }
 }
 
-// ── Start MSX CRM server ──────────────────────────────────────────
-try {
-  await import("../mcp/msx/dist/index.js");
-} catch (err) {
-  console.error("MSX CRM MCP server failed to start:", err.message || err);
-  console.error("");
-  console.error("Troubleshooting:");
-  console.error("  1. Run 'node scripts/init.js' to install dependencies.");
-  console.error("  2. Run 'cd mcp/msx && npm run build' to compile TypeScript.");
-  console.error("  3. Run 'az login' to authenticate with Azure CLI.");
+loadEnv();
+preflightAzAuth();
+
+const isWin = process.platform === "win32";
+const npx = isWin ? "npx.cmd" : "npx";
+const passthrough = process.argv.slice(2);
+
+const result = spawnSync(
+  npx,
+  [
+    "-y",
+    "--@microsoft:registry=https://npm.pkg.github.com",
+    "@microsoft/msx-mcp-server@latest",
+    ...passthrough,
+  ],
+  {
+    cwd: ROOT,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      npm_config_loglevel: process.env.npm_config_loglevel || "error",
+    },
+    shell: false,
+  },
+);
+
+if (result.error) {
+  process.stderr.write(`[msx] Failed to start package: ${result.error.message}\n`);
   process.exit(1);
 }
+
+process.exit(result.status ?? 1);

@@ -1,6 +1,6 @@
 ---
 name: risk-surfacing
-description: 'Deal-risk radar: synthesizes field data, vault notes, and calendar signals to flag relationship decay, silent stakeholders, and looming threats. Proactive early-warning system, not a document compiler. Chains with pipeline-hygiene-triage and handoff-readiness-validation for weekly pipeline review; chains with mcem-stage-identification and exit-criteria-validation for full deal triage. Triggers: deal risk, risk radar, threat flag, warning signal, silent stakeholder, relationship decay, early warning, flag risks, what risks.'
+description: 'Deal-risk radar: synthesizes field data, vault notes, and calendar signals to flag relationship decay, silent stakeholders, and looming threats. Proactive early-warning system, not a document compiler. Chains with pipeline-hygiene-triage and handoff-readiness-validation for weekly pipeline review; chains with mcem-diagnostics for full deal triage. Triggers: deal risk, risk radar, threat flag, warning signal, silent stakeholder, relationship decay, early warning, flag risks, what risks.'
 argument-hint: 'Provide opportunityId or accountId to scope the risk scan'
 ---
 
@@ -20,7 +20,7 @@ Synthesizes signals from CRM, M365 (WorkIQ), and vault to surface execution, rel
 
 ## Flow
 
-1. **CRM signals** — Call `msx-crm:crm_get_record` on opportunity + `msx-crm:get_milestones({ opportunityId, statusFilter: 'active', format: 'triage', includeTasks: true })` for milestone state pre-classified by urgency with inline tasks.
+1. **CRM signals** — Call `msx:crm_get_record` on opportunity + `msx:get_milestones({ opportunityId, statusFilter: 'active', format: 'triage', includeTasks: true })` for milestone state pre-classified by urgency with inline tasks.
 2. **M365 signals** — Call `ask_work_iq` with scoped query (apply WorkIQ scoping skill) for communication recency, engagement frequency, and sentiment.
 3. **Vault signals** — If vault is available, call `oil:get_vault_context()` for customer notes, prior risk flags, and relationship history.
 4. Classify risks by type and severity (see taxonomy below).

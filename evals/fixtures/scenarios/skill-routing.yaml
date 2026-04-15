@@ -47,17 +47,14 @@ scenarios:
   - id: route-chain-governance
     utterance: "prep me for the Contoso governance meeting"
     expected_skills:
-      - mcem-stage-identification
+      - mcem-diagnostics
       - milestone-health-review
-      - customer-evidence-pack
 
   - id: route-chain-deal-triage
     utterance: "full triage on the Contoso Azure deal"
     expected_skills:
-      - mcem-stage-identification
-      - exit-criteria-validation
+      - mcem-diagnostics
       - risk-surfacing
-      - role-orchestration
 
   # ── Risk surfacing ──────────────────────────────────────────
   - id: route-risk-surfacing
@@ -68,7 +65,7 @@ scenarios:
   # ── Task hygiene ────────────────────────────────────────────
   - id: route-task-hygiene
     utterance: "check my CRM task records for stale entries"
-    expected_skill: task-hygiene-flow
+    expected_skill: se-execution-check
     negative_skills: [milestone-health-review]
 
   # ── Vault context ──────────────────────────────────────────
@@ -79,7 +76,7 @@ scenarios:
   # ── Exit criteria ──────────────────────────────────────────
   - id: route-exit-criteria
     utterance: "are we ready to advance this deal to the next stage?"
-    expected_skill: exit-criteria-validation
+    expected_skill: mcem-diagnostics
 
   # ── Negative: off-topic ────────────────────────────────────
   - id: route-negative-off-topic

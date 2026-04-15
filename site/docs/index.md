@@ -1,151 +1,130 @@
 ---
 title: MCAPS IQ — AI-Powered Sales Operations
 description: Talk to Copilot in plain English to manage your MSX pipeline — no coding required.
-tags:
-  - home
-  - overview
 hide:
   - toc
+  - tags
+  - navigation
 ---
 
 <div class="hero" markdown>
 
-![MCAPS IQ](assets/avatar.png){ width="180" }
+![MCAPS IQ](assets/avatar.png){ width="160" }
 
 # MCAPS IQ
 
 **Talk to Copilot in plain English to manage your MSX pipeline.**{ .tagline }
 
-[:octicons-rocket-16: Get Started in 5 Minutes](getting-started/index.md){ .md-button .md-button--primary }
+[:octicons-rocket-16: Get Started in 15 minutes](getting-started/index.md){ .md-button .md-button--primary }
 [:octicons-book-16: Guided Experience](guided/index.md){ .md-button }
 
 </div>
 
----
+<div class="value-pillars" markdown>
 
-## What Is This?
+<div class="value-pillar" markdown>
+<div class="vp-icon">⏱️</div>
+<div markdown>
 
-MCAPS IQ connects **GitHub Copilot** (in VS Code) to your **MSX CRM** and **Microsoft 365** data. Instead of clicking through MSX screens, you describe what you need in the Copilot chat window and the tools handle it.
+### Save Time
 
-!!! tip "No coding required"
-    The primary interface is the Copilot chat window — you type in plain English and Copilot does the rest. The code in this repo powers the tools behind the scenes.
+Eliminate MSX screen-hopping. Pipeline, milestones, tasks, and meeting prep — all in one chat window.
 
-<div class="grid cards" markdown>
+</div>
+</div>
 
--   :material-database-search:{ .lg .middle } __Read Your Pipeline__
+<div class="value-pillar" markdown>
+<div class="vp-icon">⚡</div>
+<div markdown>
 
-    ---
+### Stay Sharp
 
-    Look up opportunities, milestones, tasks, and ownership — all from the chat window.
+AI surfaces risks, stale deals, and missed follow-ups before you even ask. Proactive, not reactive.
 
--   :material-pencil-box-outline:{ .lg .middle } __Update CRM Records__
+</div>
+</div>
 
-    ---
+<div class="value-pillar" markdown>
+<div class="vp-icon">👥</div>
+<div markdown>
 
-    Create tasks, close milestones, update statuses. Always asks before writing.
+### Work Together
 
--   :material-email-search:{ .lg .middle } __Search M365__
+Cross-role context flows automatically — handoffs, coverage gaps, and relationship health are visible across the team.
 
-    ---
-
-    Find Teams chats, meeting transcripts, emails, and documents with natural language.
-
--   :material-account-cog:{ .lg .middle } __Role-Aware Guidance__
-
-    ---
-
-    Knows your MCAPS role (Specialist, SE, CSA, CSAM) and tailors guidance accordingly.
+</div>
+</div>
 
 </div>
 
----
-
-## How It Works
-
-```
-You (Copilot Chat)
-  │
-  ├── asks about CRM data  ──→ msx-crm MCP server ──→ MSX Dynamics 365
-  ├── asks about M365 data ──→ workiq MCP server   ──→ Teams / Outlook / SharePoint
-  └── asks about notes     ──→ OIL (optional)      ──→ Your Obsidian Vault
-```
-
-1. You type a question or action in Copilot chat
-2. Copilot reads the role skills and instruction files to understand how to behave
-3. It routes your request to the right MCP server
-4. For reads, it returns results directly
-5. For writes, it shows a diff and waits for your approval
-
-![How It Works](assets/how-it-works-flat.png)
-
----
-
-## Your First 3 Prompts
-
-Once you're set up, open Copilot chat (++cmd+shift+i++) and try:
-
-| Prompt | What happens |
-|--------|-------------|
-| `Who am I in MSX?` | Identifies your CRM role and account team |
-| `Show me my active opportunities.` | Lists your pipeline with stage and health |
-| `It's Monday — run my weekly pipeline review.` | Hygiene sweep + prioritized action list |
-
-[:octicons-arrow-right-16: See all prompts by role](prompts/by-role.md){ .md-button }
-
----
-
-## Pick Your Role
-
-<div class="grid cards" markdown>
-
--   :material-chart-line:{ .lg .middle } __Specialist__
-
-    ---
-
-    Pipeline creation, deal qualification, Stage 2–3 progression
-
-    [:octicons-arrow-right-16: Specialist prompts](prompts/by-role.md#specialist)
-
--   :material-wrench:{ .lg .middle } __Solution Engineer__
-
-    ---
-
-    Technical proofs, task hygiene, architecture reviews
-
-    [:octicons-arrow-right-16: SE prompts](prompts/by-role.md#solution-engineer)
-
--   :material-vector-polygon:{ .lg .middle } __Cloud Solution Architect__
-
-    ---
-
-    Execution readiness, architecture handoff, delivery ownership
-
-    [:octicons-arrow-right-16: CSA prompts](prompts/by-role.md#cloud-solution-architect)
-
--   :material-shield-check:{ .lg .middle } __CSAM__
-
-    ---
-
-    Milestone health, adoption tracking, commit gates, value realization
-
-    [:octicons-arrow-right-16: CSAM prompts](prompts/by-role.md#csam)
-
+<div style="text-align:center" markdown>
+<span class="trust-badge">🛡️ Read-only by default · Always asks before writing · Every output is a draft for your judgment</span>
 </div>
 
----
+<div class="stat-strip" markdown>
+<div class="stat"><span class="num">52</span><span class="label">Skills</span></div>
+<div class="stat"><span class="num">28</span><span class="label">Slash Prompts</span></div>
+<div class="stat"><span class="num">5</span><span class="label">Agents</span></div>
+<div class="stat"><span class="num">8</span><span class="label">MCAPS Roles</span></div>
+<div class="stat"><span class="num">9</span><span class="label">MCP Servers</span></div>
+</div>
 
-## Safety First
+<div class="diagram-embed">
+<div class="diagram-embed-label">How It All Fits Together</div>
+<div class="diagram-frame-wrapper" id="diagram-wrapper">
+<iframe src="assets/overview-diagram.html" loading="lazy" title="MCAPS IQ Overview Diagram"></iframe>
+</div>
+<p class="diagram-hint">Scroll to explore · or open full size ↓</p>
+<div class="diagram-actions">
+<a href="assets/overview-diagram.html" target="_blank" class="md-button md-button--primary">↗️ View Full Size</a>
+<a href="getting-started/" class="md-button">Get Started</a>
+<a href="prompts/by-role/" class="md-button">Browse Prompts by Role</a>
+</div>
+</div>
 
-!!! warning "Agentic AI can make mistakes"
-    This toolkit uses AI models that may produce incorrect, incomplete, or misleading outputs. **You are responsible for reviewing and validating every action before it takes effect.**
+<script>
+(function() {
+  function fitDiagram() {
+    var w = document.getElementById('diagram-wrapper');
+    var f = w && w.querySelector('iframe');
+    if (!w || !f) return;
+    var z = w.clientWidth / 1680;
+    f.style.zoom = z;
+  }
+  window.addEventListener('load', fitDiagram);
+  window.addEventListener('resize', fitDiagram);
+  setTimeout(fitDiagram, 300);
+  if (typeof document$ !== 'undefined') document$.subscribe(function(){ setTimeout(fitDiagram, 200); });
+})();
+</script>
 
-All CRM write operations use a **Stage → Review → Execute** pattern:
+<div class="diagram-embed">
+<div class="diagram-embed-label">How It Works — Architecture</div>
+<div class="diagram-frame-wrapper" id="arch-diagram-wrapper">
+<iframe src="assets/architecture-diagram.html" loading="lazy" title="MCAPS IQ Architecture Diagram"></iframe>
+</div>
+<p class="diagram-hint">Scroll to explore · or open full size ↓</p>
+<div class="diagram-actions">
+<a href="assets/architecture-diagram.html" target="_blank" class="md-button">↗️ View Architecture Full Size</a>
+<a href="architecture/" class="md-button">Deep Dive: How It Works</a>
+</div>
+</div>
 
-1. **Stage** — your change is validated locally. Nothing is written to CRM yet.
-2. **Review** — Copilot shows a before/after diff and asks for approval.
-3. **Execute** — only after you approve does the change go through.
-
-[:octicons-shield-check-16: Learn about write safety](architecture/safety.md){ .md-button }
+<script>
+(function() {
+  function fitArchDiagram() {
+    var w = document.getElementById('arch-diagram-wrapper');
+    var f = w && w.querySelector('iframe');
+    if (!w || !f) return;
+    var z = w.clientWidth / 1680;
+    f.style.zoom = z;
+  }
+  window.addEventListener('load', fitArchDiagram);
+  window.addEventListener('resize', fitArchDiagram);
+  setTimeout(fitArchDiagram, 300);
+  if (typeof document$ !== 'undefined') document$.subscribe(function(){ setTimeout(fitArchDiagram, 200); });
+})();
+</script>
 
 ---
 

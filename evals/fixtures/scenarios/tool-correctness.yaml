@@ -10,20 +10,20 @@ scenarios:
       role: CSAM
       customer: Contoso
     expected_calls:
-      - tool: "msx-crm:crm_auth_status"
+      - tool: "msx:crm_auth_status"
         order: 1
       - tool: "oil:get_customer_context"
         params_contains:
           customer: "Contoso"
         order: 2
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_milestones"
         params_contains:
           customerKeyword: "Contoso"
           statusFilter: "active"
           includeTasks: true
         order: 3
     forbidden_calls:
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_milestones"
         params: {}
 
   - id: morning-brief-parallel
@@ -35,11 +35,11 @@ scenarios:
     expected_calls:
       - tool: "oil:get_vault_context"
         phase: 1
-      - tool: "msx-crm:crm_auth_status"
+      - tool: "msx:crm_auth_status"
         phase: 1
-      - tool: "msx-crm:get_my_active_opportunities"
+      - tool: "msx:get_my_active_opportunities"
         phase: 2
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_milestones"
         phase: 2
         params_contains:
           statusFilter: "active"
@@ -62,21 +62,21 @@ scenarios:
       mediums: [crm]
       role: Specialist
     expected_calls:
-      - tool: "msx-crm:crm_auth_status"
+      - tool: "msx:crm_auth_status"
         order: 1
-      - tool: "msx-crm:get_my_active_opportunities"
+      - tool: "msx:get_my_active_opportunities"
         order: 2
 
   - id: task-hygiene-scoped
-    skill: task-hygiene-flow
+    skill: se-execution-check
     fixture: pipelineHealth
     context:
       mediums: [crm]
       role: SE
     expected_calls:
-      - tool: "msx-crm:crm_auth_status"
+      - tool: "msx:crm_auth_status"
         order: 1
-      - tool: "msx-crm:get_milestones"
+      - tool: "msx:get_milestones"
         params_contains:
           includeTasks: true
         order: 2

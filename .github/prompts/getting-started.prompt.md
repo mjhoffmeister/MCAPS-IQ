@@ -25,5 +25,7 @@ Be encouraging and brief. This is my first time — don't overwhelm me with ever
 
 Say: *"Nice — you're set up. Here are the slash commands you'll use most:"* and list:
 - `/daily` — your role-specific morning routine
-- `/weekly` — weekly review and governance prep
+- `/weekly` — weekly review (auto-detects Monday governance prep vs Friday digest)
 - `/what-next` — not sure what to do? I'll check your pipeline and suggest actions
+- `/account-review` — multi-signal health check on any account (GHCP seats, engagement, pipeline)
+- `/meeting` — prep before or process notes after any meeting

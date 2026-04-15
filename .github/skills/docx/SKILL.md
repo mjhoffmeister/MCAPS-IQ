@@ -6,78 +6,101 @@ argument-hint: 'Provide file path and operation: read, create, or modify'
 
 # DOCX Creation, Editing, and Analysis
 
-## Python Environment — MANDATORY
+## Setup
 
-**All Python scripts in this skill MUST run inside a virtual environment. No exceptions.**
-
-```powershell
-# Create venv (once per session, skip if .venv already exists)
-python -m venv .venv
-
-# Activate (Windows PowerShell)
-.venv\Scripts\Activate.ps1
-
-# Activate (bash/macOS)
-source .venv/bin/activate
-
-# Install dependencies INSIDE venv only
-pip install pypdf pdfplumber  # only if needed for PDF conversion steps
+```bash
+npm install docx          # create new documents
+npm install mammoth       # read / extract text and HTML
+npm install docxtemplater pizzip  # fill {placeholder} templates
+npm install adm-zip       # unpack/repack for raw XML edits
 ```
 
-**Rules:**
-- NEVER run `pip install` globally — always activate `.venv` first
-- Check if `.venv` exists before creating: `Test-Path .venv`
-- All `python scripts/...` commands assume the venv is active
-- Clean up `.venv` when the session is done if it was created for this task
+Install only the packages needed for the requested operation. No Python or virtual environment required.
 
-**Temp file cleanup — MANDATORY:**
-- All temp scripts MUST use `.tmp_` prefix (e.g., `.tmp_convert_docx.py`)
-- After the task completes, delete ALL `.tmp_*` files autonomously — never leave them behind, never ask the user
-- `Remove-Item` is deny-listed in auto-approval mode. Use Python instead:
-  ```
-  .venv\Scripts\python.exe -c "import os,glob; [os.remove(f) for f in glob.glob('.tmp_*')]"
-  ```
-- If no `.venv` exists, use system `python -c "..."`
+### ESM Module Resolution (Critical)
+
+This repo uses `"type": "module"`. When generating a `.mjs` script that imports `docx`:
+
+- **Always write the script into the project root** (where `node_modules/` lives), not `/tmp/` or any external directory. Node's ESM resolver searches relative to the script's location, NOT the CWD.
+- **Use ESM `import` syntax**, not `require()`.
+- **Clean up the script after generation** — `rm ./gen-doc.mjs` after running.
+
+```bash
+# ✅ CORRECT — write script to project root, run from there, clean up
+cat > ./gen-doc.mjs << 'EOF'
+import { Document, Packer, Paragraph, TextRun } from "docx";
+import { writeFileSync } from "fs";
+// ... generation code ...
+EOF
+node ./gen-doc.mjs "/path/to/output.docx"
+rm ./gen-doc.mjs
+
+# ❌ WRONG — script in /tmp can't find node_modules
+cat > /tmp/gen-doc.mjs << 'EOF'
+import { Document } from "docx";  // ERR_MODULE_NOT_FOUND
+EOF
+node /tmp/gen-doc.mjs
+```
+
 ---
 
 ## Overview
 
 A .docx file is a ZIP archive containing XML files.
 
-**Output directory**: Save generated `.docx` files to `.copilot/docs/` (see `shared-patterns.instructions.md` § Artifact Output Directory). Create the directory before writing.
+### Output Directory
+
+Save generated `.docx` files to the vault `MCAPS-IQ-Artifacts/` folder when OIL is available, otherwise fall back to `.copilot/docs/` (see `shared-patterns` skill § Artifact Output Directory). Create the target directory before writing.
+
+### Vault Filesystem Path Discovery
+
+The vault is a local folder. To find its filesystem path for writing binary files:
+
+```bash
+# Find the vault root by locating the .obsidian config directory
+find /Users/$USER -maxdepth 4 -name ".obsidian" -type d 2>/dev/null | head -5
+# Vault root is the parent of .obsidian/
+
+# Or locate a known vault file (e.g., MCAPS-IQ-Artifacts folder)
+find /Users/$USER/Documents -maxdepth 5 -name "MCAPS-IQ-Artifacts" -type d -path "*/Obsidian/*" 2>/dev/null
+```
+
+Cache the path in a variable for the rest of the script. Use `mkdir -p` on the target directory before writing.
 
 ## Quick Reference
 
 | Task | Approach |
 |------|----------|
-| Read/analyze content | `pandoc` or unpack for raw XML |
-| Create new document | Use `docx` npm package — see Creating New Documents |
-| Edit existing document | Unpack → edit XML → repack — see Editing Existing Documents |
+| Read/analyze content | `mammoth` — extractRawText or convertToHtml |
+| Create new document | `docx` npm package — see Creating New Documents |
+| Fill template placeholders | `docxtemplater` + `pizzip` |
+| Edit existing document XML | `adm-zip` unpack → edit XML → repack |
 
 ### Converting .doc to .docx
 
 Legacy `.doc` files must be converted before editing:
 
 ```bash
-python scripts/office/soffice.py --headless --convert-to docx document.doc
+soffice --headless --convert-to docx document.doc
 ```
-
-> **Note:** `scripts/` paths are relative to this skill folder (`.github/skills/docx/`).
 
 ### Reading Content
 
-```bash
-# Text extraction with tracked changes
-pandoc --track-changes=all document.docx -o output.md
+```javascript
+import mammoth from 'mammoth';
 
-# Raw XML access
-python scripts/office/unpack.py document.docx unpacked/
+// Plain text extraction (strips all formatting)
+const { value: text } = await mammoth.extractRawText({ path: 'document.docx' });
+
+// HTML extraction (preserves headings, lists, tables, bold/italic)
+const { value: html } = await mammoth.convertToHtml({ path: 'document.docx' });
+// Check result.messages for conversion warnings
 ```
 
 ### Converting to Images
 
 ```bash
-python scripts/office/soffice.py --headless --convert-to pdf document.docx
+soffice --headless --convert-to pdf document.docx
 pdftoppm -jpeg -r 150 document.pdf page
 ```
 
@@ -86,15 +109,15 @@ pdftoppm -jpeg -r 150 document.pdf page
 To produce a clean document with all tracked changes accepted (requires LibreOffice):
 
 ```bash
-python scripts/accept_changes.py input.docx output.docx
+soffice --headless --accept-all-tracked-changes document.docx
 ```
 
 ### OOXML Reference Lookup
 
-If you need to look up OOXML schema details during complex XML editing, use the `microsoft_docs_search` MCP tool:
+If you need to look up OOXML schema details during complex XML editing, use `web_search` or `web_fetch`:
 
 ```
-microsoft_docs_search("Office Open XML word processing document structure")
+web_search("Office Open XML word processing document structure site:learn.microsoft.com")
 ```
 
 ---
@@ -103,22 +126,34 @@ microsoft_docs_search("Office Open XML word processing document structure")
 
 Generate .docx files with JavaScript using the `docx` npm package, then validate.
 
-### Setup
+### Imports
 ```javascript
-const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
-        Header, Footer, AlignmentType, PageOrientation, LevelFormat, ExternalHyperlink,
-        TableOfContents, HeadingLevel, BorderStyle, WidthType, ShadingType,
-        VerticalAlign, PageNumber, PageBreak } = require('docx');
+// ESM imports (required — this repo uses "type": "module")
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, ImageRun,
+         Header, Footer, AlignmentType, PageOrientation, LevelFormat, ExternalHyperlink,
+         TableOfContents, HeadingLevel, BorderStyle, WidthType, ShadingType,
+         VerticalAlign, PageNumber, PageBreak } from "docx";
+import { writeFileSync, mkdirSync } from "fs";
 
 const doc = new Document({ sections: [{ children: [/* content */] }] });
-Packer.toBuffer(doc).then(buffer => fs.writeFileSync("doc.docx", buffer));
+const buffer = await Packer.toBuffer(doc);
+writeFileSync("output.docx", buffer);
 ```
 
 ### Validation
-After creating the file, validate it. If validation fails, unpack, fix the XML, and repack.
+After creating the file, verify it's a valid docx:
+
 ```bash
-python scripts/office/validate.py doc.docx
+# Quick validation — confirms valid ZIP with expected OOXML structure
+python3 -c "
+import zipfile
+z = zipfile.ZipFile('output.docx')
+assert 'word/document.xml' in z.namelist(), 'Missing document.xml'
+print(f'Valid docx, {len(z.namelist())} entries')
+"
 ```
+
+If the file fails to open in Word, unpack with `adm-zip`, inspect `word/document.xml` for malformed XML, then repack.
 
 ### Page Size
 
@@ -158,20 +193,26 @@ size: {
 
 ### Styles (Override Built-in Headings)
 
-Use Arial as the default font (universally supported). Keep titles black for readability.
+Use **Aptos** (modern Microsoft default, Word 2024+) or **Arial** (universally supported fallback). Keep titles black or use a single accent color for readability.
 
 ```javascript
+const FONT = "Aptos";  // or "Arial" for maximum compatibility
+const ACCENT = "1F4E79"; // dark blue — professional, readable
+
 const doc = new Document({
   styles: {
-    default: { document: { run: { font: "Arial", size: 24 } } }, // 12pt default
+    default: { document: { run: { font: FONT, size: 22 } } }, // 11pt default
     paragraphStyles: [
       // IMPORTANT: Use exact IDs to override built-in styles
       { id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true,
-        run: { size: 32, bold: true, font: "Arial" },
-        paragraph: { spacing: { before: 240, after: 240 }, outlineLevel: 0 } },
+        run: { size: 32, bold: true, font: FONT, color: ACCENT },
+        paragraph: { spacing: { before: 300, after: 160 }, outlineLevel: 0 } },
       { id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true,
-        run: { size: 28, bold: true, font: "Arial" },
-        paragraph: { spacing: { before: 180, after: 180 }, outlineLevel: 1 } },
+        run: { size: 26, bold: true, font: FONT, color: ACCENT },
+        paragraph: { spacing: { before: 240, after: 140 }, outlineLevel: 1 } },
+      { id: "Heading3", name: "Heading 3", basedOn: "Normal", next: "Normal", quickFormat: true,
+        run: { size: 23, bold: true, font: FONT, color: ACCENT },
+        paragraph: { spacing: { before: 200, after: 120 }, outlineLevel: 2 } },
     ]
   },
   sections: [{
@@ -293,6 +334,89 @@ sections: [{
 }]
 ```
 
+### Hyperlinks
+
+```javascript
+import { ExternalHyperlink } from "docx";
+
+new Paragraph({
+  children: [
+    new TextRun("Visit "),
+    new ExternalHyperlink({
+      link: "https://example.com",
+      children: [new TextRun({ text: "Example Site", style: "Hyperlink", font: FONT, size: 22 })]
+    }),
+    new TextRun(" for details.")
+  ]
+})
+```
+
+### Helper Functions (Recommended)
+
+For any document longer than a few paragraphs, define reusable helpers to reduce boilerplate:
+
+```javascript
+const FONT = "Aptos";
+const ACCENT = "1F4E79";
+const BORDER = { style: BorderStyle.SINGLE, size: 1, color: "B0B0B0" };
+const BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
+
+// Paragraph with inline TextRuns
+function p(children, opts = {}) {
+  const runs = typeof children === "string"
+    ? [new TextRun({ text: children, font: FONT, size: opts.size || 22 })]
+    : children;
+  return new Paragraph({
+    spacing: { after: opts.after ?? 120, before: opts.before ?? 0, line: 276 },
+    alignment: opts.alignment, heading: opts.heading, numbering: opts.numbering,
+    children: runs,
+  });
+}
+
+function bold(text, size) { return new TextRun({ text, bold: true, font: FONT, size: size || 22 }); }
+function run(text, size) { return new TextRun({ text, font: FONT, size: size || 22 }); }
+function italic(text, size) { return new TextRun({ text, italics: true, font: FONT, size: size || 22 }); }
+
+function heading(text, level = HeadingLevel.HEADING_1) {
+  const sizes = { [HeadingLevel.HEADING_1]: 32, [HeadingLevel.HEADING_2]: 26, [HeadingLevel.HEADING_3]: 23 };
+  return new Paragraph({ heading: level, spacing: { before: 300, after: 160 },
+    children: [new TextRun({ text, font: FONT, bold: true, size: sizes[level] || 26, color: ACCENT })]
+  });
+}
+
+function bullet(children, level = 0) {
+  return new Paragraph({
+    numbering: { reference: "bullets", level },
+    spacing: { after: 80, line: 276 },
+    children: typeof children === "string" ? [run(children)] : children,
+  });
+}
+
+function headerCell(text, width) {
+  return new TableCell({
+    borders: BORDERS, margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    width: { size: width, type: WidthType.DXA },
+    shading: { fill: ACCENT, type: ShadingType.CLEAR },
+    children: [new Paragraph({ children: [new TextRun({ text, font: FONT, size: 20, bold: true, color: "FFFFFF" })] })]
+  });
+}
+
+function cell(text, width) {
+  return new TableCell({
+    borders: BORDERS, margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    width: { size: width, type: WidthType.DXA },
+    children: [new Paragraph({ children: [new TextRun({ text, font: FONT, size: 20 })] })]
+  });
+}
+
+// Usage:
+// p([bold("Important: "), run("this is a mixed-format paragraph")])
+// bullet([bold("Item title"), run(" — item description")])
+// heading("Section Title", HeadingLevel.HEADING_2)
+```
+
+These helpers cut the script size by ~60% and prevent common mistakes (missing font, wrong size, forgetting spacing).
+
 ### Critical Rules for docx-js
 
 - **Set page size explicitly** — defaults to A4; use US Letter (12240 x 15840 DXA) for US documents
@@ -315,18 +439,25 @@ sections: [{
 **Follow all 3 steps in order.**
 
 ### Step 1: Unpack
-```bash
-python scripts/office/unpack.py document.docx unpacked/
+
+```javascript
+import AdmZip from 'adm-zip';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+
+const zip = new AdmZip('document.docx');
+const outDir = 'unpacked';
+zip.extractAllTo(outDir, true);
+// Edit files in unpacked/word/ (see XML Reference below)
 ```
-Extracts XML, pretty-prints, merges adjacent runs, and converts smart quotes to XML entities. Use `--merge-runs false` to skip run merging.
 
 ### Step 2: Edit XML
 
 Edit files in `unpacked/word/`. See XML Reference below for patterns.
 
-**Use "Claude" as the author** for tracked changes and comments, unless the user explicitly requests a different name.
+**Use "Copilot" as the author** for tracked changes and comments, unless the user explicitly requests a different name.
 
-**Use the Edit tool directly for string replacement. Do not write Python scripts.** The Edit tool shows exactly what is being replaced.
+**Use the Edit tool directly for string replacement.** The Edit tool shows exactly what is being replaced.
 
 **CRITICAL: Use smart quotes for new content:**
 ```xml
@@ -339,23 +470,32 @@ Edit files in `unpacked/word/`. See XML Reference below for patterns.
 | `&#x201C;` | " (left double) |
 | `&#x201D;` | " (right double) |
 
-**Adding comments:** Use `comment.py` to handle boilerplate:
-```bash
-python scripts/comment.py unpacked/ 0 "Comment text with &amp; and &#x2019;"
-python scripts/comment.py unpacked/ 1 "Reply text" --parent 0
-python scripts/comment.py unpacked/ 0 "Text" --author "Custom Author"
-```
-Then add markers to document.xml (see Comments in XML Reference).
+**Adding comments:** Manually append the comment entry to `unpacked/word/comments.xml` (create the file if absent), then add markers to `document.xml` (see Comments in XML Reference). A minimal `comments.xml`:
 
-### Step 3: Pack
-```bash
-python scripts/office/pack.py unpacked/ output.docx --original document.docx
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:comment w:id="0" w:author="Copilot" w:date="2025-01-01T00:00:00Z">
+    <w:p><w:r><w:t>Comment text here</w:t></w:r></w:p>
+  </w:comment>
+</w:comments>
 ```
-Validates with auto-repair, condenses XML, and creates DOCX. Use `--validate false` to skip.
 
-**Auto-repair will fix:**
-- `durableId` >= 0x7FFFFFFF (regenerates valid ID)
-- Missing `xml:space="preserve"` on `<w:t>` with whitespace
+Register the part in `[Content_Types].xml` and `word/_rels/document.xml.rels` if not already present.
+
+### Step 3: Repack
+
+```javascript
+import AdmZip from 'adm-zip';
+
+const zip = new AdmZip();
+zip.addLocalFolder('unpacked');
+zip.writeZip('output.docx');
+```
+
+**Manual repairs to check:**
+- `xml:space="preserve"` on `<w:t>` elements with leading/trailing whitespace
+- `w:rsid` attributes must be 8-digit hex (e.g., `00AB1234`)
 
 ### Common Pitfalls
 
@@ -376,14 +516,14 @@ Validates with auto-repair, condenses XML, and creates DOCX. Use `--validate fal
 
 **Insertion:**
 ```xml
-<w:ins w:id="1" w:author="Claude" w:date="2025-01-01T00:00:00Z">
+<w:ins w:id="1" w:author="Copilot" w:date="2025-01-01T00:00:00Z">
   <w:r><w:t>inserted text</w:t></w:r>
 </w:ins>
 ```
 
 **Deletion:**
 ```xml
-<w:del w:id="2" w:author="Claude" w:date="2025-01-01T00:00:00Z">
+<w:del w:id="2" w:author="Copilot" w:date="2025-01-01T00:00:00Z">
   <w:r><w:delText>deleted text</w:delText></w:r>
 </w:del>
 ```
@@ -393,10 +533,10 @@ Inside `<w:del>`: Use `<w:delText>` instead of `<w:t>`, and `<w:delInstrText>` i
 **Minimal edits** — only mark what changes:
 ```xml
 <w:r><w:t>The term is </w:t></w:r>
-<w:del w:id="1" w:author="Claude" w:date="...">
+<w:del w:id="1" w:author="Copilot" w:date="...">
   <w:r><w:delText>30</w:delText></w:r>
 </w:del>
-<w:ins w:id="2" w:author="Claude" w:date="...">
+<w:ins w:id="2" w:author="Copilot" w:date="...">
   <w:r><w:t>60</w:t></w:r>
 </w:ins>
 <w:r><w:t> days.</w:t></w:r>
@@ -407,10 +547,10 @@ Inside `<w:del>`: Use `<w:delText>` instead of `<w:t>`, and `<w:delInstrText>` i
 <w:p>
   <w:pPr>
     <w:rPr>
-      <w:del w:id="1" w:author="Claude" w:date="2025-01-01T00:00:00Z"/>
+      <w:del w:id="1" w:author="Copilot" w:date="2025-01-01T00:00:00Z"/>
     </w:rPr>
   </w:pPr>
-  <w:del w:id="2" w:author="Claude" w:date="2025-01-01T00:00:00Z">
+  <w:del w:id="2" w:author="Copilot" w:date="2025-01-01T00:00:00Z">
     <w:r><w:delText>Entire paragraph content...</w:delText></w:r>
   </w:del>
 </w:p>
@@ -419,7 +559,7 @@ Inside `<w:del>`: Use `<w:delText>` instead of `<w:t>`, and `<w:delInstrText>` i
 **Rejecting another author's insertion:**
 ```xml
 <w:ins w:author="Jane" w:id="5">
-  <w:del w:author="Claude" w:id="10">
+  <w:del w:author="Copilot" w:id="10">
     <w:r><w:delText>their inserted text</w:delText></w:r>
   </w:del>
 </w:ins>
@@ -430,14 +570,14 @@ Inside `<w:del>`: Use `<w:delText>` instead of `<w:t>`, and `<w:delInstrText>` i
 <w:del w:author="Jane" w:id="5">
   <w:r><w:delText>deleted text</w:delText></w:r>
 </w:del>
-<w:ins w:author="Claude" w:id="10">
+<w:ins w:author="Copilot" w:id="10">
   <w:r><w:t>deleted text</w:t></w:r>
 </w:ins>
 ```
 
 ### Comments
 
-After running `comment.py`, add markers to document.xml.
+After inserting the comment entry in `comments.xml` (see Step 2 above), add markers to `document.xml`.
 
 **CRITICAL: `<w:commentRangeStart>` and `<w:commentRangeEnd>` are siblings of `<w:r>`, never inside `<w:r>`.**
 
@@ -461,7 +601,9 @@ EMU units: 914400 = 1 inch.
 
 ## Dependencies
 
-- **pandoc**: Text extraction
-- **docx**: `npm install docx` (new documents via Node.js)
-- **LibreOffice**: PDF conversion, tracked-changes acceptance (auto-configured via `scripts/office/soffice.py`)
-- **Poppler**: `pdftoppm` for image conversion
+- **docx**: `npm install docx` — new documents
+- **mammoth**: `npm install mammoth` — read/extract existing documents
+- **docxtemplater** + **pizzip**: `npm install docxtemplater pizzip` — template filling
+- **adm-zip**: `npm install adm-zip` — unpack/repack for raw XML edits
+- **LibreOffice** (optional, system install): `soffice` CLI for .doc→.docx conversion and tracked-changes acceptance
+- **Poppler** (optional, system install): `pdftoppm` for image conversion from PDF

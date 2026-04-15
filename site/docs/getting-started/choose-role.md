@@ -4,15 +4,17 @@ description: Tell Copilot your MCAPS role so it tailors its behavior to your wor
 tags:
   - getting-started
   - roles
+hide:
+  - toc
 ---
 
 # Choose Your Role
 
-<div class="step-indicator" markdown>
-<span class="step done">1. Prerequisites ✓</span>
-<span class="step done">2. Install ✓</span>
-<span class="step done">3. First Chat ✓</span>
-<span class="step active">4. Choose Role</span>
+<div class="timeline-nav">
+<a href="../" class="tl-step done"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Getting Started</div></a>
+<a href="../start-servers/" class="tl-step done"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Verify Installation</div></a>
+<a href="../first-chat/" class="tl-step done"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">First Chat</div></a>
+<a href="./" class="tl-step active"><div class="tl-node"><span class="tl-num">4</span></div><div class="tl-label">Choose Role</div></a>
 </div>
 
 Copilot automatically detects your role from CRM, but you can also tell it explicitly. This takes 30 seconds and dramatically improves the relevance of its guidance.
@@ -45,7 +47,29 @@ I'm a Specialist. What should I focus on today?
 
 <div class="grid cards" markdown>
 
--   :material-chart-line:{ .lg .middle } __Specialist (STU)__
+-   :material-briefcase-outline:{ .lg .middle } __[Account Executive (AE)](../prompts/by-role.md#account-executive)__
+
+    ---
+
+    **Customer relationship owner & strategic orchestrator**
+
+    - Account planning & MACC execution
+    - Pipeline generation & commercial excellence
+    - Cross-team account leadership
+    - Executive sponsor engagement
+
+-   :material-factory:{ .lg .middle } __[Industry Advisor (IA)](../prompts/by-role.md#industry-advisor)__
+
+    ---
+
+    **Industry-focused opportunity creator & pipeline accelerator**
+
+    - Industry use case specialization
+    - Proactive Stage 1 pipeline creation
+    - Industry partner sales & co-innovation
+    - Multi-account ROTH expansion
+
+-   :material-chart-line:{ .lg .middle } __[Specialist (STU)](../prompts/by-role.md#specialist)__
 
     ---
 
@@ -56,29 +80,29 @@ I'm a Specialist. What should I focus on today?
     - Stage 2–3 progression
     - STU-to-CSU handoff checklists
 
--   :material-wrench:{ .lg .middle } __Solution Engineer (SE)__
+-   :material-wrench:{ .lg .middle } __[Solution Engineer (SE)](../prompts/by-role.md#solution-engineer)__
 
     ---
 
-    **Technical proof executor**
+    **Technical proof executor & HoK driver**
 
-    - POC/Pilot/Demo management
+    - POC/Pilot/Demo/HoK management
     - Task-record hygiene
     - BANT qualification support
     - SE-to-CSU handoff
 
--   :material-vector-polygon:{ .lg .middle } __Cloud Solution Architect (CSA)__
+-   :material-vector-polygon:{ .lg .middle } __[Cloud Solution Architect (CSA)](../prompts/by-role.md#cloud-solution-architect)__
 
     ---
 
-    **Architecture-focused execution owner**
+    **Architecture & execution owner**
 
     - Technical proof oversight
     - Guardrail enforcement
     - Value-realization validation
     - Architecture handoff documents
 
--   :material-shield-check:{ .lg .middle } __CSAM__
+-   :material-shield-check:{ .lg .middle } __[CSAM](../prompts/by-role.md#csam)__
 
     ---
 
@@ -88,6 +112,28 @@ I'm a Specialist. What should I focus on today?
     - Success-plan alignment
     - Adoption tracking
     - Commit-readiness gates
+
+-   :material-compass-outline:{ .lg .middle } __[Account Technology Strategist (ATS)](../prompts/by-role.md#account-technology-strategist)__
+
+    ---
+
+    **AI & Security strategy leader**
+
+    - Customer technology relationship management
+    - AI and Security strategy alignment
+    - Technical team orchestration
+    - Consumption growth through technology adoption
+
+-   :material-account-tie:{ .lg .middle } __[ATU Sales Director](../prompts/by-role.md#atu-sales-director)__
+
+    ---
+
+    **Sales leader & coaching orchestrator**
+
+    - Pipeline governance & coverage
+    - MACC budget execution
+    - Team coaching & people leadership
+    - Red Carpet compliance
 
 </div>
 

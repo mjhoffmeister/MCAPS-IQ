@@ -6,77 +6,94 @@ tags:
   - onboarding
 hide:
   - toc
+  - navigation
 ---
 
-# Guided Experience
+<div class="journey-hero" markdown>
 
-!!! abstract "From "Hello" to "How did I live without this?""
-    This guided experience walks you through progressively powerful scenarios. Each day builds on the last, taking you from basic CRM reads to full multi-skill orchestration chains that will fundamentally change how you work.
+## :material-school: Guided Experience
 
----
-
-## The Journey
-
-<div class="timeline" markdown>
-
-<div class="event" markdown>
-
-### Day 1: Hello MCAPS IQ
-**Goal:** Verify your setup works and understand what you're talking to.
-
-You'll ask basic identity and read questions. By the end, you'll know Copilot can see your CRM data and respond to natural language.
-
-**Time:** 10 minutes · **Skills used:** 0 (just raw MCP tools)
-
-[:octicons-arrow-right-16: Start Day 1](day-1-hello.md){ .md-button }
+From "Hello" to "How did I live without this?" — four sessions that progressively unlock everything.
 
 </div>
 
-<div class="event" markdown>
+<div class="timeline-nav tl-guided">
+<a href="day-1-hello/" class="tl-step"><div class="tl-node"><span class="tl-num">1</span></div><div class="tl-label">Day 1<br>Hello</div></a>
+<a href="day-2-pipeline/" class="tl-step"><div class="tl-node"><span class="tl-num">2</span></div><div class="tl-label">Day 2<br>Pipeline</div></a>
+<a href="day-3-chains/" class="tl-step"><div class="tl-node"><span class="tl-num">3</span></div><div class="tl-label">Day 3<br>Chains</div></a>
+<a href="day-5-lightbulb/" class="tl-step"><div class="tl-node"><span class="tl-num">5</span></div><div class="tl-label">Day 5<br>Lightbulb</div></a>
+</div>
 
-### Day 2: Read Your Pipeline
-**Goal:** Use Copilot to understand your current pipeline state.
+<div class="journey-map">
 
-You'll explore opportunities, milestones, and tasks. You'll see how Copilot automatically queries the right data and formats it for human consumption.
+<div class="journey-card" data-day="1">
+<div class="jc-day"><span class="jc-num">1</span>Day</div>
+<div class="jc-body">
+<h3><a href="day-1-hello/">Hello MCAPS IQ</a></h3>
+<p>Verify your setup works. Ask who you are, see your tools, read your first CRM record.</p>
+</div>
+<div class="jc-meta">
+<span class="jc-time">⏱️ 10 min</span>
+<span class="jc-badge beginner">Beginner</span>
+</div>
+</div>
 
-**Time:** 15 minutes · **Skills used:** 1–2
+<div class="journey-card" data-day="2">
+<div class="jc-day"><span class="jc-num">2</span>Day</div>
+<div class="jc-body">
+<h3><a href="day-2-pipeline/">Read Your Pipeline</a></h3>
+<p>Navigate from portfolio → opportunity → milestone → task. Get governance-ready status in one prompt.</p>
+</div>
+<div class="jc-meta">
+<span class="jc-time">⏱️ 15 min</span>
+<span class="jc-badge intermediate">Intermediate</span>
+</div>
+</div>
 
-[:octicons-arrow-right-16: Start Day 2](day-2-pipeline.md){ .md-button }
+<div class="journey-card" data-day="3">
+<div class="jc-day"><span class="jc-num">3</span>Day</div>
+<div class="jc-body">
+<h3><a href="day-3-chains/">Multi-Skill Chains</a></h3>
+<p>One prompt triggers 3–4 skills in sequence — pipeline hygiene, risk analysis, action prioritization.</p>
+</div>
+<div class="jc-meta">
+<span class="jc-time">⏱️ 15 min</span>
+<span class="jc-badge advanced">Advanced</span>
+</div>
+</div>
+
+<div class="journey-card" data-day="5">
+<div class="jc-day"><span class="jc-num">5</span>Day</div>
+<div class="jc-body">
+<h3><a href="day-5-lightbulb/">💡 The Lightbulb Moment</a></h3>
+<p>Cross-medium synthesis, strategic intelligence, and workflows that would take hours done manually.</p>
+</div>
+<div class="jc-meta">
+<span class="jc-time">⏱️ 20 min</span>
+<span class="jc-badge advanced">Advanced</span>
+</div>
+</div>
 
 </div>
 
-<div class="event" markdown>
+<div class="lightbulb-callout" markdown>
+<div class="lc-icon">ℹ️</div>
+<div class="lc-body" markdown>
 
-### Day 3: Multi-Skill Chains
-**Goal:** Experience the power of multi-tool orchestration.
+#### Why "Day 5" and not "Day 4"?
 
-You'll issue a single prompt that triggers 3–4 skills in sequence — pipeline review, risk analysis, and action prioritization — all in one shot.
-
-**Time:** 15 minutes · **Skills used:** 3–4 chained
-
-[:octicons-arrow-right-16: Start Day 3](day-3-chains.md){ .md-button }
+Day 4 is left open for you to practice on your own. The gap is intentional — the guided days give structure, but the real learning happens when you explore your own data with your own questions.
 
 </div>
-
-<div class="event" markdown>
-
-### Day 5: The Lightbulb Moment :material-lightbulb-on:
-**Goal:** See what agents can really do with natural language and quality data.
-
-Cross-medium synthesis, role orchestration, and strategic intelligence. This is where you stop thinking of Copilot as a chatbot and start thinking of it as a teammate.
-
-**Time:** 20 minutes · **Skills used:** 5+ across multiple mediums
-
-[:octicons-arrow-right-16: Start Day 5](day-5-lightbulb.md){ .md-button }
-
 </div>
 
+<div class="lightbulb-callout" markdown>
+<div class="lc-icon">⏩</div>
+<div class="lc-body" markdown>
+
+#### Already comfortable with Copilot?
+
+Jump straight to [Day 5: The Lightbulb Moment](day-5-lightbulb.md) for the most powerful scenarios — cross-medium intelligence, strategic deal triage, and expansion signal detection.
+
 </div>
-
----
-
-!!! tip "Skip ahead if you're comfortable"
-    Already familiar with Copilot and MCP? Jump straight to [Day 5: The Lightbulb Moment](day-5-lightbulb.md) for the most powerful scenarios.
-
-!!! info "Why "Day 5" and not "Day 4"?"
-    Days 4 is left open for you to practice on your own. The gap is intentional — the guided days give structure, but the real learning happens when you explore your own data with your own questions.
+</div>

@@ -5,6 +5,8 @@ tags:
   - customization
   - mcp
   - security
+hide:
+  - toc
 ---
 
 # Adding MCP Servers

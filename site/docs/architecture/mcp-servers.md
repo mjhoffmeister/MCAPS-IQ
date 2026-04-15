@@ -5,6 +5,8 @@ tags:
   - architecture
   - mcp
   - tools
+hide:
+  - toc
 ---
 
 # MCP Servers & Tools
@@ -17,7 +19,7 @@ MCP (Model Context Protocol) servers are the bridges between Copilot and your da
 
 | Server | Status | Purpose | # Tools |
 |--------|--------|---------|---------|
-| `msx-crm` | **Enabled** | MSX CRM operations | ~23 |
+| `msx` | **Enabled** | MSX CRM operations | ~23 |
 | `workiq` | **Enabled** | M365 evidence retrieval | 2 |
 | `powerbi-remote` | **Enabled** | Power BI analytics | 4 |
 | `oil` | Commented out | Obsidian vault integration | 22 |
@@ -108,7 +110,7 @@ See [Obsidian Integration](../integrations/obsidian.md) for the full 22-tool ref
 Servers are defined in `.vscode/mcp.json`. Each entry specifies:
 
 - **type** — `stdio` (local process) or `sse` (network)
-- **command** — what to run (e.g., `node mcp/msx/src/index.js`)
+- **command** — what to run (for example `npx` with a published MCP package)
 - **env** — environment variables (CRM URL, tenant ID, etc.)
 
 !!! warning "Security"

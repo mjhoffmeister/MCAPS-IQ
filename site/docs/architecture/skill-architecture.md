@@ -6,6 +6,8 @@ tags:
   - skills
   - mcem
   - restructure
+hide:
+  - toc
 ---
 
 # Skill Architecture
@@ -90,7 +92,7 @@ Write-intent operations are always **low freedom**.
 
 - `name`: ≤64 chars, lowercase + hyphens only, gerund or noun form
 - `argument-hint`: describes what the user should provide
-- MCP tool references use fully qualified names: `msx-crm:crm_query`, `oil:get_customer_context`
+- MCP tool references use fully qualified names: `msx:crm_query`, `oil:get_customer_context`
 
 ### P6. Consistent Terminology
 
@@ -192,14 +194,23 @@ The flow encodes these MCEM realities:
 
 ```mermaid
 graph LR
-    S1["Stage 1\nListen & Consult\n(ATU)"] --> S2["Stage 2\nInspire & Design\n(STU)"]
-    S2 --> S3["Stage 3\nEmpower & Achieve\n(STU)"]
-    S3 --> S4["Stage 4\nRealize Value\n(CSU)"]
-    S4 --> S5["Stage 5\nManage & Optimize\n(CSU)"]
+    S1["<b>Stage 1</b><br/>Listen & Consult<br/><small>ATU</small>"] --> S2["<b>Stage 2</b><br/>Inspire & Design<br/><small>STU</small>"]
+    S2 --> S3["<b>Stage 3</b><br/>Empower & Achieve<br/><small>STU</small>"]
+    S3 --> S4["<b>Stage 4</b><br/>Realize Value<br/><small>CSU</small>"]
+    S4 --> S5["<b>Stage 5</b><br/>Manage & Optimize<br/><small>CSU</small>"]
     
-    S3 -.->|proof gaps| S2
-    S4 -.->|scope gaps| S3
-    S5 -.->|expansion| S1
+    S3 -.->|"proof gaps"| S2
+    S4 -.->|"scope gaps"| S3
+    S5 -.->|"expansion"| S1
+
+    style S1 fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:2px
+    style S2 fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style S3 fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style S4 fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
+    style S5 fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
+
+    linkStyle 0,1,2,3 stroke:#9e9e9e,stroke-width:2.5px
+    linkStyle 4,5,6 stroke:#D13438,stroke-width:1.5px
 ```
 
 | Stage | Objective | Accountable | Key Skills |
@@ -336,7 +347,7 @@ Medium | Low (for write-intent)
 When this skill activates.
 
 ## Flow
-1. Step 1 — tool call with `msx-crm:tool_name`
+1. Step 1 — tool call with `msx:tool_name`
 2. Step 2 — evaluation logic
 3. Step 3 — output generation
 
@@ -354,13 +365,24 @@ Every stage-bound skill includes a `next_action` field in its output:
 
 ```mermaid
 graph LR
-    PQ["pipeline-qualification"] -->|"exit criteria met"| PPO["proof-plan-orchestration"]
-    PPO -->|"plays confirmed"| PHT["pipeline-hygiene-triage"]
-    PHT -->|"pipeline clean"| CGE["commit-gate-enforcement"]
-    CGE -->|"commit gate passed"| HRV["handoff-readiness-validation"]
-    HRV -->|"STU→CSU handoff"| DAM["delivery-accountability-mapping"]
+    PQ["<b>pipeline-qualification</b>"] -->|"exit criteria met"| PPO["<b>proof-plan-orchestration</b>"]
+    PPO -->|"plays confirmed"| PHT["<b>pipeline-hygiene-triage</b>"]
+    PHT -->|"pipeline clean"| CGE["<b>commit-gate-enforcement</b>"]
+    CGE -->|"commit gate passed"| HRV["<b>handoff-readiness-validation</b>"]
+    HRV -->|"STU→CSU handoff"| DAM["<b>delivery-accountability-mapping</b>"]
     
-    CGE -.->|"capacity gap"| AFC["architecture-feasibility-check"]
+    CGE -.->|"capacity gap"| AFC["<b>architecture-feasibility-check</b>"]
+
+    style PQ fill:#107C10,color:#fff,stroke:#0a5c0a,stroke-width:2px
+    style PPO fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style PHT fill:#0078D4,color:#fff,stroke:#005a9e,stroke-width:2px
+    style CGE fill:#FFB900,color:#1B1B1B,stroke:#e0a700,stroke-width:2px
+    style HRV fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
+    style DAM fill:#00B7C3,color:#fff,stroke:#008b94,stroke-width:2px
+    style AFC fill:#5C2D91,color:#fff,stroke:#462170,stroke-width:1.5px
+
+    linkStyle default stroke:#9e9e9e,stroke-width:2px
+    linkStyle 5 stroke:#D13438,stroke-width:1.5px
 ```
 
 **Rules:**

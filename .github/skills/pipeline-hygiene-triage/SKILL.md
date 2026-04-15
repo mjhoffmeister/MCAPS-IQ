@@ -20,10 +20,10 @@ Detects and prioritizes pipeline hygiene exceptions across active Stage 2–3 op
 
 ## Flow
 
-1. Call `msx-crm:get_my_active_opportunities({ maxResults: 100 })` — single call for active opportunities with bounded payload.
-2. Call `msx-crm:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, `format: 'summary'` — one call returns all milestones across opportunities. Add `includeTasks: true` if task state is needed.
+1. Call `msx:get_my_active_opportunities({ maxResults: 100 })` — single call for active opportunities with bounded payload.
+2. Call `msx:get_milestones` with `opportunityIds` (batch from step 1), `statusFilter: 'active'`, `format: 'summary'` — one call returns all milestones across opportunities. Add `includeTasks: true` if task state is needed.
 3. Score and rank exceptions by severity.
-4. Generate dry-run `msx-crm:update_milestone` and `msx-crm:update_task` payloads for top exceptions.
+4. Generate dry-run `msx:update_milestone` and `msx:update_task` payloads for top exceptions.
 
 ## Exception Detection Rules
 

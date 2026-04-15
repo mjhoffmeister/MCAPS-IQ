@@ -4,6 +4,8 @@ description: How MCAPS IQ connects Copilot to your enterprise data sources.
 tags:
   - architecture
   - overview
+hide:
+  - toc
 ---
 
 # System Overview
@@ -15,7 +17,7 @@ tags:
 ```
 You (Copilot Chat)
   │
-  ├── asks about CRM data  ──→ msx-crm MCP server ──→ MSX Dynamics 365
+  ├── asks about CRM data  ──→ msx MCP server ──→ MSX Dynamics 365
   ├── asks about M365 data ──→ workiq MCP server   ──→ Teams / Outlook / SharePoint
   ├── asks about notes     ──→ OIL (optional)      ──→ Your Obsidian Vault
   └── asks about analytics ──→ powerbi-remote       ──→ Power BI Semantic Models
@@ -33,20 +35,26 @@ You (Copilot Chat)
 
 ```mermaid
 sequenceDiagram
-    participant U as You
-    participant C as GitHub Copilot
-    participant I as .github/ Instructions
-    participant M as MCP Server
-    participant D as Data Source
+    participant U as 🧑‍💻 You
+    participant C as 🤖 GitHub Copilot
+    participant I as 📄 .github/ Instructions
+    participant M as 🔌 MCP Server
+    participant D as 🏢 Data Source
 
     U->>C: "Show my milestones"
+    activate C
     C->>I: Load matching skills & instructions
     I-->>C: milestone-health-review skill
     C->>M: get_milestones(mine: true)
+    activate M
     M->>D: OData query to Dynamics 365
+    activate D
     D-->>M: Milestone records
+    deactivate D
     M-->>C: Structured response
+    deactivate M
     C-->>U: Formatted milestone summary
+    deactivate C
 ```
 
 ---
@@ -62,8 +70,8 @@ sequenceDiagram
 | `.github/skills/` | 27 atomic domain skills (loaded on demand) | **Yes** — tailor to your operating model |
 | `.github/prompts/` | Reusable prompt templates (slash commands) | **Yes** — create workflows you repeat |
 | `.vscode/mcp.json` | MCP server definitions | **Yes** — add/remove data sources |
-| `mcp/msx/` | MSX CRM MCP server | Optional — works out of the box |
-| `mcp/oil/` | Obsidian Intelligence Layer | Optional — enables persistent vault memory |
+| `scripts/msx-start.js` | MSX CRM MCP launcher (published package via npx) | Optional — starts on demand |
+| `scripts/oil-start.js` | OIL MCP launcher (published package via npx) | Optional — enables persistent vault memory |
 | `docs/` | Architecture docs | Reference only |
 
 ---

@@ -15,6 +15,9 @@ on:
       - '.github/copilot-instructions.md'
       - '.github/eval/**'
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: .github/eval
@@ -49,6 +52,8 @@ jobs:
       # ── Tier 2: embedding-based gates (downloads model ~23MB) ──
       - name: Confusion matrix check
         run: node confusion-matrix.mjs --ci
+        env:
+          MAX_CONFUSION_PAIRS: 30  # role-card family creates intentional similarity clusters
 
       - name: Routing regression check
         if: github.event_name == 'pull_request'

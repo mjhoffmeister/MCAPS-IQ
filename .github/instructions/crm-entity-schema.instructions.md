@@ -37,6 +37,9 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 - `msp_activesalesstage`
 - `estimatedclosedate`
 - `msp_estcompletiondate`
+- `estimatedvalue` — total deal value; populated primarily on **licensing/seat deals** (M365, W365, Dynamics). Often `$0` on Azure consumption-only deals.
+- `msp_consumptionconsumedrecurring` — actual recurring consumption ACR; populated primarily on **Azure consumption deals**. Often `null` on licensing-only deals.
+- `description`
 - `_ownerid_value`
 - `_parentaccountid_value`
 - `statecode`
@@ -54,6 +57,9 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 - `msp_commitmentrecommendation`
 - `msp_milestoneworkload`
 - `msp_deliveryspecifiedfield`
+- `msp_monthlyuse`
+- `msp_forecastcomments` — latest forecast comment (plain text summary, most recent at top)
+- `msp_forecastcommentsjsonfield` — full comment history as JSON array with `userId`, `modifiedOn`, `comment` per entry
 - `msp_milestonepreferredazureregion`
 - `msp_milestoneazurecapacitytype` — **MultiSelectPicklist** (not a standard Picklist; metadata type is `MultiSelectPicklistAttributeMetadata`, options exposed via `GlobalOptionSet`)
 
@@ -80,7 +86,12 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 - `msp_dealteamid`
 - `_msp_dealteamuserid_value`
 - `_msp_parentopportunityid_value`
+- `msp_isowner`
 - `statecode`
+
+### `systemusers` (extended)
+
+- `title`
 
 ## High-Value Corrections
 
@@ -108,8 +119,11 @@ Use this file for safe, scoped CRM query construction. Keep queries small and ex
 ### Commitment (`msp_commitmentrecommendation`)
 
 - Uncommitted: `861980000`
+- ~~Best Case: `861980001`~~: **deprecated** — exists in historical records but API rejects writes with this value
+- Pipeline: `861980002`
 - Committed: `861980003`
-- ~~`861980001`~~: **invalid / deprecated** — API rejects this value
+
+> `msp_monthlyuse` = estimated **change** in monthly revenue (delta), not total/absolute. Commitment should only be set when there is confidence the delta will be attained. This is the **most reliable ACR indicator** — populated on milestones regardless of whether the parent opportunity is licensing or consumption. At the opportunity level, check both `estimatedvalue` (licensing deals) and `msp_consumptionconsumedrecurring` (consumption deals) since they split by deal type.
 
 ### Workload type (`msp_milestoneworkload`)
 

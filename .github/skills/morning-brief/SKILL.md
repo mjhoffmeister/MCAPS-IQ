@@ -35,7 +35,7 @@ Launch all three probes at once. These have no dependencies on each other.
 | Lane | Tool Call | Purpose |
 |---|---|---|
 | **Vault** | `oil:get_vault_context()` | Confirm vault online, get shape + scale |
-| **CRM** | `msx-crm:crm_auth_status` | Confirm CRM reachable |
+| **CRM** | `msx:crm_auth_status` | Confirm CRM reachable |
 | **WorkIQ** | `workiq:accept_eula` (if needed) | Confirm M365 queryable |
 
 Record which mediums are available. If a medium fails, mark it `unavailable` and continue.
@@ -47,7 +47,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 | Lane | Depends on | Tool Calls | What it produces |
 |---|---|---|---|
 | **A: Vault Context** | Vault available | `oil:get_customer_context({ customer })` per active customer (or `oil:query_notes({ query: "action items OR risk OR blocked", limit: 20 })` for unscoped) | Customer context, known opp GUIDs, open action items, risk flags, stale notes |
-| **B: CRM Pipeline** | CRM available | `msx-crm:get_my_active_opportunities({ maxResults: 75 })` → `msx-crm:get_milestones({ opportunityIds: [...], statusFilter: 'active', format: 'summary', includeTasks: true })` | Pipeline snapshot, milestone health, overdue tasks |
+| **B: CRM Pipeline** | CRM available | `msx:get_my_active_opportunities({ maxResults: 75 })` → `msx:get_milestones({ opportunityIds: [...], statusFilter: 'active', format: 'summary', includeTasks: true })` | Pipeline snapshot, milestone health, overdue tasks |
 | **C: Today's Calendar** | WorkIQ available | `workiq:ask_work_iq` — "What meetings do I have today? Include attendees, time, and any attached agendas or pre-reads." | Today's meeting schedule with context |
 | **D: Recent Signals** | WorkIQ available | `workiq:ask_work_iq` — "What emails or Teams messages in the last 24 hours were flagged, urgent, or mention [customer names from Lane A]?" | Urgent comms requiring morning attention |
 
@@ -77,6 +77,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 - Meeting today + associated opportunity has overdue tasks → promote to 🔴
 - Vault risk flag + no recent CRM activity → promote to 🟡 with "silent risk" label
 - CRM milestone committed + no recent customer communication → flag as communication gap
+- **SE role + HoK**: Opportunities with no HoK positioning → promote to 🟡 with "HoK not positioned" label. HoK tasks without legal coverage → promote to 🔴 with "legal gate missing" label. Cusp customers (uncertain next steps) → surface in Gaps & Risks with leadership escalation note.
 
 ## Output Schema
 
@@ -104,6 +105,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 - **At-risk milestones**: {count} — {names}
 - **Overdue tasks**: {count}
 - **Upcoming commits**: {milestones due <30 days}
+- **HoK status** (SE role): {active_hok_count} active | {positioned_count} positioned | {not_positioned_count} not yet positioned | {cusp_count} cusp customers
 
 ## Gaps & Risks
 - {risk}: {evidence} → {role to act} | {minimum intervention}
@@ -114,7 +116,7 @@ Launch all available lanes in parallel. Use vault data to focus CRM/WorkIQ queri
 - `meetings_today`: structured meeting list with prep context
 - `pipeline_snapshot`: summary counts and at-risk items
 - `gaps_and_risks`: proactive risk flags with evidence
-- `next_action`: "Morning brief complete. Drill into any item, or run `pipeline-hygiene-triage` for full portfolio cleanup."
+- `next_action`: "Morning brief complete. Drill into any item, or run `pipeline-hygiene-triage` for full portfolio cleanup." | SE role: "Morning brief complete. {cusp_count} cusp customers flagged — run `hok-readiness-check` for HoK portfolio review, or drill into any item."
 - `connect_hook_hint`: Impact Area(s): Culture & Collaboration — "Morning brief synthesized {n} items across {mediums_count} mediums — {act_now_count} requiring immediate action, {today_count} for today"
 
 ## Customization

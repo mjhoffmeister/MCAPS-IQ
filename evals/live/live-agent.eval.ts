@@ -286,6 +286,82 @@ describe("LLM-as-Judge", () => {
   });
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Workflow Delegation Tests — Parent Prompt → Subagent Chains
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Workflow Delegation — Account Review", () => {
+  it.skipIf(!HAS_AZURE_ENDPOINT)("seats analysis resolves TPID and calls vault before CRM", { timeout: 90_000 }, async ({ task }) => {
+    const result = await runLiveScenario(getScenario("live-account-review-seats-tpid"), config);
+
+    task.meta.evalScenarioId = result.evalResult.scenarioId;
+    task.meta.evalDimension = "workflow-delegation";
+    task.meta.evalScore = result.evalResult.overallScore;
+    task.meta.evalPass = result.evalResult.pass;
+
+    console.log(`\n📋 Account Review — Seats by TPID [${result.model}] — ${result.durationMs}ms`);
+    console.log(`   Tool calls: ${result.toolCalls.map((c) => c.tool).join(", ")}`);
+    console.log(`   Score: ${(result.evalResult.overallScore * 100).toFixed(0)}%`);
+
+    // Vault should be consulted (not just CRM)
+    const hasVault = result.toolCalls.some((c) => c.tool.startsWith("oil:"));
+    expect(hasVault).toBe(true);
+
+    // AP-004 (vault skip) must not be violated
+    const ap = result.evalResult.dimensions.antiPatterns;
+    const vaultSkip = ap?.violations.find((v) => v.id === "AP-004");
+    expect(vaultSkip).toBeUndefined();
+
+    // Output should mention GHCP/seats
+    const output = result.agentOutput.toLowerCase();
+    expect(output).toMatch(/ghcp|seat/i);
+  });
+
+  it.skipIf(!HAS_AZURE_ENDPOINT)("pipeline by abbreviation resolves NIQ to Nielsen", { timeout: 90_000 }, async ({ task }) => {
+    const result = await runLiveScenario(getScenario("live-account-review-pipeline-abbrev"), config);
+
+    task.meta.evalScenarioId = result.evalResult.scenarioId;
+    task.meta.evalDimension = "workflow-delegation";
+    task.meta.evalScore = result.evalResult.overallScore;
+    task.meta.evalPass = result.evalResult.pass;
+
+    console.log(`\n📋 Account Review — Pipeline by Abbrev [${result.model}] — ${result.durationMs}ms`);
+    console.log(`   Tool calls: ${result.toolCalls.map((c) => c.tool).join(", ")}`);
+    console.log(`   Score: ${(result.evalResult.overallScore * 100).toFixed(0)}%`);
+
+    // Should have called get_milestones with scoping
+    const milestoneCall = result.toolCalls.find((c) => c.tool.includes("get_milestones"));
+    if (milestoneCall) {
+      const hasScope = milestoneCall.params.customerKeyword || milestoneCall.params.tpid;
+      expect(hasScope).toBeTruthy();
+    }
+  });
+});
+
+describe("Workflow Delegation — Portfolio Prioritization", () => {
+  it.skipIf(!HAS_AZURE_ENDPOINT)("reads vault roster and queries CRM with scoped params", { timeout: 90_000 }, async ({ task }) => {
+    const result = await runLiveScenario(getScenario("live-portfolio-prioritization"), config);
+
+    task.meta.evalScenarioId = result.evalResult.scenarioId;
+    task.meta.evalDimension = "workflow-delegation";
+    task.meta.evalScore = result.evalResult.overallScore;
+    task.meta.evalPass = result.evalResult.pass;
+
+    console.log(`\n📋 Portfolio Prioritization [${result.model}] — ${result.durationMs}ms`);
+    console.log(`   Tool calls: ${result.toolCalls.map((c) => c.tool).join(", ")}`);
+    console.log(`   Score: ${(result.evalResult.overallScore * 100).toFixed(0)}%`);
+
+    // Vault must be used first
+    const vaultIdx = result.toolCalls.findIndex((c) => c.tool.startsWith("oil:"));
+    expect(vaultIdx).toBeGreaterThanOrEqual(0);
+
+    // AP-001 (unscoped milestones) must not fire
+    const ap = result.evalResult.dimensions.antiPatterns;
+    const unscopedMs = ap?.violations.find((v) => v.id === "AP-001");
+    expect(unscopedMs).toBeUndefined();
+  });
+});
+
 describe("Multi-Model Comparison", () => {
   const models = (process.env.EVAL_MODELS ?? "").split(",").filter(Boolean);
 

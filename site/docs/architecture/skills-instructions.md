@@ -5,6 +5,8 @@ tags:
   - architecture
   - skills
   - instructions
+hide:
+  - toc
 ---
 
 # Skills & Instructions
@@ -50,14 +52,14 @@ When you ask _"How are my milestones doing?"_, Copilot sees the keyword overlap 
 
 ## Role Cards (Tier 1)
 
-Role cards define each MCAPS role's identity, accountability, and boundaries:
+Role cards define each MCAPS role's identity, accountability, and boundaries. These live as skills in `.github/skills/` for portability across all Copilot surfaces:
 
 | Role Card | Who It's For |
 |-----------|-------------|
-| `role-card-specialist.instructions.md` | Pipeline creation, opportunity qualification |
-| `role-card-se.instructions.md` | Technical proof execution, task hygiene |
-| `role-card-csa.instructions.md` | Architecture oversight, delivery ownership |
-| `role-card-csam.instructions.md` | Customer success, adoption, governance |
+| `role-specialist/SKILL.md` | Pipeline creation, opportunity qualification |
+| `role-se/SKILL.md` | Technical proof execution, task hygiene |
+| `role-csa/SKILL.md` | Architecture oversight, delivery ownership |
+| `role-csam/SKILL.md` | Customer success, adoption, governance |
 
 ---
 

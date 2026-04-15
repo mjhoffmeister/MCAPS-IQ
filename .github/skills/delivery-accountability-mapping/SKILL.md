@@ -1,51 +1,54 @@
 ---
 name: delivery-accountability-mapping
-description: 'RACI mapper: answers "who runs point on hands-on work vs. who coordinates?" Classifies each work item into execution doer vs. orchestration coordinator and flags mislabeled delivery-PM assignments. Chains with commit-gate-enforcement and non-linear-progression for commit-or-loopback decision. Triggers: RACI, who delivers, accountability roster, delivery PM confusion, implementation vs coordination, who runs point, missing attribution. DO NOT USE FOR: unit-level routing (ATU/STU/CSU next-step assignment) — use role-orchestration.'
-argument-hint: 'Provide opportunityId and milestoneId(s) with unclear RACI'
+description: "Delivery accountability mapping: clarifies who owns execution vs orchestration for committed milestones in Stage 4. Maps delivery owners (Partner, ISD, Unified, internal) and flags when CSAM is treated as delivery owner without decision rights. Triggers: delivery owner, who owns execution, delivery accountability, execution vs orchestration, delivery mapping, CSAM delivery burden, partner delivery, ISD delivery."
 ---
 
-## Purpose
+# Delivery Accountability Mapping
 
-Clarifies delivery accountability on committed milestones by mapping execution ownership (Partner / ISD / Unified / CSA) versus CSAM orchestration responsibility, and flags mismatches.
+## Purpose
+Clarify **who owns execution vs orchestration** for committed milestones in Stage 4 (Realize Value). Prevents the common failure mode where CSAM is held accountable for delivery execution without having decision rights over the delivery resource.
 
 ## Freedom Level
-
-**Medium** — Accountability classification requires judgment; owner corrections are exact.
+**Medium** — Requires judgment on delivery ownership patterns.
 
 ## Trigger
+- Committed milestones entering delivery phase
+- CSAM flagged as delivery owner but actual execution is Partner/ISD/Unified
+- Blocked milestones where delivery accountability is unclear
+- Post-handoff from `handoff-readiness-validation` (STU→CSU transition)
+- `milestone-health-review` surfaces blocked milestones needing accountability clarity
 
-- CSAM is tagged as owner for delivery execution delays
-- User asks "who owns delivery?" or "accountability mapping"
-- Milestone has no explicit delivery attribution
+## Inputs
+- Opportunity ID or customer name
+- Committed milestones with current owner assignments
+- Delivery motion context (Partner-led, ISD, Unified, internal)
 
 ## Flow
 
-1. Call `msx-crm:get_milestones` with `opportunityId` — identify at-risk/blocked committed milestones.
-2. Call `msx-crm:crm_query` on `msp_engagementmilestones` to inspect owner, assignment, and delivery motion fields.
-3. Call `msx-crm:get_milestone_activities` for milestones lacking clear delivery-owner evidence (targeted only).
-4. Classify accountability per milestone (see model below).
-5. Generate dry-run `msx-crm:update_milestone` recommendations for owner/dependency corrections.
+1. **Retrieve committed milestones** — Query CRM for committed milestones on the target opportunity. Include owner, delivery type, and status.
+2. **Map accountability** — For each milestone, classify:
+   - **Execution Owner**: Who performs the delivery work (Partner, ISD, Unified, CSA, SE)
+   - **Orchestration Owner**: Who manages customer expectations and cadence (typically CSAM)
+   - **Decision Authority**: Who can change scope, timeline, or approach
+   - **Escalation Path**: Where blockers go when execution stalls
+3. **Flag mismatches** — Identify milestones where:
+   - CSAM is listed as owner but has no execution authority
+   - Execution owner is unnamed or generic ("TBD", "Partner")
+   - Decision authority is ambiguous between roles
+   - Delivery motion (Partner/ISD/Unified) is not reflected in CRM fields
+4. **Recommend fixes** — For each mismatch, propose specific owner reassignment or CRM field update.
 
-## Accountability Model
+## Output Format
 
-| Role | Responsibility |
-|---|---|
-| **CSAM** | Outcome orchestration, customer expectation management, risk escalation |
-| **CSA** | Technical feasibility, architecture guardrails, execution integrity |
-| **Partner/ISD/Unified** | Day-to-day delivery execution |
-| **Specialist** | Pipeline integrity (Stages 2-3 only) |
+| Milestone | Execution Owner | Orchestration Owner | Decision Authority | Status | Issue |
+|---|---|---|---|---|---|
+| _name_ | _who delivers_ | _who orchestrates_ | _who decides_ | _match/mismatch_ | _description if mismatch_ |
 
-## Decision Logic
+## Boundary Rules
+- CSAM owns orchestration and customer expectation management, NOT day-to-day delivery execution.
+- If CSAM is the listed milestone owner but a Partner/ISD is executing, flag for reassignment — the delivery resource should be the milestone owner.
+- CSA owns technical decision authority; CSAM communicates customer-facing implications.
+- Specialist owns opportunity field updates; redirect if stage/revenue changes are needed.
 
-- **Accountability mismatch**: CSAM listed as milestone owner but delivery motion indicates Partner/ISD/Unified → flag for reassignment
-- **Missing attribution**: No delivery owner explicitly named → flag as execution risk
-- **Correct alignment**: CSAM owns orchestration with explicit delivery owner → no action
-- **Escalation needed**: Delivery owner exists but is not responding/executing → route escalation to delivery org
-
-## Output Schema
-
-- `accountability_map`: per-milestone mapping of orchestration vs execution ownership
-- `mismatches`: milestones where CSAM is incorrectly treated as delivery owner
-- `missing_attribution`: milestones with no explicit delivery owner
-- `recommended_owner_corrections`: dry-run update payloads
-- `next_action`: "Accountability mapped. Would you like to run `milestone-health-review` for the flagged milestones?"
+## Chain Outputs
+- `next_action`: "Accountability mapped. Run `execution-monitoring` (CSA) for architecture guardrail checks on flagged milestones, or `milestone-health-review` (CSAM) for status updates."

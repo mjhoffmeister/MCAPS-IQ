@@ -516,7 +516,7 @@ async function captureCrm(flags) {
   let conn;
   try {
     conn = await connectMcpServer(
-      "msx-crm",
+      "msx",
       "node",
       [join(ROOT, "scripts", "msx-start.js")],
     );
@@ -621,7 +621,7 @@ async function captureOil(flags) {
     );
   } catch (err) {
     console.error("❌ Failed to connect to OIL server:", err.message);
-    console.error("   Check OBSIDIAN_VAULT_PATH in .env and `cd mcp/oil && npm install`.");
+    console.error("   Check OBSIDIAN_VAULT_PATH in .env and npm access to @jinlee794/obsidian-intelligence-layer.");
     return results;
   }
 

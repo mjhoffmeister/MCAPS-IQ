@@ -3,6 +3,8 @@ title: Customization
 description: Fork and tailor MCAPS IQ for your team's workflows.
 tags:
   - customization
+hide:
+  - toc
 ---
 
 # Customization

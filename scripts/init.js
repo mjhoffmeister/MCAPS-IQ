@@ -4,53 +4,45 @@
  * Cross-platform environment initializer for mcaps-iq.
  *
  * Usage:
- *   node scripts/init.js          # install + build all MCP servers
- *   node scripts/init.js --check  # verify environment without installing
+ *   node scripts/init.js          # optional local tooling setup + environment bootstrap
+ *   node scripts/init.js --check  # verify runtime prerequisites and local tooling status
  *
  * Exit codes:
  *   0 — success
  *   1 — one or more steps failed
  */
 
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
+import { ensureGithubPackagesAuth } from "./github-packages-auth.js";
+import { persistVaultToShellProfile } from "./setup-vault-env.js";
+import { scaffoldVault, syncSidekick } from "./setup-vault.js";
 
 // ── repo root (scripts/ lives one level below) ──────────────────────
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 
-// ── MCP server definitions ──────────────────────────────────────────
-// Each entry describes an MCP sub-project and the commands needed to
-// initialise it.  Add new entries here as new servers appear.
-const SERVERS = [
+// ── Package-based MCP server definitions ────────────────────────────
+// These servers are launched on-demand from npm via npx and do not
+// require local source checkout in this repo.
+const PACKAGE_SERVERS = [
   {
-    name: "msx-crm",
-    dir: join(ROOT, "mcp", "msx"),
-    install: "npm install",
-    build: "npm run build",
-    verify: "dist/index.js",
+    name: "msx",
+    package: "@microsoft/msx-mcp-server@latest",
   },
   {
     name: "oil (Obsidian Intelligence Layer)",
-    dir: join(ROOT, "mcp", "oil"),
-    install: "npm install",
-    build: "npm run build",
-    verify: "dist/index.js",
-  },
-  {
-    name: "excalidraw",
-    dir: join(ROOT, "mcp", "excalidraw"),
-    install: "npm install",
-    build: null, // plain JS — no build step
-    verify: "src/index.js",
+    package: "@jinlee794/obsidian-intelligence-layer@latest",
+    note: "Requires OBSIDIAN_VAULT_PATH to use vault tools.",
   },
 ];
 
 // ── prerequisite checks ─────────────────────────────────────────────
 const PREREQS = [
+  { cmd: "git --version", label: "Git" },
   { cmd: "node --version", label: "Node.js", minMajor: 18 },
   { cmd: "npm --version", label: "npm" },
 ];
@@ -129,77 +121,88 @@ function checkPrereqs() {
     warn("  Install: https://learn.microsoft.com/cli/azure/install-azure-cli");
   }
 
+  const ghVersion = tryRun("gh --version");
+  if (ghVersion) {
+    ok(`GitHub CLI ${ghVersion.split("\n")[0].replace("gh version ", "")}`);
+    const ghStatus = tryRun("gh auth status");
+    if (ghStatus && ghStatus.includes("read:packages")) {
+      ok("GitHub Packages auth available via GitHub CLI");
+    } else if (ghStatus) {
+      warn("GitHub CLI is signed in, but no account with read:packages was detected.");
+      warn("  Run: npm run auth:packages");
+    } else {
+      warn("GitHub CLI installed but not signed in.");
+      warn("  Run: npm run auth:packages");
+    }
+  } else {
+    console.log();
+    console.log("  \x1b[1m\x1b[31m╔══════════════════════════════════════════════════════════╗\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   GitHub CLI (gh) is NOT installed.                      ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   It is required for private MCP package auth.           ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   It will be installed automatically during setup,       ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║   or install manually:                                   ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[33m║     macOS:    brew install gh                            ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[33m║     Windows:  winget install --id GitHub.cli             ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[33m║     Linux:    https://github.com/cli/cli#installation    ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m║                                                          ║\x1b[0m");
+    console.log("  \x1b[1m\x1b[31m╚══════════════════════════════════════════════════════════╝\x1b[0m");
+    console.log();
+  }
+
   return passed;
 }
 
 // ── server initialization ───────────────────────────────────────────
 function initServers() {
-  let allOk = true;
-  for (const server of SERVERS) {
-    heading(`Initializing ${server.name}`);
-
-    if (!existsSync(server.dir)) {
-      fail(`Directory not found: ${server.dir}`);
-      allOk = false;
-      continue;
-    }
-
-    try {
-      console.log(`  → ${server.install}`);
-      run(server.install, server.dir);
-      ok("Dependencies installed");
-
-      if (server.build) {
-        console.log(`  → ${server.build}`);
-        run(server.build, server.dir);
-        ok("Build succeeded");
-      }
-
-      const artifact = join(server.dir, server.verify);
-      if (existsSync(artifact)) {
-        ok(`Entry point verified: ${server.verify}`);
-      } else {
-        warn(`Expected entry point not found: ${server.verify}`);
-      }
-    } catch (err) {
-      fail(`Failed — ${err.message}`);
-      allOk = false;
+  heading("Package-based MCP servers (npx)");
+  for (const server of PACKAGE_SERVERS) {
+    ok(`${server.name} — resolved at runtime via npx (${server.package})`);
+    if (server.note) {
+      console.log(`    ${server.note}`);
     }
   }
-  return allOk;
+  console.log("    Private GitHub Packages can be bootstrapped with: npm run auth:packages");
+
+  return true;
 }
 
 // ── check-only mode ─────────────────────────────────────────────────
 function checkOnly() {
   const prereqsOk = checkPrereqs();
 
-  heading("Checking MCP servers");
-  let serversOk = true;
-  for (const server of SERVERS) {
-    const nodeModules = join(server.dir, "node_modules");
-    const artifact = join(server.dir, server.verify);
-    const installed = existsSync(nodeModules);
-    const built = existsSync(artifact);
-
-    if (installed && built) {
-      ok(`${server.name} — ready`);
-    } else if (installed && !server.build) {
-      ok(`${server.name} — ready (no build step)`);
-    } else {
-      const missing = [];
-      if (!installed) missing.push("npm install");
-      if (server.build && !built) missing.push(server.build);
-      fail(`${server.name} — needs: ${missing.join(", ")}`);
-      serversOk = false;
+  heading("Checking package-based MCP servers");
+  for (const server of PACKAGE_SERVERS) {
+    ok(`${server.name} — configured for npx package launch (${server.package})`);
+    if (server.note) {
+      console.log(`    ${server.note}`);
     }
   }
+  console.log("    Private GitHub Packages bootstrap: npm run auth:packages");
 
-  if (prereqsOk && serversOk) {
-    heading("Environment is ready ✔");
+  // Check Agency CLI status
+  heading("Checking Agency CLI");
+  const agencyCheck = tryRun("agency --help");
+  if (agencyCheck) {
+    ok("Agency CLI is installed.");
   } else {
-    heading("Environment has issues — run `node scripts/init.js` to fix");
+    warn("Agency CLI is not installed.");
+    if (isWindows) {
+      warn('  Install: iex "& { $(irm aka.ms/InstallTool.ps1)} agency"');
+    } else {
+      warn("  Install: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency");
+    }
+    warn("  Details: https://aka.ms/agency");
   }
-  return prereqsOk && serversOk;
+
+  if (prereqsOk) {
+    heading("Runtime environment is ready ✔");
+  } else {
+    heading("Runtime prerequisites have issues — fix the errors above");
+  }
+  return prereqsOk;
 }
 
 // ── global alias registration ───────────────────────────────────────
@@ -236,17 +239,31 @@ function registerAlias() {
     } catch { /* best-effort */ }
   }
 
+  // Check if mcaps is already linked and working
+  const whichCmd = isWindows ? "where mcaps" : "which mcaps";
+  const existing = tryRun(whichCmd);
+
   try {
     // --ignore-scripts prevents recursive postinstall
-    run("npm link --ignore-scripts", ROOT);
+    // --force overwrites if already linked (avoids EEXIST on re-install)
+    // Use pipe stdio to suppress noisy npm force/warn output
+    execSync("npm link --ignore-scripts --force", {
+      cwd: ROOT,
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: isWindows ? true : "/bin/sh",
+    });
   } catch {
+    // If link failed but mcaps already exists and works, that's fine
+    if (existing) {
+      ok("'mcaps' is already registered globally — no changes needed.");
+      return true;
+    }
     warn("Could not register global alias automatically.");
     printAliasFallback();
     return false;
   }
 
   // Verify the command is actually reachable after linking
-  const whichCmd = isWindows ? "where mcaps" : "which mcaps";
   const found = tryRun(whichCmd);
 
   if (found) {
@@ -306,13 +323,18 @@ function ask(question) {
   return new Promise((resolve) => rl.question(question, (a) => { rl.close(); resolve(a.trim()); }));
 }
 
-async function configureEnv() {
+async function configureEnv({ force = false } = {}) {
   const envPath = join(ROOT, ".env");
   const existing = parseEnvFile(envPath);
 
-  if (existing.OBSIDIAN_VAULT_PATH) {
+  if (existing.OBSIDIAN_VAULT_PATH && !force) {
     ok(`Vault path already configured: ${existing.OBSIDIAN_VAULT_PATH}`);
     return;
+  }
+
+  if (existing.OBSIDIAN_VAULT_PATH && force) {
+    warn(`Current vault path: ${existing.OBSIDIAN_VAULT_PATH}`);
+    console.log("  Re-entering vault configuration.\n");
   }
 
   // Skip prompt in non-interactive environments (CI, piped stdin)
@@ -326,32 +348,136 @@ async function configureEnv() {
   console.log("  The OIL MCP server needs the path to your Obsidian vault.");
   console.log("  This is stored in .env (gitignored) — not committed.\n");
 
-  const vaultPath = await ask("  Obsidian vault path (or press Enter to skip): ");
+  let vaultPath = "";
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    vaultPath = await ask("  Obsidian vault path (or press Enter to skip): ");
 
-  if (!vaultPath) {
-    warn("Skipped — OIL server won't start without a vault path.");
-    warn("You can set it later:  echo 'OBSIDIAN_VAULT_PATH=/your/path' >> .env");
+    if (!vaultPath) {
+      warn("Skipped — OIL server won't start without a vault path.");
+      warn("You can set it later:  echo 'OBSIDIAN_VAULT_PATH=/your/path' >> .env");
+      warn("Or re-run:  npm run vault:env /your/path");
+      return;
+    }
+
+    if (existsSync(vaultPath)) break;
+
+    warn(`Path does not exist: ${vaultPath}`);
+    if (attempt < MAX_ATTEMPTS) {
+      console.log("  Please check the path and try again.\n");
+    } else {
+      warn("Saving anyway — make sure the vault is created before starting OIL.");
+    }
+  }
+
+  // Write to .env (replace existing value or append)
+  const envLine = `OBSIDIAN_VAULT_PATH=${vaultPath}`;
+  let content = existsSync(envPath) ? readFileSync(envPath, "utf-8") : "";
+  if (content.match(/^OBSIDIAN_VAULT_PATH\s*=/m)) {
+    content = content.replace(/^OBSIDIAN_VAULT_PATH\s*=.*$/m, envLine);
+  } else {
+    content = content + (content.length > 0 && !content.endsWith("\n") ? "\n" : "") + envLine + "\n";
+  }
+  writeFileSync(envPath, content, "utf-8");
+  ok(`Saved to .env: OBSIDIAN_VAULT_PATH=${vaultPath}`);
+
+  // Persist to shell profile so it's available system-wide
+  try {
+    const result = persistVaultToShellProfile(vaultPath);
+    if (result.updated) {
+      ok(`Exported OBSIDIAN_VAULT to ${result.shell} profile: ${result.profilePath}`);
+      console.log("    New terminals will have OBSIDIAN_VAULT and OBSIDIAN_VAULT_PATH set.");
+      console.log(`    Activate now:  source ${result.profilePath}`);
+    } else {
+      ok(`Shell profile already up to date (${result.profilePath})`);
+    }
+  } catch (err) {
+    warn(`Could not update shell profile: ${err.message}`);
+    warn("Set OBSIDIAN_VAULT manually in your shell profile for system-wide access.");
+  }
+}
+
+// ── Agency CLI installation ─────────────────────────────────────
+async function installAgencyCli() {
+  heading("Agency CLI");
+
+  // Check if agency is already installed
+  const agencyVersion = tryRun("agency --help");
+  if (agencyVersion) {
+    ok("Agency CLI is already installed.");
     return;
   }
 
-  if (!existsSync(vaultPath)) {
-    warn(`Path does not exist yet: ${vaultPath}`);
-    warn("Saving anyway — make sure the vault is created before starting OIL.");
+  warn("Agency CLI is not installed.");
+
+  // Skip prompt in non-interactive environments
+  if (!process.stdin.isTTY) {
+    warn("Non-interactive shell — skipping Agency CLI prompt.");
+    warn("Install manually: https://aka.ms/InstallTool.sh (macOS) or https://aka.ms/InstallTool.ps1 (Windows)");
+    warn("Details: https://aka.ms/agency");
+    return;
   }
 
-  // Append to .env (preserve any other vars)
-  const envLine = `OBSIDIAN_VAULT_PATH=${vaultPath}\n`;
-  const content = existsSync(envPath) ? readFileSync(envPath, "utf-8") : "";
-  writeFileSync(envPath, content + envLine, "utf-8");
-  ok(`Saved to .env: OBSIDIAN_VAULT_PATH=${vaultPath}`);
+  const answer = await ask("  Would you like to install Agency CLI? (yes/no): ");
+  if (answer.toLowerCase() !== "yes" && answer.toLowerCase() !== "y") {
+    warn("Skipped — you can install Agency CLI later.");
+    if (isWindows) {
+      warn('  Windows: iex "& { $(irm aka.ms/InstallTool.ps1)} agency"');
+    } else {
+      warn("  macOS/Linux: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency");
+    }
+    warn("  Details: https://aka.ms/agency");
+    return;
+  }
+
+  console.log("  Installing Agency CLI...\n");
+
+  try {
+    if (isWindows) {
+      // Use pwsh (PowerShell 7+) if available, fall back to powershell.exe
+      const psExe = tryRun("pwsh -v") ? "pwsh" : "powershell.exe";
+      const psScript = [
+        'iex "& { $(irm aka.ms/InstallTool.ps1)} agency"',
+        '$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")',
+      ].join("; ");
+      execFileSync(psExe, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", psScript], {
+        cwd: ROOT,
+        stdio: "inherit",
+      });
+    } else {
+      run("curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency && exec $SHELL -l", ROOT);
+    }
+
+    // Verify installation
+    const verifyResult = tryRun("agency --help");
+    if (verifyResult) {
+      ok("Agency CLI installed and verified successfully.");
+    } else {
+      warn("Agency CLI install completed, but 'agency --help' did not succeed.");
+      warn("You may need to restart your terminal or refresh your PATH.");
+    }
+  } catch (err) {
+    warn(`Agency CLI installation failed: ${err.message}`);
+    if (isWindows) {
+      warn('  Retry manually: iex "& { $(irm aka.ms/InstallTool.ps1)} agency"');
+    } else {
+      warn("  Retry manually: curl -sSfL https://aka.ms/InstallTool.sh | sh -s agency");
+    }
+    warn("  Details: https://aka.ms/agency");
+  }
 }
 
 // ── main ────────────────────────────────────────────────────────────
 const checkMode = process.argv.includes("--check");
+const reconfigureVault = process.argv.includes("--reconfigure-vault");
 
 if (checkMode) {
   const ok = checkOnly();
   process.exit(ok ? 0 : 1);
+} else if (reconfigureVault) {
+  heading("Reconfigure Obsidian Vault Path");
+  await configureEnv({ force: true });
+  process.exit(0);
 } else {
   const prereqsOk = checkPrereqs();
   if (!prereqsOk) {
@@ -387,9 +513,75 @@ if (checkMode) {
 
   const serversOk = initServers();
   if (serversOk) {
+    // ── GitHub Packages auth ────────────────────────────────────
+    heading("GitHub Packages authentication");
+    try {
+      await ensureGithubPackagesAuth();
+    } catch (err) {
+      warn(err.message);
+      warn("You can retry later with: npm run auth:packages");
+      warn("Or open Copilot Chat (Cmd+Shift+I) and ask: 'Help me debug my MCP package auth setup'");
+    }
+
+    // ── Agency CLI ────────────────────────────────────────────
+    await installAgencyCli();
+
     await configureEnv();
-    registerAlias();
+
+    // ── Vault scaffold + sidekick sync ──────────────────────────
+    const vaultDir =
+      process.env.OBSIDIAN_VAULT ||
+      process.env.OBSIDIAN_VAULT_PATH ||
+      parseEnvFile(join(ROOT, ".env")).OBSIDIAN_VAULT_PATH;
+
+    if (vaultDir && existsSync(vaultDir)) {
+      heading("Vault scaffold + sidekick sync");
+      try {
+        const { created } = scaffoldVault(vaultDir);
+        if (created.length > 0) {
+          ok(`Created ${created.length} vault folder(s).`);
+        } else {
+          ok("Vault folders already in place.");
+        }
+
+        const { copied } = syncSidekick(vaultDir);
+        if (copied.length > 0) {
+          ok(`Synced ${copied.length} file(s) to sidekick/.`);
+        } else {
+          ok("Sidekick already up to date.");
+        }
+      } catch (err) {
+        warn(`Vault setup failed: ${err.message}`);
+        warn("Run manually later: npm run vault:init");
+      }
+    } else if (vaultDir) {
+      warn(`Vault path set but does not exist: ${vaultDir}`);
+      warn("Create the vault in Obsidian, then run: npm run vault:init");
+    }
+
+    const aliasOk = registerAlias();
     heading("All done ✔");
+
+    // Prominent mcaps alias banner
+    if (aliasOk) {
+      console.log(`
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │   ★  The 'mcaps' command is now available globally.         │
+  │                                                             │
+  │   Open any terminal, from any directory, and type:          │
+  │                                                             │
+  │       mcaps                                                 │
+  │                                                             │
+  │   This launches Copilot CLI with all MCAPS IQ servers,      │
+  │   agents, and skills loaded — no need to cd into the repo.  │
+  │                                                             │
+  │   Requires: Copilot CLI (brew install copilot-cli)          │
+  │   Fallback: opens VS Code if Copilot CLI isn't installed.   │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+`);
+    }
 
     // Check if already signed in to provide the right next step
     const account = tryRun("az account show --query user.name -o tsv");
@@ -401,9 +593,7 @@ if (checkMode) {
     1. Open this repo in VS Code:  code .
     2. MCP servers auto-start via .vscode/mcp.json
     3. Open Copilot chat (Cmd+Shift+I) and try: "Who am I in MSX?"
-
-  Or from anywhere:  mcaps
-  (launches Copilot CLI in this repo)
+    4. Or just run 'mcaps' from any terminal!
 `);
     } else {
       console.log(`
@@ -413,9 +603,7 @@ if (checkMode) {
     3. Open this repo in VS Code:  code .
     4. MCP servers auto-start via .vscode/mcp.json
     5. Open Copilot chat (Cmd+Shift+I) and try: "Who am I in MSX?"
-
-  Or from anywhere:  mcaps
-  (launches Copilot CLI in this repo)
+    6. Or just run 'mcaps' from any terminal!
 `);
     }
   } else {

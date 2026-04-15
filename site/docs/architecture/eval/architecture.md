@@ -5,6 +5,8 @@ tags:
   - evaluation
   - architecture
   - testing
+hide:
+  - toc
 ---
 
 # Evaluation Framework — Architecture & Implementation Guide
@@ -179,7 +181,7 @@ When the LLM (or a hand-crafted test) makes a tool call, the harness routes it b
 
 | Tool Prefix | Mock Server | Fixture Source |
 |---|---|---|
-| `msx-crm:*` | `MockCrmServer` | `fixtures/crm-responses/` |
+| `msx:*` | `MockCrmServer` | `fixtures/crm-responses/` |
 | `oil:*` | `MockOilServer` | Inline vault context |
 | `workiq:*`, `calendar:*`, `mail:*` | `MockM365Server` | `fixtures/m365-responses/` |
 
@@ -192,9 +194,9 @@ sequenceDiagram
     participant M365 as MockM365Server
     participant Rec as ToolCallRecorder
 
-    Test->>Router: tool_call("msx-crm:crm_whoami", {})
+    Test->>Router: tool_call("msx:crm_whoami", {})
     Router->>CRM: handle("crm_whoami", {})
-    CRM->>Rec: record("msx-crm", "crm_whoami", {}, result)
+    CRM->>Rec: record("msx", "crm_whoami", {}, result)
     CRM-->>Router: whoami.json
     Router-->>Test: {"fullname": "Jin Lee", ...}
 
@@ -313,7 +315,7 @@ Located in `evals/fixtures/scenarios/` — 5 files, 34+ scenarios:
     role: CSAM
     customer: Contoso
   expected_calls:
-    - tool: msx-crm:get_milestones
+    - tool: msx:get_milestones
       paramsContains: { customerKeyword: "Contoso", statusFilter: "active" }
 ```
 
@@ -358,11 +360,11 @@ Checks three things against the recorded trace:
 2. **Parameters**: Do params match (exact or subset via `params_contain`)?
 3. **Ordering**: Are `after` constraints satisfied?
 
-Supports wildcards (`msx-crm:*`) for "any CRM tool was called" assertions.
+Supports wildcards (`msx:*`) for "any CRM tool was called" assertions.
 
 #### `anti-pattern.ts` — Anti-Pattern Detection
 
-Scans the trace for 10 known bad patterns with **severity-weighted scoring**. Each violation carries a different penalty (AP-005 write bypass = 0.5, AP-001 unscoped query = 0.3, AP-010 role assumption = 0.1, default = 0.2). AP-004 accepts scenario `context.mediums` to skip vault-skip checks on CRM-only scenarios. AP-003 uses param-aware scope grouping for N+1 detection:
+Scans the trace for 11 known bad patterns with **severity-weighted scoring**. Each violation carries a different penalty (AP-005 write bypass = 0.5, AP-001 unscoped query = 0.3, AP-011 missing statusFilter = 0.25, AP-010 role assumption = 0.1, default = 0.2). AP-004 accepts scenario `context.mediums` to skip vault-skip checks on CRM-only scenarios. AP-003 uses param-aware scope grouping for N+1 detection:
 
 ```mermaid
 flowchart LR
@@ -379,6 +381,7 @@ flowchart LR
         AP8["AP-008: Vault state as live truth\n(stub — deferred to LLM judge)"]
         AP9["AP-009: Unbounded WorkIQ\n(missing top: or limit)"]
         AP10["AP-010: Role assumed\n(no crm_whoami call)"]
+        AP11["AP-011: Missing statusFilter\n(scoped but returns all including completed)"]
     end
 
     AP --> Result["violations[] + pass/fail per AP"]
@@ -475,7 +478,7 @@ sequenceDiagram
     loop Agent Loop (max 10 turns)
         Azure-->>LiveHarness: response with tool_calls[]
         loop Each tool_call
-            LiveHarness->>Mocks: route by prefix (msx-crm:, oil:, etc.)
+            LiveHarness->>Mocks: route by prefix (msx:, oil:, etc.)
             Mocks->>Recorder: record(call)
             Mocks-->>LiveHarness: fixture response
         end
@@ -502,7 +505,7 @@ flowchart TD
 
 ### Mock Tools Definition
 
-`live-harness.ts` defines a `MOCK_TOOLS` array — an OpenAI function-calling schema for **32 tools** that the LLM can call. Tool names use underscore format (`msx_crm__get_milestones`) which the harness maps to prefix format (`msx-crm:get_milestones`) when routing to mock servers.
+`live-harness.ts` defines a `MOCK_TOOLS` array — an OpenAI function-calling schema for **32 tools** that the LLM can call. Tool names use underscore format (`msx_crm__get_milestones`) which the harness maps to prefix format (`msx:get_milestones`) when routing to mock servers.
 
 | Category | Tools |
 |---|---|
@@ -521,7 +524,7 @@ flowchart TD
 | 1 | **Morning Brief** | Scoped retrieval, parallel phases, structured output |
 | 2 | **Milestone Health** | CSAM governance review, table format, required columns |
 | 3 | **Write Safety** | All writes staged (not executed), staging receipt returned |
-| 4 | **Vault-First** | `oil:*` called before `msx-crm:*` |
+| 4 | **Vault-First** | `oil:*` called before `msx:*` |
 | 5 | **Scoped Query** | No N+1 loops, milestones scoped by keyword/filter |
 
 ### Multi-Model Comparison
@@ -617,7 +620,7 @@ npm run fixtures:capture:redact   # Capture with PII scrubbing
 
 ### 1. Vault-First Pattern
 
-Judges enforce that `oil:*` calls precede `msx-crm:*` calls, ensuring the agent consults local knowledge before querying CRM. This reduces CRM load and provides richer context.
+Judges enforce that `oil:*` calls precede `msx:*` calls, ensuring the agent consults local knowledge before querying CRM. This reduces CRM load and provides richer context.
 
 ### 2. Scoped Query Pattern
 

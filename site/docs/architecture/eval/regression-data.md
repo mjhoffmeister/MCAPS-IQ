@@ -5,6 +5,8 @@ tags:
   - evaluation
   - regression
   - test-data
+hide:
+  - toc
 ---
 
 # Eval Regression Tracking & Test Data Strategy — Spec
@@ -376,7 +378,7 @@ scenarios:
       role: CSAM
       customer: Contoso
     expected_calls:
-      - tool: msx-crm:get_milestones
+      - tool: msx:get_milestones
         paramsContains: { customerKeyword: "Contoso", statusFilter: "active" }
 ```
 

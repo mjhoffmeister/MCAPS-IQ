@@ -19,7 +19,7 @@ Analyzes CRM signals and customer outcomes to pinpoint the functional MCEM stage
 
 ## Flow
 
-1. **Retrieve Context**: Call `msx-crm:get_opportunity_details` and `msx-crm:get_milestones`.
+1. **Retrieve Context**: Call `msx:get_opportunity_details` and `msx:get_milestones`.
 2. **Evaluate Outcomes**: Compare findings against the **Exit Criteria** defined in `MCEM-stage-reference.md`.
 3. **Cross-Reference**: Check if the active **Role Accountability** (ATU/STU/CSU) aligns with the functional stage.
 4. **Identify Gaps**: Flag missing Verifiable Outcomes (VOs) that are required to exit the current stage.
@@ -47,4 +47,4 @@ Analyzes CRM signals and customer outcomes to pinpoint the functional MCEM stage
 * **Context Efficiency**: It references `MCEM-stage-reference.md` as the "Source Authority," keeping the skill body under the 80-line target.
 * **Non-Linear Handling**: It explicitly includes a "Regression" logic rule to catch deals that have been moved forward in the CRM without completing the necessary work.
 
-**Would you like me to draft the `shared-patterns.instructions.md` next to establish the "VAULT-PREFETCH" and scoping standards used by these skills?**
+**Would you like me to run the `shared-patterns` skill next to establish the "VAULT-PREFETCH" and scoping standards used by these skills?**

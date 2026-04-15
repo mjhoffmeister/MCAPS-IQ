@@ -2,8 +2,8 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Setup: Install Everything",
-      "detail": "Installs all MCP server dependencies and builds what's needed. Run this once after cloning.",
+      "label": "Setup: Optional Local Tooling",
+      "detail": "Optional: installs repo-local tooling (eval/docs/excalidraw) and registers mcaps CLI alias. MCP runtime servers use npx/http.",
       "type": "shell",
       "command": "node scripts/init.js",
       "group": "build",
@@ -16,7 +16,7 @@
     },
     {
       "label": "Setup: Check Environment",
-      "detail": "Verifies Node.js, npm, Azure CLI, and MCP servers are all ready — without installing anything.",
+      "detail": "Verifies runtime prerequisites (Node/npm/Azure) and reports optional local tooling status.",
       "type": "shell",
       "command": "node scripts/init.js --check",
       "group": "test",

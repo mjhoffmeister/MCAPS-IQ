@@ -24,11 +24,11 @@ Generates an Excalidraw diagram that visually represents a customer's account st
 
 1. **Scope** — Identify the customer. Use one of:
    - `oil:get_customer_context({ customer })` for vault-first prefetch (account IDs, known opportunity GUIDs).
-   - `msx-crm:list_accounts_by_tpid({ tpid })` if TPID is provided.
-   - `msx-crm:get_my_active_opportunities({ customerKeyword })` to discover opportunities by name.
+   - `msx:list_accounts_by_tpid({ tpid })` if TPID is provided.
+   - `msx:get_my_active_opportunities({ customerKeyword })` to discover opportunities by name.
 
 2. **Gather structural data** — For each opportunity in scope:
-   - `msx-crm:get_milestones({ opportunityIds: [...], includeTasks: true })` — batch milestones with inline tasks, status, commitment, owners, dates. Or use `customerKeyword` for customer-scoped retrieval in one call.
+   - `msx:get_milestones({ opportunityIds: [...], includeTasks: true })` — batch milestones with inline tasks, status, commitment, owners, dates. Or use `customerKeyword` for customer-scoped retrieval in one call.
    - `oil:get_vault_context()` — stakeholder map, risk flags, relationship notes (skip if unavailable).
 
 3. **Classify MCEM stage** — For each opportunity, determine functional stage using `mcem-stage-identification` Decision Logic (or reuse if already in context). Tag each opportunity node with its stage.
@@ -44,7 +44,7 @@ Generates an Excalidraw diagram that visually represents a customer's account st
 
 5. **Generate Excalidraw diagram** — Produce a valid `.excalidraw.md` code block using the layout and element specs below.
 
-6. **Output** — Return the diagram as a fenced code block (` ```excalidraw `) that can be pasted into an Obsidian note or saved as a `.excalidraw` file in `.copilot/docs/excalidraw/` (see `shared-patterns.instructions.md` § Artifact Output Directory).
+6. **Output** — Return the diagram as a fenced code block (` ```excalidraw `) that can be pasted into an Obsidian note. When OIL is available, save the `.excalidraw` file to the vault `MCAPS-IQ-Artifacts/` folder (customer-scoped: `MCAPS-IQ-Artifacts/<Customer>/`); otherwise fall back to `.copilot/docs/excalidraw/` (see `shared-patterns` skill § Artifact Output Directory).
 
 ## Layout Specification
 

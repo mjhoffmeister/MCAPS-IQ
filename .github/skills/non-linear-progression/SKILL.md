@@ -1,55 +1,60 @@
 ---
 name: non-linear-progression
-description: 'Non-linear progression advisor: guides when and how to regress a deal to an earlier MCEM phase after proof failures, scope pivots, or buyer-readiness gaps. Provides re-entry requirements. Chains with commit-gate-enforcement and delivery-accountability-mapping for commit-or-loopback decision. Triggers: loopback, deal regression, stage rollback, go back, roll back, proof failed rework, scope pivot, re-entry, loop back, should we loop back. DO NOT USE FOR: software test regression analysis.'
-argument-hint: 'Provide opportunityId and describe the triggering event (proof failure, scope change, etc.)'
+description: "Non-linear progression: guides MCEM stage loopback when customer readiness gaps, proof failures, or capacity constraints require iteration rather than forward movement. Determines which stage to loop back to and what must be resolved. Triggers: loop back, stage regression, go back a stage, not ready to advance, proof failed, readiness gap, stage loopback, re-qualify, stage regression, iteration needed."
 ---
 
-## Purpose
+# Non-Linear Progression
 
-Guides structured stage loopback when evidence shows the opportunity is not ready to progress — preventing false advancement and preserving execution integrity through deliberate iteration.
+## Purpose
+Guide **MCEM stage loopback** when customer readiness, proof gaps, or capacity constraints require iteration rather than forward progression. Determines the correct stage to return to, what must be resolved before re-advancing, and which role leads the recovery.
 
 ## Freedom Level
-
-**Medium** — Loopback assessment requires judgment; loopback patterns are documented.
+**Medium** — Loopback routing requires situational judgment.
 
 ## Trigger
+- Proof execution fails or produces inconclusive results
+- Customer readiness gaps surface during delivery (Stage 4 → Stage 2/3)
+- Capacity or resource constraints block committed delivery
+- `commit-gate-enforcement` determines the opportunity is not ready to commit
+- `exit-criteria-validation` shows unmet criteria for the current stage
 
-- Proof failure or incomplete evidence at Stage 3
-- Capacity or readiness gaps discovered post-commitment
-- User asks "should we go back?" or "this isn't ready"
-- Exit criteria validation reveals unmet prerequisites
+## Inputs
+- Current MCEM stage (from `mcem-stage-identification` or user context)
+- Nature of the gap: proof failure, readiness gap, capacity constraint, scope change
+- Relevant CRM state (milestone status, commitment status, stage field)
 
 ## Flow
 
-1. Identify current stage and the triggering gap (from `exit-criteria-validation` or user context).
-2. Classify the loopback type (see patterns below).
-3. Recommend target stage and specific re-entry skills.
-4. Generate dry-run actions to document the loopback reason in CRM.
+1. **Classify the gap** — Determine the root cause category:
+   - **Proof gap**: Technical proof incomplete, inconclusive, or failed → loop to Stage 2 (redesign) or Stage 3 (re-execute)
+   - **Readiness gap**: Customer not ready for commitment or delivery → loop to Stage 2 (re-align) or Stage 1 (re-qualify)
+   - **Capacity constraint**: Resources unavailable for delivery → hold at current stage or loop to Stage 3 (re-scope)
+   - **Scope change**: Customer requirements changed materially → loop to Stage 2 (redesign)
+2. **Determine target stage** — Based on the gap class, identify which stage the opportunity should functionally operate in.
+3. **Identify recovery owner** — Map the target stage to the accountable role per MCEM model:
+   - Stage 1: Specialist (re-qualify)
+   - Stage 2: Specialist + SE (redesign)
+   - Stage 3: SE + CSA/CSAM (re-execute proof, re-validate commitment)
+   - Stage 4: CSAM + CSA (re-scope delivery)
+4. **Define recovery criteria** — List what must be resolved before the opportunity can re-advance past the loopback point.
+5. **Recommend CRM actions** — Flag if the Stage field should be updated, milestone commitment should be reverted, or new milestones are needed.
 
-## Common Loopback Patterns
+## Output Format
 
-| Trigger | From → To | Re-entry Skill |
-|---|---|---|
-| Proof fails or is inconclusive | Stage 3 → Stage 2 | `proof-plan-orchestration` |
-| Architecture infeasible | Stage 3 → Stage 2 | `architecture-feasibility-check` |
-| Capacity/delivery gap post-commit | Stage 4 → Stage 3 | `commit-gate-enforcement` |
-| Scope change by customer | Stage 4 → Stage 2 | `pipeline-qualification` + `proof-plan-orchestration` |
-| Adoption stall reveals design issue | Stage 5 → Stage 4 | `value-realization-pack` |
-| Customer priority shift | Any → Stage 1 | `customer-outcome-scoping` |
+| Field | Value |
+|---|---|
+| **Current Stage** | _where the opportunity sits today_ |
+| **Gap Type** | _proof / readiness / capacity / scope_ |
+| **Loopback Target** | _Stage N_ |
+| **Recovery Owner** | _role (unit)_ |
+| **Recovery Criteria** | _what must be true to re-advance_ |
+| **CRM Actions** | _stage field update, milestone changes, etc._ |
 
-## Decision Logic
+## Boundary Rules
+- Loopback is normal — it is not a failure. Frame as iteration toward the right outcome.
+- Stage field updates are Specialist-owned. If loopback requires a stage field change, recommend it but redirect execution to Specialist.
+- Milestone commitment changes follow the write-gate authority matrix — CSAM/Specialist only.
+- Do not recommend closing the opportunity unless the customer has explicitly disengaged. Loopback ≠ loss.
 
-- Loopback is recommended when VO evidence contradicts current stage positioning
-- Document loopback reason in milestone comments before stage change
-- Notify accountable roles for both current and target stages
-- Loopback is not failure — it preserves long-term execution integrity
-
-## Output Schema
-
-- `loopback_recommended`: boolean
-- `from_stage`: current stage
-- `to_stage`: recommended target stage
-- `reason`: specific evidence driving the loopback
-- `re_entry_skill`: skill to invoke at the target stage
-- `dry_run_documentation`: CRM update payloads to record loopback
-- `next_action`: names the re-entry skill for the target stage
+## Chain Outputs
+- `next_action`: Based on the loopback target — e.g., "Looping to Stage 2. Next: `architecture-feasibility-check` (CSA) to validate revised design, then `proof-plan-orchestration` (SE) to rebuild proof plan."
