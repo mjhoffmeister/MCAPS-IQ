@@ -5,6 +5,7 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { resolve, join } from 'path';
@@ -33,28 +34,23 @@ const SESSION_HEARTBEAT_MS = 10_000;
 const SESSION_MISSED_LIMIT = 3;
 const DISCONNECT_TIMEOUT_MS = 30_000;
 
-// ── Rate limiter (in-memory, per-route) ────────────────────────
+// ── Rate limiters (express-rate-limit — recognized by CodeQL) ──
 
-function createRateLimiter({ windowMs = 60_000, max = 30 } = {}) {
-  const hits = new Map();
-  return (req, res, next) => {
-    const key = req.ip || '127.0.0.1';
-    const now = Date.now();
-    let entry = hits.get(key);
-    if (!entry || now - entry.start > windowMs) {
-      entry = { start: now, count: 0 };
-      hits.set(key, entry);
-    }
-    entry.count++;
-    if (entry.count > max) {
-      return res.status(429).json({ error: 'Too many requests, try again later' });
-    }
-    next();
-  };
-}
+const generalLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, try again later' }
+});
 
-const generalLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
-const execLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+const execLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, try again later' }
+});
 
 const stateManager = createMultiSessionState();
 const viewerClients = new Set();
@@ -129,13 +125,16 @@ wss.on('error', () => {});
 
 app.use(express.json({ limit: '1mb' }));
 
+// Global rate limiter — covers static files and all routes
+app.use(generalLimiter);
+
 // Static files
 const resolvedPublic = resolve(PUBLIC_DIR);
 app.use(express.static(resolvedPublic, { setHeaders: (res) => {
   res.setHeader('Cache-Control', 'no-cache, must-revalidate');
 }}));
-app.get('/', generalLimiter, (_req, res) => res.sendFile(resolve(resolvedPublic, 'index.html')));
-app.get('/favicon.ico', generalLimiter, (_req, res) => res.status(204).end());
+app.get('/', (_req, res) => res.sendFile(resolve(resolvedPublic, 'index.html')));
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
 // ── API: Health ────────────────────────────────────────────────
 
@@ -223,7 +222,7 @@ app.get('/api/capabilities/summary', async (_req, res) => {
 
 // ── API: Settings ──────────────────────────────────────────────
 
-app.get('/api/settings', generalLimiter, (_req, res) => {
+app.get('/api/settings', (_req, res) => {
   res.json(readSettings());
 });
 
@@ -256,7 +255,7 @@ app.post('/api/settings/priority-accounts', execLimiter, (req, res) => {
 
 // Static-path routes MUST come before parameterized /:id routes
 
-app.get('/api/schedules', generalLimiter, (_req, res) => {
+app.get('/api/schedules', (_req, res) => {
   try {
     const list = scheduler.list();
     res.json({ schedules: list });
@@ -279,7 +278,7 @@ app.post('/api/schedules', execLimiter, (req, res) => {
   }
 });
 
-app.post('/api/schedules/validate', generalLimiter, (req, res) => {
+app.post('/api/schedules/validate', (req, res) => {
   const { cron } = req.body || {};
   if (!cron) return res.status(400).json({ error: 'cron is required' });
   const err = validateCron(cron);
@@ -311,7 +310,7 @@ app.post('/api/schedules/once', execLimiter, (req, res) => {
   }
 });
 
-app.get('/api/schedules/once', generalLimiter, (_req, res) => {
+app.get('/api/schedules/once', (_req, res) => {
   res.json({ pending: scheduler.listOnce() });
 });
 
@@ -324,7 +323,7 @@ app.delete('/api/schedules/once/:id', execLimiter, (req, res) => {
 
 // Parameterized /:id routes after all static paths
 
-app.get('/api/schedules/:id', generalLimiter, (req, res) => {
+app.get('/api/schedules/:id', (req, res) => {
   try {
     const schedule = scheduler.get(req.params.id);
     if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
@@ -396,7 +395,7 @@ app.get('/api/sessions/:id', (req, res) => {
 
 // ── API: Session History (Mission Control) ─────────────────────
 
-app.get('/api/session-history', generalLimiter, (req, res) => {
+app.get('/api/session-history', (req, res) => {
   try {
     const result = listSessionHistory({
       limit: Math.min(Number(req.query.limit) || 50, 200),
@@ -411,7 +410,7 @@ app.get('/api/session-history', generalLimiter, (req, res) => {
   }
 });
 
-app.get('/api/session-history/stats', generalLimiter, (_req, res) => {
+app.get('/api/session-history/stats', (_req, res) => {
   try {
     res.json(getSessionStats());
   } catch (err) {
@@ -419,7 +418,7 @@ app.get('/api/session-history/stats', generalLimiter, (_req, res) => {
   }
 });
 
-app.get('/api/session-history/search', generalLimiter, (req, res) => {
+app.get('/api/session-history/search', (req, res) => {
   const query = req.query.q || req.query.query;
   if (!query) return res.status(400).json({ error: 'q or query param required' });
   try {
@@ -432,7 +431,7 @@ app.get('/api/session-history/search', generalLimiter, (req, res) => {
   }
 });
 
-app.get('/api/session-history/:id', generalLimiter, (req, res) => {
+app.get('/api/session-history/:id', (req, res) => {
   try {
     const detail = getSessionDetail(req.params.id);
     if (!detail) return res.status(404).json({ error: 'Session not found in history' });
@@ -442,7 +441,7 @@ app.get('/api/session-history/:id', generalLimiter, (req, res) => {
   }
 });
 
-app.get('/api/session-history/:id/turns', generalLimiter, (req, res) => {
+app.get('/api/session-history/:id/turns', (req, res) => {
   try {
     const result = getSessionTurns(req.params.id, {
       limit: Math.min(Number(req.query.limit) || 100, 500),
@@ -564,7 +563,7 @@ app.get('/api/crm/milestones', async (req, res) => {
   }
 });
 
-app.post('/api/crm/refresh', (_req, res) => {
+app.post('/api/crm/refresh', execLimiter, (_req, res) => {
   try {
     getCrmClient().invalidateCache();
     res.json({ refreshed: true });
@@ -670,7 +669,7 @@ app.get('/api/crm/query', async (req, res) => {
 
 // ── API: CRM Write-Intent (staged) ────────────────────────────
 
-app.post('/api/crm/milestones', async (req, res) => {
+app.post('/api/crm/milestones', execLimiter, async (req, res) => {
   const { name, opportunityId } = req.body || {};
   if (!name || !opportunityId) {
     return res.status(400).json({ error: 'name and opportunityId are required' });
@@ -683,7 +682,7 @@ app.post('/api/crm/milestones', async (req, res) => {
   }
 });
 
-app.post('/api/crm/milestones/:id', async (req, res) => {
+app.post('/api/crm/milestones/:id', execLimiter, async (req, res) => {
   const { payload } = req.body || {};
   if (!payload || typeof payload !== 'object') {
     return res.status(400).json({ error: 'payload object is required' });
@@ -696,7 +695,7 @@ app.post('/api/crm/milestones/:id', async (req, res) => {
   }
 });
 
-app.post('/api/crm/milestones/:id/team', async (req, res) => {
+app.post('/api/crm/milestones/:id/team', execLimiter, async (req, res) => {
   const { action, userId } = req.body || {};
   if (!action || !userId) {
     return res.status(400).json({ error: 'action and userId are required' });
@@ -711,7 +710,7 @@ app.post('/api/crm/milestones/:id/team', async (req, res) => {
   }
 });
 
-app.post('/api/crm/tasks', async (req, res) => {
+app.post('/api/crm/tasks', execLimiter, async (req, res) => {
   const { subject, milestoneId } = req.body || {};
   if (!subject || !milestoneId) {
     return res.status(400).json({ error: 'subject and milestoneId are required' });
@@ -724,7 +723,7 @@ app.post('/api/crm/tasks', async (req, res) => {
   }
 });
 
-app.post('/api/crm/tasks/:id', async (req, res) => {
+app.post('/api/crm/tasks/:id', execLimiter, async (req, res) => {
   const { payload } = req.body || {};
   if (!payload || typeof payload !== 'object') {
     return res.status(400).json({ error: 'payload object is required' });
@@ -737,7 +736,7 @@ app.post('/api/crm/tasks/:id', async (req, res) => {
   }
 });
 
-app.post('/api/crm/tasks/:id/close', async (req, res) => {
+app.post('/api/crm/tasks/:id/close', execLimiter, async (req, res) => {
   try {
     const data = await getCrmClient().closeTask(req.params.id);
     res.json(data);
@@ -746,7 +745,7 @@ app.post('/api/crm/tasks/:id/close', async (req, res) => {
   }
 });
 
-app.post('/api/crm/opportunities/:id/deal-team', async (req, res) => {
+app.post('/api/crm/opportunities/:id/deal-team', execLimiter, async (req, res) => {
   const { action, userId } = req.body || {};
   if (!action || !userId) {
     return res.status(400).json({ error: 'action and userId are required' });
@@ -781,7 +780,7 @@ app.get('/api/crm/operations/:id/diff', async (req, res) => {
   }
 });
 
-app.post('/api/crm/operations/:id/execute', async (req, res) => {
+app.post('/api/crm/operations/:id/execute', execLimiter, async (req, res) => {
   try {
     const data = await getCrmClient().executeOperation(req.params.id);
     res.json(data);
@@ -790,7 +789,7 @@ app.post('/api/crm/operations/:id/execute', async (req, res) => {
   }
 });
 
-app.post('/api/crm/operations/execute-all', async (_req, res) => {
+app.post('/api/crm/operations/execute-all', execLimiter, async (_req, res) => {
   try {
     const data = await getCrmClient().executeAll();
     res.json(data);
@@ -799,7 +798,7 @@ app.post('/api/crm/operations/execute-all', async (_req, res) => {
   }
 });
 
-app.post('/api/crm/operations/:id/cancel', async (req, res) => {
+app.post('/api/crm/operations/:id/cancel', execLimiter, async (req, res) => {
   try {
     const data = await getCrmClient().cancelOperation(req.params.id);
     res.json(data);
@@ -808,7 +807,7 @@ app.post('/api/crm/operations/:id/cancel', async (req, res) => {
   }
 });
 
-app.post('/api/crm/operations/cancel-all', async (_req, res) => {
+app.post('/api/crm/operations/cancel-all', execLimiter, async (_req, res) => {
   try {
     const data = await getCrmClient().cancelAll();
     res.json(data);
@@ -1051,7 +1050,7 @@ app.get('/api/vault/name', (_req, res) => {
   res.json({ name });
 });
 
-app.post('/api/vault/refresh', (_req, res) => {
+app.post('/api/vault/refresh', execLimiter, (_req, res) => {
   try {
     getOilClient().invalidateCache();
     res.json({ refreshed: true });
@@ -1110,7 +1109,7 @@ function classifyServer(name, cfg) {
   };
 }
 
-app.get('/api/mcp/servers', generalLimiter, (_req, res) => {
+app.get('/api/mcp/servers', (_req, res) => {
   try {
     const config = readMcpConfig();
     const disabled = getMcpDisabledSet();
